@@ -1,0 +1,12 @@
+# Blender 5.1.0 MTL File: 'zombie_v5.blend'
+# www.blender.org
+
+newmtl ZombieMaterial_Fixed
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd c:/Users/kyle.escamez.GIBRALTAR/.gemini/antigravity/brain/75f418eb-47a4-4920-a585-4ca975ef70b9/zombie_skin_high_fidelity_1775808897192.png

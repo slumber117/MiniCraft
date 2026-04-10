@@ -1,0 +1,15 @@
+.gradle/
+build/
+*.log
+*.txt
+*.ps1
+*.py
+*.blend
+*.blend1
+hs_err_pid*
+bin/
+out/
+.idea/
+.vscode/
+*.iml
+*.class
