@@ -198,7 +198,22 @@ public class Chunk {
         int nz = gz + (sideIdx == 4 ? 1 : (sideIdx == 5 ? -1 : 0));
 
         Block neighbor = world.getBlock(nx, ny, nz);
-        if (neighbor != null && neighbor.isOpaque()) return;
+        
+        // Culling Logic: Prevent internal faces of transparent blocks (like water/leaves) from rendering
+        if (neighbor != null) {
+            // Cull ifneighbor is same type and not opaque (Water, Leaves, etc)
+            if (b == neighbor && !b.isOpaque()) return;
+            
+            // Standard Opaque Culling
+            if (neighbor.isOpaque()) {
+                // Special case for stone to allow some variety if neighbor is different
+                if (b == Block.STONE) {
+                    if (neighbor == Block.STONE || neighbor == Block.BEDROCK) return;
+                } else {
+                    return;
+                }
+            }
+        }
 
         String tex = b.getTextureForFace(f);
         if (tex == null) return;

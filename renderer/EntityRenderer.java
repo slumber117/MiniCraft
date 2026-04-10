@@ -81,13 +81,24 @@ public class EntityRenderer {
             if (e.isDead() || e.type == minicraft.entity.EntityType.PLAYER) continue;
 
             String typeName = e.type.name();
+            Vector4f color = new Vector4f(1, 1, 1, 1);
+            if (e.damageFlashTimer > 0) color = new Vector4f(1, 0.5f, 0.5f, 1);
+
+            // --- HIGH-FIDELITY 3D NPC OVERRIDE ---
+            if (typeName.equalsIgnoreCase("ZOMBIE")) {
+                Mesh zombieMesh = ModelRegistry.getModel("zombie");
+                if (zombieMesh != null) {
+                    render3DNPC(e, zombieMesh, shader, color);
+                    if (e.getHealth() < e.getMaxHealth()) renderHealthBar(e, shader, viewMatrix);
+                    continue;
+                }
+            }
+
             String texName = entityTextures.getOrDefault(typeName, "stone");
             
             if (e instanceof minicraft.entity.ItemEntity) {
                 texName = ((minicraft.entity.ItemEntity) e).block.sideTexture;
             }
-            
-            Vector4f color = new Vector4f(1, 1, 1, 1);
             
             float yPos = e.position.y;
             float scaleX = e.width;
@@ -97,8 +108,6 @@ public class EntityRenderer {
                 yPos += ((minicraft.entity.ItemEntity) e).getBobbingOffset();
                 scaleX = 0.25f;
                 scaleY = 0.25f;
-            } else if (e.damageFlashTimer > 0) {
-                color = new Vector4f(1, 0.5f, 0.5f, 1); // Red flash
             }
 
             Matrix4f model = new Matrix4f()
@@ -118,6 +127,19 @@ public class EntityRenderer {
                 renderHealthBar(e, shader, viewMatrix);
             }
         }
+    }
+
+    private void render3DNPC(Entity e, Mesh mesh, ShaderProgram shader, Vector4f color) {
+        // High-fidelity transform for humanoid models
+        Matrix4f model = new Matrix4f()
+            .identity()
+            .translate(e.position.x, e.position.y, e.position.z)
+            .rotateY((float) Math.toRadians(-e.yaw + 180)) // Compressing Blender vs Engine heading
+            .scale(0.8f, 0.8f, 0.8f); // High-fidelity scale (slightly taller than cube)
+
+        shader.setUniform("colorTint", color);
+        shader.setUniform("modelMatrix", model);
+        mesh.render(null); // Uses internal high-fidelity texture
     }
 
     private void renderHealthBar(Entity e, ShaderProgram shader, Matrix4f viewMatrix) {

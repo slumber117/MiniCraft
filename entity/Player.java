@@ -204,4 +204,8 @@ public class Player extends Entity {
     public Camera getCamera() {
         return camera;
     }
+
+    public void handleMouseInput(float dx, float dy) {
+        camera.handleMouseInput(dx, dy);
+    }
 }

@@ -62,4 +62,13 @@ public class Camera {
         viewMatrix.translate(-position.x, -position.y, -position.z);
         return viewMatrix;
     }
+
+    public void handleMouseInput(float dx, float dy) {
+        rotation.x -= dy; // Fixed inversion
+        rotation.y += dx;
+        
+        // Clamp pitch to prevent flipping
+        if (rotation.x > 89.0f) rotation.x = 89.0f;
+        if (rotation.x < -89.0f) rotation.x = -89.0f;
+    }
 }

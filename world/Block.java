@@ -12,10 +12,33 @@ public enum Block {
     DIRT      (true,  0, 0.5f, "dirt"),
     STONE     (true,  1, 1.5f, "stone"),
     SAND      (true,  0, 0.5f, "sand"),
+    RED_SAND  (true,  0, 0.5f, "red_sand"),
     WATER     (false, 0, 0f,   "water"),
     WOOD      (true,  0, 2.0f, "wood"),
     LEAVES    (true,  0, 0.2f, "leaves"),
     SNOW      (true,  0, 0.1f, "snow"),
+    ICE       (true,  1, 2.0f, "ice"),
+    PODZOL    (true,  0, 0.6f, "podzol_top", "dirt", "podzol_side"),
+
+    // ── Construction ──────────────────────────────────────────────────────
+    SAND_BRICKS  (true, 0, 2.0f, "sand_bricks"),
+    STONE_BRICKS (true, 0, 3.0f, "stone_bricks"),
+    WOOD_PLANKS  (true, 0, 1.5f, "wood_planks"),
+    OBSIDIAN     (true, 4, 40.0f, "obsidian"),
+
+    // ── Vegetation Variants ────────────────────────────────────────────────
+    OAK_WOOD        (true, 0, 2.0f, "wood"),
+    OAK_LEAVES      (true, 0, 0.2f, "leaves"),
+    REDWOOD_WOOD    (true, 0, 3.0f, "redwood_wood"),
+    REDWOOD_LEAVES  (true, 0, 0.2f, "redwood_leaves"),
+    MANGO_WOOD      (true, 0, 2.0f, "mango_wood"),
+    MANGO_LEAVES    (true, 0, 0.2f, "fruit_leaves_mango"),
+    APPLE_WOOD      (true, 0, 2.0f, "apple_wood"),
+    APPLE_LEAVES    (true, 0, 0.2f, "fruit_leaves_apple"),
+    PEAR_WOOD       (true,  0, 2.0f, "pear_wood"),
+    PEAR_LEAVES     (true,  0, 0.2f, "fruit_leaves_pear"),
+    JUNGLE_WOOD     (true,  0, 2.5f, "jungle_wood"),
+    JUNGLE_LEAVES   (true,  0, 0.2f, "jungle_leaves"),
 
     // ── Basic Ores ────────────────────────────────────────────────────────
     COAL_ORE      (true, 1, 3.0f,  "coal_ore"),
@@ -36,7 +59,6 @@ public enum Block {
 
     TUNGSTEN_ORE  (true, 2, 10.0f, "tungsten_ore"),
     TITANIUM_ORE  (true, 2, 10.0f, "titanium_ore"),
-    OBSIDIAN      (true, 4, 40.0f, "obsidian"),
 
     BRONZE_BLOCK  (true, 0, 5.0f, "bronze_block"),
     CRAFTING_TABLE(true, 0, 2.5f, "crafting_table"),
@@ -44,12 +66,15 @@ public enum Block {
     ALLOY_FORGE   (true, 0, 4.0f, "alloy_forge"),
     CHEST         (true, 0, 2.5f, "chest"),
 
-    // ── Vegetation ────────────────────────────────────────────────────────
+    // ── Vegetation & Undersea ─────────────────────────────────────────────
     TALL_GRASS   (false, 0, 0f,   "tall_grass", MeshType.CROSS),
     FLOWER_RED   (false, 0, 0f,   "flower_red", MeshType.CROSS),
     FLOWER_BLUE  (false, 0, 0f,   "flower_blue", MeshType.CROSS),
     MUSHROOM     (false, 0, 0f,   "mushroom", MeshType.CROSS),
-    TORCH        (false, 0, 0f,   "torch", MeshType.CROSS);
+    TORCH        (false, 0, 0f,   "torch", MeshType.CROSS),
+    CACTUS       (true,  0, 0.5f, "cactus"),
+    SEA_WEED     (false, 0, 0f,   "sea_weed", MeshType.CROSS),
+    CORAL        (true,  0, 0.3f, "coral");
 
     // ── Mesh Types ──
     public enum MeshType { CUBE, CROSS }
@@ -113,6 +138,10 @@ public enum Block {
     public boolean isAir() { return this == AIR; }
     
     public boolean isOpaque() {
-        return solid && this != LEAVES && this != WATER && this != SNOW;
+        if (!solid) return false;
+        // Transparent solids
+        if (this == LEAVES || this == WATER || this == SNOW || this == SEA_WEED || this == CORAL || this == ICE) return false;
+        if (this == OAK_LEAVES || this == REDWOOD_LEAVES || this == MANGO_LEAVES || this == APPLE_LEAVES || this == PEAR_LEAVES || this == JUNGLE_LEAVES) return false;
+        return true;
     }
 }

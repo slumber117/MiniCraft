@@ -1,5 +1,7 @@
 package minicraft.world;
 
+import java.util.Random;
+
 import minicraft.math.Matrix4f;
 import minicraft.renderer.ShaderProgram;
 import minicraft.renderer.TextureRegistry;
@@ -16,17 +18,23 @@ public class World {
     private static final int BEDROCK_Y       = 1;
     private static final int DIRT_LAYERS     = 5;
 
-    private final PerlinNoise noise;
+    private final WorldGenerator generator;
     private final TextureRegistry textures;
     private final Map<Long, Chunk> chunks = new HashMap<>();
+    private final Map<String, minicraft.entity.Inventory> worldContainers = new HashMap<>();
+    private final StructureGenerator structGen = new StructureGenerator();
     private final int renderDistance; 
     private final WeatherManager weatherManager = new WeatherManager();
+    private final Random random = new Random();
 
     public World(long seed, TextureRegistry textures, int renderDistance) {
         this.textures = textures;
-        this.noise = new PerlinNoise(seed);
+        this.generator = new WorldGenerator(seed);
         this.renderDistance = renderDistance;
     }
+
+    public WorldGenerator getGenerator() { return generator; }
+
 
     private final Matrix4f chunkMatrix = new Matrix4f();
 
@@ -58,54 +66,133 @@ public class World {
         return chunk.getLight(Math.floorMod(gx, Chunk.WIDTH), gy, Math.floorMod(gz, Chunk.DEPTH));
     }
 
+    public Block getSurfaceBlock(Biome biome) {
+        switch (biome) {
+            case OCEAN:        return Block.SAND;
+            case FROZEN_OCEAN: return Block.ICE;
+            case ARCTIC:
+            case TUNDRA:
+            case SNOWY_FOREST:
+            case SNOWY_PEAKS:  return Block.SNOW;
+            case REDWOOD:      return Block.PODZOL;
+            case DESERT:       return Block.SAND;
+            case MOUNTAINS:    return Block.STONE;
+            case JUNGLE:
+            case SAVANNA:
+            case GRASSLAND:
+            case FOREST:
+            case HIGHLANDS:    return Block.GRASS;
+            default:           return Block.GRASS;
+        }
+    }
+
+    public Block getFillerBlock(Biome biome) {
+        switch (biome) {
+            case OCEAN:
+            case DESERT:       return Block.SAND;
+            case FROZEN_OCEAN:
+            case ARCTIC:       return Block.ICE;
+            case MOUNTAINS:
+            case SNOWY_PEAKS:  return Block.STONE;
+            default:           return Block.DIRT;
+        }
+    }
+
+    public minicraft.math.Vector3f getFogColor(Biome biome) {
+        switch (biome) {
+            case FROZEN_OCEAN:
+            case ARCTIC:
+            case SNOWY_PEAKS:  return new minicraft.math.Vector3f(0.8f, 0.8f, 0.9f);
+            case DESERT:       return new minicraft.math.Vector3f(0.8f, 0.7f, 0.5f);
+            case JUNGLE:       return new minicraft.math.Vector3f(0.4f, 0.6f, 0.4f);
+            case REDWOOD:      return new minicraft.math.Vector3f(0.4f, 0.5f, 0.6f);
+            case SAVANNA:      return new minicraft.math.Vector3f(0.7f, 0.7f, 0.5f);
+            default:           return new minicraft.math.Vector3f(0.5f, 0.6f, 0.7f);
+        }
+    }
+
+
     private Chunk generate(int cx, int cz) {
         Chunk chunk = new Chunk(cx, cz);
-        int wx0 = cx * Chunk.WIDTH;
-        int wz0 = cz * Chunk.DEPTH;
+        WorldCell[][] region = generator.generateRegion(cx * 16, cz * 16, 16, 16);
+        int seaLevelY = (int)(WorldCell.SEA_LEVEL * Chunk.HEIGHT);
 
         for (int x = 0; x < Chunk.WIDTH; x++) {
             for (int z = 0; z < Chunk.DEPTH; z++) {
-                double wx = (wx0 + x) / 100.0;
-                double wz = (wz0 + z) / 100.0;
-
-                // Surface Logic: Normalized to 400 height
-                double heightNoise = noise.octaveNoise(wx, wz, 4, 0.5);
-                int surfaceY = (int) ((heightNoise * 0.5 + 0.5) * 180) + 70;
-                surfaceY = Math.min(Chunk.HEIGHT - 20, surfaceY);
+                WorldCell cell = region[x][z];
+                int surfaceY = (int) (cell.elevation * Chunk.HEIGHT);
+                surfaceY = Math.min(Chunk.HEIGHT - 20, Math.max(BEDROCK_Y + 2, surfaceY));
 
                 for (int y = BEDROCK_Y; y <= surfaceY; y++) {
                     Block b;
                     if (y == BEDROCK_Y) b = Block.BEDROCK;
-                    else if (y == surfaceY) {
-                        if (surfaceY >= SNOW_START) b = Block.SNOW;
-                        else if (surfaceY <= SEA_LEVEL + 1) b = Block.SAND;
-                        else b = Block.GRASS;
-                    } else if (y >= surfaceY - DIRT_LAYERS) b = Block.DIRT;
+                    else if (y == surfaceY) b = getSurfaceBlock(cell.biome);
+                    else if (y >= surfaceY - DIRT_LAYERS) b = getFillerBlock(cell.biome);
                     else b = Block.STONE;
                     chunk.setBlock(x, y, z, b);
                 }
 
-                if (surfaceY < SEA_LEVEL) {
-                    for (int y = surfaceY + 1; y <= SEA_LEVEL; y++) chunk.setBlock(x, y, z, Block.WATER);
+                if (cell.isWater) {
+                    for (int y = surfaceY + 1; y <= seaLevelY; y++) chunk.setBlock(x, y, z, Block.WATER);
+                    // Undersea life
+                    if (cell.biome == Biome.OCEAN && surfaceY < seaLevelY - 3 && Math.random() < 0.05) {
+                        chunk.setBlock(x, surfaceY + 1, z, Math.random() < 0.7 ? Block.SEA_WEED : Block.CORAL);
+                    }
                 }
 
-                // Caves logic (Vertical scale adjusted for 400 range)
-                for (int y = BEDROCK_Y + 1; y < surfaceY - 8; y++) {
-                    double wy = y / 20.0;
-                    double cave1 = noise.noise(wx * 1.5, wy * 0.5, wz * 1.5);
-                    double cave2 = noise.noise(wx * 0.5, wy * 1.5, wz * 0.5);
-                    if (Math.abs(cave1) < 0.08 || Math.abs(cave2) < 0.06) chunk.setBlock(x, y, z, Block.AIR);
+                // CAVES (using continentalness as a seed factor)
+                for (int y = BEDROCK_Y + 1; y < surfaceY - 10; y++) {
+                    double n1 = generator.getElevationOnly((x + cx * 16) * 1.5, (z + cz * 16) * 1.5 + y * 2.5);
+                    if (Math.abs(n1) < 0.02) {
+                        chunk.setBlock(x, y, z, Block.AIR);
+                    }
                 }
+            }
+        }
 
-                if (Math.random() < 0.012 && surfaceY > SEA_LEVEL + 1 && surfaceY < SNOW_START - 20) {
-                    spawnTree(chunk, x, surfaceY + 1, z);
+        // STRUCTURES & RE-POPULATION
+        if (Math.random() < 0.08) {
+             int sx = random.nextInt(8) + 4;
+             int sz = random.nextInt(8) + 4;
+             WorldCell scell = generator.generate(sx + cx * 16, sz + cz * 16);
+             int sY = getSafeSpawnY(sx + cx * 16, sz + cz * 16);
+
+             if (sY > seaLevelY + 5 && sY < Chunk.HEIGHT - 40) {
+                 if (scell.biome == Biome.SAVANNA || scell.biome == Biome.GRASSLAND) {
+                     structGen.generateVillage(chunk, sx, sY, sz, scell.biome);
+                 } else if (scell.biome == Biome.MOUNTAINS || scell.biome == Biome.SNOWY_PEAKS) {
+                     structGen.generateFortress(chunk, sx, sY, sz, scell.biome);
+                 } else {
+                     structGen.generateCastle(chunk, sx, sY, sz, scell.biome);
+                 }
+             }
+        }
+
+        // Vegetation Pass
+        for (int x = 2; x < 14; x++) {
+            for (int z = 2; z < 14; z++) {
+                int sY = getSafeSpawnY(x + cx * 16, z + cz * 16);
+                WorldCell cell = region[x][z];
+                
+                if (sY > seaLevelY && sY < Chunk.HEIGHT - 60) {
+                    Block ground = chunk.getBlock(x, sY - 1, z);
+                    float treeChance = 0.005f;
+                    Block log = Block.OAK_WOOD, leaf = Block.OAK_LEAVES;
+
+                    if (cell.biome == Biome.JUNGLE) { treeChance = 0.08f; log = Block.JUNGLE_WOOD; leaf = Block.JUNGLE_LEAVES; }
+                    else if (cell.biome == Biome.REDWOOD) { treeChance = 0.03f; log = Block.REDWOOD_WOOD; leaf = Block.REDWOOD_LEAVES; }
+                    else if (cell.biome == Biome.FOREST || cell.biome == Biome.SNOWY_FOREST) { treeChance = 0.02f; }
+                    else if (cell.biome == Biome.TUNDRA) { treeChance = 0.005f; log = Block.REDWOOD_WOOD; leaf = Block.REDWOOD_LEAVES; }
+                    else if (cell.biome == Biome.DESERT && Math.random() < 0.01) { chunk.setBlock(x, sY, z, Block.CACTUS); continue; }
+
+                    if (Math.random() < treeChance) {
+                        spawnTreeType(chunk, x, sY, z, log, leaf);
+                    }
                 }
             }
         }
 
         spawnOres(chunk, cx, cz);
-        // buildMesh is intentionally NOT called here to prevent initial deadlock recursion.
-        // It will be called in the update loop when visible.
         return chunk;
     }
 
@@ -127,15 +214,37 @@ public class World {
         }
     }
 
-    private void spawnTree(Chunk c, int x, int y, int z) {
+    private void spawnTreeType(Chunk c, int x, int y, int z, Block log, Block leaf) {
         int h = 5 + (int)(Math.random() * 3);
+        int r = 2;
+
+        if (log == Block.REDWOOD_WOOD) {
+            h = 15 + (int)(Math.random() * 10);
+            r = 3;
+        } else if (log == Block.JUNGLE_WOOD) {
+            h = 10 + (int)(Math.random() * 8);
+            r = 4;
+        }
+
         if (y + h + 2 >= Chunk.HEIGHT) return;
-        for (int i = 0; i < h; i++) c.setBlock(x, y + i, z, Block.WOOD);
-        for (int lx = -2; lx <= 2; lx++)
-            for (int lz = -2; lz <= 2; lz++)
-                for (int ly = -1; ly <= 2; ly++)
-                    if (Math.abs(lx) + Math.abs(lz) + Math.abs(ly) <= 4)
-                        if (c.getBlock(x+lx, y+h+ly, z+lz).isAir()) c.setBlock(x+lx, y+h+ly, z+lz, Block.LEAVES);
+        
+        // Spawn Trunk
+        for (int i = 0; i < h; i++) c.setBlock(x, y + i, z, log);
+        
+        // Spawn Foliage
+        for (int lx = -r; lx <= r; lx++)
+            for (int lz = -r; lz <= r; lz++)
+                for (int ly = -2; ly <= 2; ly++) {
+                    if (Math.abs(lx) + Math.abs(lz) + Math.abs(ly/2) <= r + 1) {
+                        if (c.getBlock(x+lx, y+h+ly, z+lz).isAir()) {
+                             c.setBlock(x+lx, y+h+ly, z+lz, leaf);
+                        }
+                    }
+                }
+    }
+
+    private void spawnTree(Chunk c, int x, int y, int z) {
+        spawnTreeType(c, x, y, z, Block.OAK_WOOD, Block.OAK_LEAVES);
     }
 
     public void update(float dt, minicraft.entity.Player player, minicraft.entity.ParticleManager pm) {
@@ -174,7 +283,8 @@ public class World {
             int rx = startX + (int)(Math.random() * 64 - 32);
             int rz = startZ + (int)(Math.random() * 64 - 32);
             int y = getSafeSpawnY(rx, rz);
-            if (getBlock(rx, y - 1, rz) == Block.GRASS && getBlock(rx, y, rz).isAir()) {
+            Block ground = getBlock(rx, y - 1, rz);
+            if ((ground == Block.GRASS || ground == Block.PODZOL || ground == Block.SNOW) && getBlock(rx, y, rz).isAir()) {
                  return new minicraft.math.Vector3f(rx + 0.5f, y, rz + 0.5f);
             }
         }
@@ -183,9 +293,10 @@ public class World {
 
     private int getSafeSpawnY(int x, int z) {
         for (int y = Chunk.HEIGHT - 1; y > 0; y--) {
-            if (getBlock(x, y, z).solid) return y + 1;
+            Block b = getBlock(x, y, z);
+            if (b.solid || b == Block.WATER || b == Block.ICE) return y + 1;
         }
-        return SEA_LEVEL + 2;
+        return (int)(WorldCell.SEA_LEVEL * Chunk.HEIGHT) + 2;
     }
 
     public void render(ShaderProgram shader, minicraft.math.Vector3f playerPos) {
@@ -208,6 +319,37 @@ public class World {
         }
     }
 
+    public minicraft.entity.Inventory getContainer(int x, int y, int z) {
+        String key = x + "," + y + "," + z;
+        if (!worldContainers.containsKey(key)) {
+            minicraft.entity.Inventory inv = new minicraft.entity.Inventory();
+            populateLoot(inv, x, y, z);
+            worldContainers.put(key, inv);
+        }
+        return worldContainers.get(key);
+    }
+
+    private void populateLoot(minicraft.entity.Inventory inv, int x, int y, int z) {
+        Random r = new Random((long)x * 1234567L + (long)z * 7654321L);
+        WorldCell cell = generator.generate(x, z);
+        float elev = cell.elevation;
+        
+        // Tier 1: Iron Age (Coal, Iron, Wood)
+        inv.add(Block.COAL_ORE, 5 + r.nextInt(10));
+        inv.add(Block.IRON_ORE, 2 + r.nextInt(5));
+        
+        // Tier 2: Elite Age (Gold, Silver, Obsidiam if high elev)
+        if (elev > 0.45) {
+            inv.add(Block.GOLD_ORE, 1 + r.nextInt(3));
+            inv.add(Block.SILVER_ORE, 1 + r.nextInt(4));
+        }
+        
+        // Tier 3: Legendary (Diamond if extreme elev)
+        if (elev > 0.75) {
+            inv.add(Block.DIAMOND_ORE, 1 + r.nextInt(2));
+        }
+    }
+
     public WeatherManager getWeather() { return weatherManager; }
-    public void cleanup() { chunks.values().forEach(Chunk::cleanup); chunks.clear(); }
+    public void cleanup() { chunks.values().forEach(Chunk::cleanup); chunks.clear(); worldContainers.clear(); }
 }

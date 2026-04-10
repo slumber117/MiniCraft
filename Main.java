@@ -13,8 +13,31 @@ import minicraft.item.Recipe;
 import minicraft.renderer.Camera;
 import minicraft.renderer.EntityRenderer;
 import minicraft.renderer.ShaderProgram;
+import minicraft.renderer.Mesh;
+import minicraft.renderer.ModelRegistry;
+import minicraft.renderer.TextureRegistry;
 import minicraft.math.Vector3f;
 import minicraft.math.Vector4f;
+import minicraft.math.Matrix4f;
+import minicraft.world.World;
+import minicraft.world.Block;
+import minicraft.world.WorldGenerator;
+import minicraft.world.WorldCell;
+import minicraft.world.Biome;
+
+import org.lwjgl.Version;
+import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.opengl.GL;
+import org.lwjgl.system.MemoryStack;
+
+import java.nio.IntBuffer;
+
+import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
+import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.NULL;
 import minicraft.renderer.TextureRegistry;
 import minicraft.renderer.UIRenderer;
 import minicraft.world.World;
@@ -92,8 +115,13 @@ public class Main {
     // Crafting / Inventory State
     public boolean craftingOpen = false;
     public boolean inventoryOpen = false;
-    public int recipeIndex = 0;
+    public boolean chestOpen = false;
+    public minicraft.entity.Inventory activeChest = null;
+    
     public Recipe.Category activeCategory = Recipe.Category.TOOLS;
+    public int recipeIndex = 0;
+    public int inventoryIndex = 0;
+    public int chestIndex = 0;
     public final CraftingManager craftingManager = new CraftingManager();
     
     private boolean prevC = false, prevE = false;
@@ -151,12 +179,65 @@ public class Main {
         if (window == NULL) throw new RuntimeException("Cannot create GLFW window");
 
         // Key callback: ESC to exit
-        glfwSetKeyCallback(window, (win, key, scancode, action, mods) -> {
-            if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
-                glfwSetWindowShouldClose(win, true);
+        glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
+            if (action == GLFW_PRESS) {
+                if (key == GLFW_KEY_C || key == GLFW_KEY_V) {
+                    craftingOpen = !craftingOpen;
+                    if (craftingOpen) {
+                        inventoryOpen = false;
+                        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                    } else {
+                        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                        firstMouse = true;
+                    }
+                }
+                if (key == GLFW_KEY_E || key == GLFW_KEY_I) {
+                    inventoryOpen = !inventoryOpen;
+                    if (inventoryOpen) {
+                        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                        craftingOpen = false;
+                    } else {
+                        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                        firstMouse = true;
+                    }
+                }
+                
+                // Close everything if ESC is pressed
+                if (key == GLFW_KEY_ESCAPE) {
+                    craftingOpen = false;
+                    inventoryOpen = false;
+                    chestOpen = false;
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                    firstMouse = true;
+                }
+            }
         });
 
-        // Resize callback (Persistent tracking)
+        glfwSetMouseButtonCallback(window, (window, button, action, mods) -> {
+            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+                if (inventoryOpen) {
+                    handleInventoryClick();
+                } else if (chestOpen) {
+                    handleChestClick();
+                }
+            }
+        });
+
+        glfwSetCursorPosCallback(window, (window, xpos, ypos) -> {
+            if (!inventoryOpen && !craftingOpen) {
+                if (firstMouse) {
+                    lastMouseX = xpos;
+                    lastMouseY = ypos;
+                    firstMouse = false;
+                }
+                double dx = xpos - lastMouseX;
+                double dy = lastMouseY - ypos;
+                lastMouseX = xpos;
+                lastMouseY = ypos;
+                player.handleMouseInput((float) dx * MOUSE_SENSITIVITY, (float) dy * MOUSE_SENSITIVITY);
+            }
+        });
+
         glfwSetFramebufferSizeCallback(window, (win, w, h) -> {
             glViewport(0, 0, w, h);
             this.framebufferW = w;
@@ -236,6 +317,9 @@ public class Main {
         
         ToolItem sword = new ToolItem("Bronze Sword", ToolItem.ToolType.SWORD, 2, 5.0f, "item_sword_bronze"); // Fast swing
         player.inventory.add(sword, 1);
+
+        ToolItem pickaxe = new ToolItem("Wooden Pickaxe", ToolItem.ToolType.PICKAXE, 0, 2.0f, "item_pick_wood");
+        player.inventory.add(pickaxe, 1);
         
         // Sync Camera to Eye-Level
         camera.setPosition(spawnPos.x, spawnPos.y + 1.6f, spawnPos.z);
@@ -267,7 +351,14 @@ public class Main {
         entityRenderer = new EntityRenderer(textures);
         weatherRenderer = new minicraft.renderer.WeatherRenderer();
         world = new World(SEED, textures, RENDER_DISTANCE);
+
+        // 3D Model System
+        ModelRegistry.init(textures);
     }
+
+    private float handAnimTime = 0.0f;
+    private float handSwingTime = 0.0f;
+    private boolean isHandSwinging = false;
 
     private void spawnInitialEntities() {
         // Passive animals – scatter around spawn area
@@ -299,9 +390,13 @@ public class Main {
             long now = System.nanoTime();
             float dt = (now - lastTime) / 1_000_000_000f;
             lastTime = now;
-
-
-
+            // --- UI Interaction Logic ---
+            if (inventoryOpen || craftingOpen) {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            } else {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            }
+            
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             // Get window size
@@ -353,7 +448,13 @@ public class Main {
             shaderProgram.setUniform("torchStrength", torchPower);
 
             // 3. Render World
-            shaderProgram.setUniform("colorTint", new Vector4f(1f, 1f, 1f, 1f));
+            boolean isUnderwater = world.getBlock((int)Math.floor(player.position.x), (int)Math.floor(player.position.y + 1.6f), (int)Math.floor(player.position.z)) == Block.WATER;
+            if (isUnderwater) {
+                shaderProgram.setUniform("colorTint", new Vector4f(0.4f, 0.6f, 1.0f, 1.0f));
+            } else {
+                shaderProgram.setUniform("colorTint", whiteTint);
+            }
+            
             world.render(shaderProgram, player.position);
             
             // Render Entities
@@ -364,8 +465,12 @@ public class Main {
             
             // Render Weather Particles
             weatherRenderer.render(player.position, world.getWeather(), shaderProgram, (float) dt);
-
-            // 6. Item Collection Logic
+            // --- RENDER 3D HAND / PICKAXE ---
+            glDisable(GL_DEPTH_TEST); // Render over world
+            renderHand(shaderProgram, (float) dt);
+            glEnable(GL_DEPTH_TEST);
+            
+            glEnable(GL_BLEND);
             if (!craftingOpen) {
                 minicraft.entity.Entity item = entityManager.getNearestOfType(
                     camera.getPosition().x, camera.getPosition().y, camera.getPosition().z, 
@@ -449,38 +554,7 @@ public class Main {
 
     private void handleInventoryInput() {
         boolean mouseLeftDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-        if (mouseLeftDown && !prevMouseLeftDown) {
-            double[] mx = new double[1], my = new double[1];
-            glfwGetCursorPos(window, mx, my);
-            
-            float panelW = 800;
-            float panelH = 500;
-            float sx = (WIN_W - panelW) / 2f;
-            float sy = (WIN_H - panelH) / 2f;
-            
-            float invX = sx + 240;
-            float slotSize = 64;
-            float gap = 15;
-            
-            Map<Item, Integer> items = player.inventory.getItems();
-            List<Item> keys = new ArrayList<>(items.keySet());
-            
-            // Check inventory clicks
-            for (int i = 0; i < keys.size(); i++) {
-                int row = i / 6;
-                int col = i % 6;
-                float x = invX + 40 + col * (slotSize + gap);
-                float y = sy + 100 + row * (slotSize + gap);
-                
-                if (mx[0] >= x && mx[0] <= x + slotSize && my[0] >= y && my[0] <= y + slotSize) {
-                    Item item = keys.get(i);
-                    if (item instanceof minicraft.item.ArmorItem) {
-                        player.inventory.equip((minicraft.item.ArmorItem) item);
-                    }
-                    break;
-                }
-            }
-        }
+        // Simplified in V3 - handoff to handleInventoryClick via mouse callback
         prevMouseLeftDown = mouseLeftDown;
     }
 
@@ -562,14 +636,15 @@ public class Main {
             r = 0.1f; g = 0.1f; b = 0.2f;
         }
         
-        // Darken for intensity-based rain/snow
-        if (rain > 0 || world.getWeather().getCurrentType().name().contains("BLIZZARD")) {
-            float darkenScale = 0.4f + world.getWeather().getIntensity() * 0.3f;
-            r *= (1.0f - darkenScale);
-            g *= (1.0f - darkenScale);
-            b *= (1.0f - darkenScale);
-        }
+        // Incorporate Biome Fog Color
+        WorldGenerator gen = world.getGenerator();
+        WorldCell cell = gen.generate(player.position.x, player.position.z);
+        minicraft.math.Vector3f fog = world.getFogColor(cell.biome);
         
+        r = (r + fog.x) * 0.5f;
+        g = (g + fog.y) * 0.5f;
+        b = (b + fog.z) * 0.5f;
+
         glClearColor(r, g, b, 1.0f);
     }
 
@@ -676,7 +751,22 @@ public class Main {
             int gy = (int) Math.floor(py);
             int gz = (int) Math.floor(pz);
 
-            if (world.getBlock(gx, gy, gz).solid) {
+            // 1. INTERACTION CHECK
+            Block targeted = world.getBlock(gx, gy, gz);
+            if (targeted == Block.CHEST || targeted == Block.CRAFTING_TABLE || targeted == Block.FURNACE) {
+                if (targeted == Block.CHEST) {
+                    activeChest = world.getContainer(gx, gy, gz);
+                    chestOpen = true;
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                } else if (targeted == Block.CRAFTING_TABLE) {
+                    craftingOpen = true;
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                }
+                return; // Interaction handled
+            }
+
+            // 2. PLACEMENT LOGIC
+            if (targeted.solid) {
                 // We hit a block! Place ADJACENT to it (using the previous step)
                 float prevPx = pos.x + dx * (dist - 0.1f);
                 float prevPy = pos.y + dy * (dist - 0.1f);
@@ -692,11 +782,58 @@ public class Main {
                     return; 
                 }
 
-                if (!world.getBlock(pgx, pgy, pgz).solid) {
+                if (selected != null && !world.getBlock(pgx, pgy, pgz).solid) {
                     world.setBlock(pgx, pgy, pgz, selected);
                     player.inventory.remove(selected, 1);
                     return;
                 }
+            }
+        }
+    }
+
+    private void handleChestClick() {
+        if (activeChest == null) return;
+        double[] mx = new double[1], my = new double[1];
+        glfwGetCursorPos(window, mx, my);
+        
+        int[] winW = new int[1], winH = new int[1];
+        glfwGetWindowSize(window, winW, winH);
+        float scaleX = (float) framebufferW / Math.max(1, winW[0]);
+        float scaleY = (float) framebufferH / Math.max(winH[0], 1);
+        
+        float x = (float) mx[0] * scaleX;
+        float y = (float) my[0] * scaleY;
+
+        float panelW = 800;
+        float sx = (framebufferW - panelW) / 2f;
+        float sy = (framebufferH - 550) / 2f;
+        float slotSize = 64;
+        float gap = 15;
+
+        // Chest Interior Detection (Top 3x9)
+        float chestStartX = sx + (panelW - (slotSize + gap) * 9) / 2f;
+        float chestStartY = sy + 80;
+        for (int i = 0; i < 27; i++) {
+            int row = i / 9;
+            int col = i % 9;
+            float slotX = chestStartX + col * (slotSize + gap);
+            float slotY = chestStartY + row * (slotSize + gap);
+            if (x >= slotX && x <= slotX + slotSize && y >= slotY && y <= slotY + slotSize) {
+                activeChest.clickSlot(i, false);
+                return;
+            }
+        }
+
+        // Player Feedback Detection (Bottom 3x9)
+        float playerStartY = sy + 300;
+        for (int i = 0; i < 27; i++) {
+            int row = i / 9;
+            int col = i % 9;
+            float slotX = chestStartX + col * (slotSize + gap);
+            float slotY = playerStartY + row * (slotSize + gap);
+            if (x >= slotX && x <= slotX + slotSize && y >= slotY && y <= slotY + slotSize) {
+                player.inventory.clickSlot(i, false);
+                return;
             }
         }
     }
@@ -789,5 +926,126 @@ public class Main {
 
         prevUp = isUp; prevDown = isDown; prevEnter = isEnter;
         prevMouseLeftDown = mouseLeftDown;
+    }
+
+    private void renderHealthBar(Entity e, ShaderProgram shader, Matrix4f viewMatrix) {
+    }
+
+    private void renderHand(ShaderProgram shader, float dt) {
+        Item heldItem = player.inventory.getSelectedItem();
+        if (heldItem == null) return;
+
+        Mesh model = null;
+        if (heldItem.getName().contains("Pickaxe")) {
+            model = ModelRegistry.getModel("pickaxe_wooden");
+        }
+
+        if (model == null) return;
+
+        // --- HAND ANIMATION LOGIC ---
+        // 1. Walking Bob
+        float walkSpeed = (float) Math.sqrt(player.velocity.x * player.velocity.x + player.velocity.z * player.velocity.z);
+        if (player.isGrounded && walkSpeed > 0.1f) {
+            handAnimTime += dt * walkSpeed * 0.5f;
+        } else {
+            handAnimTime = 0.0f;
+        }
+        
+        float bobX = (float) Math.sin(handAnimTime * 2.0f) * 0.02f;
+        float bobY = (float) Math.abs(Math.cos(handAnimTime * 2.0f)) * 0.02f;
+
+        // 2. Mining Swing
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && !craftingOpen) {
+            isHandSwinging = true;
+        }
+
+        if (isHandSwinging) {
+            handSwingTime += dt * 8.0f; // Fast swing
+            if (handSwingTime > Math.PI) {
+                handSwingTime = 0.0f;
+                isHandSwinging = false;
+            }
+        }
+        float swingRot = (float) Math.sin(handSwingTime) * 45.0f;
+
+        // --- RENDERING ---
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK); // Fix "see-through" by ensuring correct face culling
+        glClear(GL_DEPTH_BUFFER_BIT); // Draw on top of world
+
+        Matrix4f h_proj = new Matrix4f().perspective((float)Math.toRadians(70), (float)framebufferW/Math.max(1, framebufferH), 0.01f, 100.0f);
+        Matrix4f h_view = new Matrix4f().identity(); 
+
+        Matrix4f h_model = new Matrix4f().identity();
+        h_model.translate(0.55f + bobX, -0.45f + bobY, -0.65f); // Position on screen
+        
+        // --- NEW ORIENTATION ---
+        // 1. Point the head AWAY from torso (+180 on Y if it was facing us)
+        h_model.rotate((float)Math.toRadians(160), new Vector3f(0, 1, 0)); 
+        // 2. Natural grip tilt
+        h_model.rotate((float)Math.toRadians(-25 + (isHandSwinging ? swingRot : 0)), new Vector3f(1, 0, 0)); 
+        // 3. Side angle for better visibility
+        h_model.rotate((float)Math.toRadians(20), new Vector3f(0, 0, 1));
+        
+        h_model.scale(0.4f, 0.4f, 0.4f); 
+
+        shader.setUniform("projectionMatrix", h_proj);
+        shader.setUniform("viewMatrix", h_view);
+        shader.setUniform("modelMatrix", h_model);
+        
+        // --- SHADING UPGRADE ---
+        shader.setUniform("useLighting", 1); 
+        shader.setUniform("sunBrightness", 0.9f); // Bright "Studio" look for hand
+        shader.setUniform("torchStrength", 0.5f); // Subtle glow on hand
+
+        model.render();
+        
+        glEnable(GL_CULL_FACE);
+    }
+
+    private void handleInventoryClick() {
+        double[] mx = new double[1], my = new double[1];
+        glfwGetCursorPos(window, mx, my);
+        
+        // --- High-DPI Calibration ---
+        int[] winW = new int[1], winH = new int[1];
+        glfwGetWindowSize(window, winW, winH);
+        float scaleX = (float) framebufferW / Math.max(1, winW[0]);
+        float scaleY = (float) framebufferH / Math.max(1, winH[0]);
+        
+        float x = (float) mx[0] * scaleX;
+        float y = (float) my[0] * scaleY;
+
+        float panelW = 800;
+        float panelH = 500;
+        float sx = (framebufferW - panelW) / 2f;
+        float sy = (framebufferH - panelH) / 2f;
+
+        // 1. Main Inventory Detection (3x9 grid)
+        float invX = sx + 240;
+        float slotSize = 64;
+        float gap = 15;
+        for (int i = 0; i < 27; i++) {
+            int row = i / 9;
+            int col = i % 9;
+            float slotX = invX + 40 + col * (slotSize + gap);
+            float slotY = sy + 100 + row * (slotSize + gap);
+            if (x >= slotX && x <= slotX + slotSize && y >= slotY && y <= slotY + slotSize) {
+                player.inventory.clickSlot(i, false);
+                return;
+            }
+        }
+
+        // 2. Hotbar Detection (1x9 grid at bottom of panel)
+        float hbX = (framebufferW - ((slotSize + gap) * 9)) / 2f;
+        float hbY = sy + panelH - 80;
+        for (int i = 0; i < 9; i++) {
+            float slotX = hbX + i * (slotSize + gap);
+            if (x >= slotX && x <= slotX + slotSize && y >= hbY && y <= hbY + slotSize) {
+                player.inventory.clickSlot(i, true);
+                return;
+            }
+        }
     }
 }

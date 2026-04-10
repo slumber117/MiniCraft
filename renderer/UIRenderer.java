@@ -52,8 +52,8 @@ public class UIRenderer {
         textQuadMesh = new Mesh(positions, uvs, indices, null);
 
         try {
-            // High-resolution font for clarity
-            Font font = new Font(Font.SANS_SERIF, Font.PLAIN, 24);
+            // High-resolution premium font
+            Font font = new Font(Font.MONOSPACED, Font.BOLD, 22);
             fontTexture = new FontTexture(font, "ISO-8859-1");
             textQuadMesh.setTexture(fontTexture.getTexture());
         } catch (Exception e) {
@@ -74,8 +74,17 @@ public class UIRenderer {
         shader.setUniform("viewMatrix", new Matrix4f().identity());
         shader.setUniform("useLighting", 0.0f); // UI is unlit
 
+        // --- INVENTORY V3 ---
         if (main.inventoryOpen) {
-            renderInventoryScreen(player, shader, width, height, main);
+            renderInventoryScreenV3(player, shader, width, height, main);
+            glDisable(GL_BLEND);
+            glEnable(GL_CULL_FACE);
+            glEnable(GL_DEPTH_TEST);
+            return;
+        }
+
+        if (main.chestOpen) {
+            renderChestScreen(player, shader, width, height, main);
             glDisable(GL_BLEND);
             glEnable(GL_CULL_FACE);
             glEnable(GL_DEPTH_TEST);
@@ -137,55 +146,137 @@ public class UIRenderer {
         drawRectInternal(shader, 0, 0, width, height, new Vector4f(1.0f, 0, 0, intensity));
     }
 
-    private void renderInventoryScreen(Player player, ShaderProgram shader, int width, int height, minicraft.Main main) {
-        // Darken background
-        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.7f));
+    private void renderChestScreen(Player player, ShaderProgram shader, int width, int height, minicraft.Main main) {
+        if (main.activeChest == null) return;
+        
+        // Darken world
+        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.75f));
         
         float panelW = 800;
-        float panelH = 500;
+        float panelH = 550;
         float sx = (width - panelW) / 2f;
         float sy = (height - panelH) / 2f;
         
-        // 1. Armor Pane (Left)
-        float armorX = sx + 20;
-        float armorY = sy + 60;
-        drawRectInternal(shader, armorX, sy + 20, 200, panelH - 40, new Vector4f(0.1f, 0.1f, 0.1f, 0.8f));
-        drawText(shader, "EQUIPMENT", armorX + 30, sy + 40, 1.0f);
-        
-        drawArmorSlot(shader, armorX + 50, armorY + 40,  "HELMET",     player.inventory.getHelmet());
-        drawArmorSlot(shader, armorX + 50, armorY + 120, "CHESTPLATE", player.inventory.getChestplate());
-        drawArmorSlot(shader, armorX + 50, armorY + 200, "LEGGINGS",   player.inventory.getLeggings());
-        drawArmorSlot(shader, armorX + 50, armorY + 280, "BOOTS",      player.inventory.getBoots());
-        
-        drawText(shader, "DEFENSE: " + (int)(player.inventory.getTotalDefense() * 100) + "%", armorX + 30, sy + panelH - 60, 0.8f);
+        drawRectInternal(shader, sx, sy, panelW, panelH, glassBgColor);
+        drawRectInternal(shader, sx, sy, panelW, 2, glassBorderColor);
+        drawText(shader, "LOOT CONTAINER", sx + 30, sy + 30, 1.2f, new Vector4f(0.4f, 1.0f, 0.4f, 1.0f));
 
-        // 2. Inventory Pane (Right)
-        float invX = sx + 240;
-        drawRectInternal(shader, invX, sy + 20, 540, panelH - 40, new Vector4f(0.15f, 0.15f, 0.15f, 0.8f));
-        drawText(shader, "INVENTORY", invX + 30, sy + 40, 1.0f);
-        
-        Map<Item, Integer> items = player.inventory.getItems();
-        List<Item> keys = new ArrayList<>(items.keySet());
-        
-        int cols = 6;
+        // 1. Render Chest Contents (Top 3x9)
+        minicraft.item.ItemStack[] chestInv = main.activeChest.getMainInventory();
         float slotSize = 64;
         float gap = 15;
-        
-        for (int i = 0; i < keys.size(); i++) {
-            int row = i / cols;
-            int col = i % cols;
-            float x = invX + 40 + col * (slotSize + gap);
-            float y = sy + 100 + row * (slotSize + gap);
-            
-            drawRectInternal(shader, x, y, slotSize, slotSize, new Vector4f(0,0,0,0.5f));
-            drawItemIcon(shader, keys.get(i), x + 5, y + 5, slotSize - 10);
-            drawText(shader, String.valueOf(items.get(keys.get(i))), x + 5, y + slotSize - 15, 0.6f);
+        float gridStartX = sx + (panelW - (slotSize + gap) * 9) / 2f;
+        float chestStartY = sy + 80;
+
+        drawText(shader, "TREASURE", gridStartX, chestStartY - 25, 0.6f, highlightColor);
+        for (int i = 0; i < 27; i++) {
+            int row = i / 9;
+            int col = i % 9;
+            float x = gridStartX + col * (slotSize + gap);
+            float y = chestStartY + row * (slotSize + gap);
+            drawSlot(shader, x, y, slotSize, chestInv[i]);
         }
 
-        // Draw Mouse Cursor Overlay (in UI space)
-        double[] mx = new double[1], my = new double[1];
-        org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
-        drawRectInternal(shader, (float)mx[0], (float)my[0], 10, 10, new Vector4f(1,1,1,1));
+        // 2. Render Player Inventory (Bottom 3x9)
+        minicraft.item.ItemStack[] playerInv = player.inventory.getMainInventory();
+        float playerStartY = sy + 300;
+        drawText(shader, "YOUR BAG", gridStartX, playerStartY - 25, 0.6f, highlightColor);
+        for (int i = 0; i < 27; i++) {
+            int row = i / 9;
+            int col = i % 9;
+            float x = gridStartX + col * (slotSize + gap);
+            float y = playerStartY + row * (slotSize + gap);
+            drawSlot(shader, x, y, slotSize, playerInv[i]);
+        }
+
+        // 3. Shared Cursor ItemStack
+        minicraft.item.ItemStack cursor = player.inventory.getCursorStack();
+        if (cursor != null && !cursor.isEmpty()) {
+            double[] mx = new double[1], my = new double[1];
+            org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
+            
+            int[] winW = new int[1], winH = new int[1];
+            org.lwjgl.glfw.GLFW.glfwGetWindowSize(main.getWindow(), winW, winH);
+            float scaleX = (float) width / Math.max(1, winW[0]);
+            float scaleY = (float) height / Math.max(1, winH[0]);
+            
+            float curX = (float) mx[0] * scaleX - slotSize/2;
+            float curY = (float) my[0] * scaleY - slotSize/2;
+            
+            drawItemIcon(shader, cursor.getItem(), curX + 5, curY + 5, slotSize - 10);
+            if (cursor.getCount() > 1) {
+                drawText(shader, String.valueOf(cursor.getCount()), curX + 10, curY + slotSize - 15, 0.8f);
+            }
+        }
+    }
+
+    private void renderInventoryScreenV3(Player player, ShaderProgram shader, int width, int height, minicraft.Main main) {
+        // Darken world
+        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.75f));
+        
+        float panelW = 800;
+        float panelH = 550;
+        float sx = (width - panelW) / 2f;
+        float sy = (height - panelH) / 2f;
+        
+        // --- 1. Main Background ---
+        drawRectInternal(shader, sx, sy, panelW, panelH, glassBgColor);
+        drawRectInternal(shader, sx, sy, panelW, 2, glassBorderColor);
+        drawText(shader, "PLAYER INVENTORY", sx + 30, sy + 30, 1.2f, new Vector4f(0.9f, 0.9f, 0.4f, 1.0f));
+
+        // --- 2. Main 3x9 Grid ---
+        minicraft.item.ItemStack[] mainInv = player.inventory.getMainInventory();
+        float slotSize = 64;
+        float gap = 15;
+        float invStartX = sx + (panelW - (slotSize + gap) * 9) / 2f;
+        float invStartY = sy + 100;
+
+        for (int i = 0; i < 27; i++) {
+            int row = i / 9;
+            int col = i % 9;
+            float x = invStartX + col * (slotSize + gap);
+            float y = invStartY + row * (slotSize + gap);
+            
+            drawSlot(shader, x, y, slotSize, mainInv[i]);
+        }
+
+        // --- 3. Hotbar 1x9 Grid (Utilized in Inventory) ---
+        minicraft.item.ItemStack[] hotbar = player.inventory.getHotbar();
+        float hbY = sy + panelH - 95;
+        drawText(shader, "HOTBAR", invStartX, hbY - 25, 0.7f, highlightColor);
+        
+        for (int i = 0; i < 9; i++) {
+            float x = invStartX + i * (slotSize + gap);
+            drawSlot(shader, x, hbY, slotSize, hotbar[i]);
+            if (i == player.inventory.getSelectedIndex()) {
+                drawRectInternal(shader, x - 2, hbY - 2, slotSize + 4, 3, new Vector4f(1, 1, 0, 1));
+            }
+        }
+
+        // --- 4. Cursor ItemStack (Attached to Mouse) ---
+        minicraft.item.ItemStack cursor = player.inventory.getCursorStack();
+        if (cursor != null && !cursor.isEmpty()) {
+            double[] mx = new double[1], my = new double[1];
+            org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
+            float curX = (float) mx[0] - slotSize/2;
+            float curY = (float) my[0] - slotSize/2;
+            drawItemIcon(shader, cursor.getItem(), curX + 5, curY + 5, slotSize - 10);
+            if (cursor.getCount() > 1) {
+                drawText(shader, String.valueOf(cursor.getCount()), curX + 10, curY + slotSize - 15, 0.8f);
+            }
+        }
+    }
+
+    private void drawSlot(ShaderProgram shader, float x, float y, float size, minicraft.item.ItemStack stack) {
+        // Slot Shadow/Background
+        drawRectInternal(shader, x, y, size, size, new Vector4f(0, 0, 0, 0.6f));
+        
+        if (stack != null && !stack.isEmpty()) {
+            drawItemIcon(shader, stack.getItem(), x + 8, y + 8, size - 16);
+            if (stack.getCount() > 1) {
+                drawText(shader, String.valueOf(stack.getCount()), x + 5, y + size - 16, 0.7f);
+            }
+        }
     }
 
     private void drawArmorSlot(ShaderProgram shader, float x, float y, String label, Item item) {
@@ -199,6 +290,8 @@ public class UIRenderer {
     }
 
     private void drawItemIcon(ShaderProgram shader, Item item, float x, float y, float size) {
+        if (item == null) return;
+        
         if (item instanceof minicraft.item.ToolItem) {
             String tex = ((minicraft.item.ToolItem) item).getTextureName();
             if (tex != null) {
@@ -456,8 +549,7 @@ public class UIRenderer {
         drawRectInternal(shader, startX - 5, y - 5, barWidth + 5, slotSize + 10, glassBgColor);
         drawRectInternal(shader, startX - 5, y - 5, barWidth + 5, 1, glassBorderColor);
 
-        Map<minicraft.item.Item, Integer> items = player.inventory.getItems();
-        java.util.List<minicraft.item.Item> keys = new java.util.ArrayList<>(items.keySet());
+        minicraft.item.ItemStack[] hotbar = player.inventory.getHotbar();
         int selectedIdx = player.inventory.getSelectedIndex();
 
         for (int i = 0; i < totalSlots; i++) {
@@ -466,20 +558,19 @@ public class UIRenderer {
             // Highlight
             if (i == selectedIdx) {
                 drawRectInternal(shader, slotX, y, slotSize, slotSize, new Vector4f(1, 1, 1, 0.3f));
+                drawRectInternal(shader, slotX, y, slotSize, 2, new Vector4f(1,1,0,1)); // Selection top bar
             } else {
                 drawRectInternal(shader, slotX, y, slotSize, slotSize, new Vector4f(0, 0, 0, 0.4f));
             }
 
-            if (i < keys.size()) {
-                minicraft.item.Item item = keys.get(i);
-                int count = items.get(item);
-                
+            minicraft.item.ItemStack stack = hotbar[i];
+            if (stack != null && !stack.isEmpty()) {
                 // Item Icon
-                drawItemIcon(shader, item, slotX + 5, y + 5, slotSize - 10);
+                drawItemIcon(shader, stack.getItem(), slotX + 5, y + 5, slotSize - 10);
                 
                 // Count
-                if (item.isBlock() && count > 1) {
-                    drawText(shader, String.valueOf(count), slotX + 2, y + slotSize - 12, 0.8f);
+                if (stack.getCount() > 1) {
+                    drawText(shader, String.valueOf(stack.getCount()), slotX + 2, y + slotSize - 12, 0.6f);
                 }
             }
         }
