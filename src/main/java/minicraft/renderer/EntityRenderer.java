@@ -89,7 +89,7 @@ public class EntityRenderer {
                 Mesh zombieMesh = ModelRegistry.getModel("zombie");
                 if (zombieMesh != null) {
                     render3DNPC(e, zombieMesh, shader, color);
-                    if (e.getHealth() < e.getMaxHealth()) renderHealthBar(e, shader, viewMatrix);
+                    if (e.getHealth() < e.getMaxHealth() || e.damageFlashTimer > 0) renderHealthBar(e, shader, viewMatrix);
                     continue;
                 }
             }
@@ -122,8 +122,8 @@ public class EntityRenderer {
 
             cubeMesh.render(textures.get(texName));
 
-            // Render Health Bar for hit monsters
-            if (e.type.category == minicraft.entity.EntityType.Category.MONSTER && e.getHealth() < e.getMaxHealth()) {
+            // Render Health Bar for damaged entities
+            if (e.getHealth() < e.getMaxHealth() || e.isDead()) {
                 renderHealthBar(e, shader, viewMatrix);
             }
         }
@@ -144,26 +144,41 @@ public class EntityRenderer {
 
     private void renderHealthBar(Entity e, ShaderProgram shader, Matrix4f viewMatrix) {
         float healthRatio = e.getHealth() / e.getMaxHealth();
-        float width = 1.0f;
-        float height = 0.1f;
-        
-        // Billboard rotation (facing camera)
-        Matrix4f model = new Matrix4f()
-            .identity()
-            .translate(e.position.x, e.position.y + e.height + 0.5f, e.position.z);
-        
-        // Match camera yaw for billboarding
-        model.rotateY((float) Math.toRadians(e.yaw)); // Simple approach for now
+        if (healthRatio <= 0 && !e.isDead()) return;
 
-        // Background (Grey)
-        shader.setUniform("colorTint", new Vector4f(0.2f, 0.2f, 0.2f, 1.0f));
-        shader.setUniform("modelMatrix", new Matrix4f(model).scale(width, height, 0.1f));
+        // 1. BILLBOARD CALCULATION
+        // Extract Camera's Right and Up vectors from the view matrix (Rows 0 and 1)
+        float rx = viewMatrix.m[0], ry = viewMatrix.m[4], rz = viewMatrix.m[8];
+        float ux = viewMatrix.m[1], uy = viewMatrix.m[5], uz = viewMatrix.m[9];
+        
+        // 2. Final Model Matrix
+        Matrix4f model = new Matrix4f().identity();
+        
+        // Translation (Center above entity head)
+        model.m[12] = e.position.x;
+        model.m[13] = e.position.y + e.height + 0.35f;
+        model.m[14] = e.position.z;
+        
+        // Inverse Rotation (Billboard logic)
+        // We set the model's orientation axes to match the camera's screen-plane axes
+        model.m[0] = rx; model.m[1] = ry; model.m[2] = rz;
+        model.m[4] = ux; model.m[5] = uy; model.m[6] = uz;
+        // Facing vector (matches camera depth axis)
+        model.m[8] = viewMatrix.m[2]; model.m[9] = viewMatrix.m[6]; model.m[10] = viewMatrix.m[10];
+
+        // 3. BACKGROUND BAR (Shadow)
+        shader.setUniform("colorTint", new Vector4f(0.05f, 0.05f, 0.05f, 0.85f));
+        shader.setUniform("modelMatrix", new Matrix4f(model).scale(0.45f, 0.04f, 1.0f));
         cubeMesh.render(null);
 
-        // Health Fill (Green to Red)
-        Vector4f hColor = new Vector4f(1.0f - healthRatio, healthRatio, 0.0f, 1.0f);
+        // 4. HEALTH FILL (Ruby to Emerald)
+        Vector4f hColor = (healthRatio > 0.45f) ? new Vector4f(0.3f, 0.9f, 0.3f, 1.0f) : new Vector4f(0.95f, 0.15f, 0.15f, 1.0f);
         shader.setUniform("colorTint", hColor);
-        shader.setUniform("modelMatrix", new Matrix4f(model).scale(width * healthRatio, height, 0.11f));
+        
+        // Apply scaling and a tiny offset forward (Z) to prevent flickering against bg
+        shader.setUniform("modelMatrix", new Matrix4f(model)
+            .scale(0.43f * healthRatio, 0.035f, 1.0f)
+            .translate(0, 0, 0.01f)); 
         cubeMesh.render(null);
     }
 
