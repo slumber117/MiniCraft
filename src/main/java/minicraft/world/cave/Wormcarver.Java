@@ -64,16 +64,10 @@ public class WormCarver {
     // ── State ─────────────────────────────────────────────────────────────
 
     /**
-     * Carved spheres accumulated for the current chunk.
-     * Stored as float[4]: {cx, cy, cz, radius}.
-     * Query time: O(n) sphere tests — fast enough for chunk-sized volumes.
+     * Voxel occupancy map for the current chunk.
+     * Index = (lx * 400 * 16) + (ly * 16) + lz
      */
-    private final java.util.List<float[]> carvedSpheres = new java.util.ArrayList<>();
-
-    /**
-     * Parallel list — CaveType for each sphere in carvedSpheres.
-     */
-    private final java.util.List<CaveType> sphereTypes = new java.util.ArrayList<>();
+    private final CaveType[] occupancyMap = new CaveType[16 * 400 * 16];
 
     /** Noise used to steer worm direction. */
     private final PerlinNoise directionNoise;
@@ -86,6 +80,8 @@ public class WormCarver {
     public WormCarver(long seed) {
         directionNoise = new PerlinNoise(seed + 7001L);
         radiusNoise    = new PerlinNoise(seed + 7002L);
+        // Initialize occupancy map
+        java.util.Arrays.fill(occupancyMap, CaveType.NONE);
     }
 
     // ── Public API ────────────────────────────────────────────────────────
@@ -104,8 +100,7 @@ public class WormCarver {
      */
     public void generateForChunk(int chunkX, int chunkZ, long worldSeed,
                                  int maxY, int chunkW, int chunkD, int worldMaxY) {
-        carvedSpheres.clear();
-        sphereTypes.clear();
+        java.util.Arrays.fill(occupancyMap, CaveType.NONE);
 
         // Deterministic per-chunk seed
         long chunkSeed = worldSeed ^ ((long) chunkX * 341873128712L) ^ ((long) chunkZ * 132897987541L);
@@ -153,14 +148,10 @@ public class WormCarver {
      * Call generateForChunk() for the relevant chunk first.
      */
     public boolean isCarved(int x, int y, int z) {
-        for (float[] sphere : carvedSpheres) {
-            float dx = x - sphere[0];
-            float dy = y - sphere[1];
-            float dz = z - sphere[2];
-            float r  = sphere[3];
-            if (dx * dx + dy * dy + dz * dz <= r * r) return true;
-        }
-        return false;
+        int lx = x & 15;
+        int lz = z & 15;
+        if (y < 0 || y >= 400) return false;
+        return occupancyMap[(lx * 400 * 16) + (y * 16) + lz] != CaveType.NONE;
     }
 
     /**
@@ -168,15 +159,10 @@ public class WormCarver {
      * or CaveType.NONE if the voxel is solid.
      */
     public CaveType getType(int x, int y, int z) {
-        for (int i = 0; i < carvedSpheres.size(); i++) {
-            float[] sphere = carvedSpheres.get(i);
-            float dx = x - sphere[0];
-            float dy = y - sphere[1];
-            float dz = z - sphere[2];
-            float r  = sphere[3];
-            if (dx * dx + dy * dy + dz * dz <= r * r) return sphereTypes.get(i);
-        }
-        return CaveType.NONE;
+        int lx = x & 15;
+        int lz = z & 15;
+        if (y < 0 || y >= 400) return CaveType.NONE;
+        return occupancyMap[(lx * 400 * 16) + (y * 16) + lz];
     }
 
     // ── Worm walker ───────────────────────────────────────────────────────
@@ -232,11 +218,38 @@ public class WormCarver {
             float radius = baseRadius + (float) (radiusMod * RADIUS_VARIANCE);
             radius = Math.max(0.5f, radius);
 
-            // Squash the sphere slightly vertically so tunnels look more like tunnels
-            // by using an ellipsoid: scale Y component of the test in isCarved
-            // We encode squash in a 5th element: sphere[4] = yScale (1.0 = sphere)
-            carvedSpheres.add(new float[]{ (float) px, (float) py, (float) pz, radius });
-            sphereTypes.add(type);
+            // Carve into the map immediately
+            carveSphere((float) px, (float) py, (float) pz, radius, type, startX & ~15, startZ & ~15);
+        }
+    }
+
+    private void carveSphere(float worldX, float worldY, float worldZ, float radius, CaveType type, int chunkStartX, int chunkStartZ) {
+        int minX = Math.max(chunkStartX, (int) (worldX - radius));
+        int maxX = Math.min(chunkStartX + 15, (int) (worldX + radius));
+        int minY = Math.max(0, (int) (worldY - radius));
+        int maxY = Math.min(399, (int) (worldY + radius));
+        int minZ = Math.max(chunkStartZ, (int) (worldZ - radius));
+        int maxZ = Math.min(chunkStartZ + 15, (int) (worldZ + radius));
+
+        float r2 = radius * radius;
+
+        for (int x = minX; x <= maxX; x++) {
+            float dx = x - worldX;
+            for (int z = minZ; z <= maxZ; z++) {
+                float dz = z - worldZ;
+                float dxdz2 = dx * dx + dz * dz;
+                if (dxdz2 > r2) continue;
+                
+                int lx = x - chunkStartX;
+                int lz = z - chunkStartZ;
+                
+                for (int y = minY; y <= maxY; y++) {
+                    float dy = y - worldY;
+                    if (dxdz2 + dy * dy <= r2) {
+                        occupancyMap[(lx * 400 * 16) + (y * 16) + lz] = type;
+                    }
+                }
+            }
         }
     }
 }

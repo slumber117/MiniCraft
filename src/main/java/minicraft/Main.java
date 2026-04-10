@@ -1017,6 +1017,8 @@ public class Main {
         float x = (float) mx[0] * scaleX;
         float y = (float) my[0] * scaleY;
 
+        boolean isShift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
+
         float panelW = 800;
         float panelH = 500;
         float sx = (framebufferW - panelW) / 2f;
@@ -1032,7 +1034,11 @@ public class Main {
             float slotX = invX + 40 + col * (slotSize + gap);
             float slotY = sy + 100 + row * (slotSize + gap);
             if (x >= slotX && x <= slotX + slotSize && y >= slotY && y <= slotY + slotSize) {
-                player.inventory.clickSlot(i, false);
+                if (isShift) {
+                    player.inventory.quickMove(i, false);
+                } else {
+                    player.inventory.clickSlot(i, false);
+                }
                 return;
             }
         }
@@ -1043,7 +1049,11 @@ public class Main {
         for (int i = 0; i < 9; i++) {
             float slotX = hbX + i * (slotSize + gap);
             if (x >= slotX && x <= slotX + slotSize && y >= hbY && y <= hbY + slotSize) {
-                player.inventory.clickSlot(i, true);
+                if (isShift) {
+                    player.inventory.quickMove(i, true);
+                } else {
+                    player.inventory.clickSlot(i, true);
+                }
                 return;
             }
         }

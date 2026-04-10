@@ -134,6 +134,32 @@ public class Inventory {
         cursorStack = clicked;
     }
 
+    public void quickMove(int index, boolean isHotbar) {
+        ItemStack[] source = isHotbar ? hotbar : mainInventory;
+        ItemStack[] target = isHotbar ? mainInventory : hotbar;
+        if (index < 0 || index >= source.length || source[index] == null) return;
+
+        ItemStack stack = source[index];
+        
+        // 1. Try to stack in target
+        for (int i = 0; i < target.length; i++) {
+            if (target[i] != null && target[i].getItem().equals(stack.getItem())) {
+                target[i].add(stack.getCount());
+                source[index] = null;
+                return;
+            }
+        }
+        
+        // 2. Find empty slot in target
+        for (int i = 0; i < target.length; i++) {
+            if (target[i] == null) {
+                target[i] = stack;
+                source[index] = null;
+                return;
+            }
+        }
+    }
+
     public ItemStack[] getHotbar() { return hotbar; }
     public ItemStack[] getMainInventory() { return mainInventory; }
     public ItemStack getCursorStack() { return cursorStack; }
