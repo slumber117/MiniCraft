@@ -1,6 +1,8 @@
 package minicraft.world;
 
-import minicraft.world.cave.RavineCarver;
+import minicraft.world.cave.CaveCarver;
+import minicraft.world.cave.CaveCell;
+import minicraft.world.cave.CaveType;
 import java.util.Random;
 
 import minicraft.math.Matrix4f;
@@ -24,7 +26,7 @@ public class World {
     private final Map<Long, Chunk> chunks = new HashMap<>();
     private final Map<String, minicraft.entity.Inventory> worldContainers = new HashMap<>();
     private final StructureGenerator structGen = new StructureGenerator();
-    private final RavineCarver ravineCarver;
+    private final CaveCarver caveCarver;
     private final int renderDistance; 
     private final WeatherManager weatherManager = new WeatherManager();
     private final Random random = new Random();
@@ -32,7 +34,7 @@ public class World {
     public World(long seed, TextureRegistry textures, int renderDistance) {
         this.textures = textures;
         this.generator = new WorldGenerator(seed);
-        this.ravineCarver = new RavineCarver(seed);
+        this.caveCarver = new CaveCarver(seed);
         this.renderDistance = renderDistance;
     }
 
@@ -120,9 +122,9 @@ public class World {
         WorldCell[][] region = generator.generateRegion(cx * 16, cz * 16, 16, 16);
         int seaLevelY = (int)(WorldCell.SEA_LEVEL * Chunk.HEIGHT);
         
-        // Prepare Ravine carving for this chunk
+        // Prepare unified cave system for this chunk
         int centerSurfaceY = (int)(region[8][8].elevation * Chunk.HEIGHT);
-        ravineCarver.generateForChunk(cx, cz, generator.getSeed(), centerSurfaceY, Chunk.WIDTH, Chunk.DEPTH);
+        caveCarver.prepareChunk(cx, cz, centerSurfaceY, Chunk.HEIGHT);
 
         for (int x = 0; x < Chunk.WIDTH; x++) {
             for (int z = 0; z < Chunk.DEPTH; z++) {
@@ -150,18 +152,12 @@ public class World {
                     }
                 }
 
-                // CAVES & RAVINES
-                for (int y = BEDROCK_Y + 1; y < surfaceY - 5; y++) {
-                    // Check Ravine first (visually dominant)
-                    if (ravineCarver.isCarved(gx, y, gz)) {
-                        chunk.setBlock(x, y, z, Block.AIR);
-                        continue;
-                    }
-                    
-                    // Traditional Caves
-                    double n1 = generator.getElevationOnly(gx * 1.5, gz * 1.5 + y * 2.5);
-                    if (Math.abs(n1) < 0.02) {
-                        chunk.setBlock(x, y, z, Block.AIR);
+                // CAVE SYSTEM
+                for (int y = BEDROCK_Y + 1; y < surfaceY; y++) {
+                    CaveCell caveCell = caveCarver.query(gx, y, gz, cell, surfaceY);
+                    if (caveCell.isCarved) {
+                        Block b = (caveCell.type == CaveType.UNDERWATER) ? Block.WATER : Block.AIR;
+                        chunk.setBlock(x, y, z, b);
                     }
                 }
             }
