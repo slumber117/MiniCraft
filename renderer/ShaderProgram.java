@@ -35,28 +35,38 @@ public class ShaderProgram {
     }
 
     public void setUniform(String uniformName, Matrix4f value) {
+        Integer location = uniforms.get(uniformName);
+        if (location == null || location < 0) return;
         try (MemoryStack stack = MemoryStack.stackPush()) {
             FloatBuffer fb = stack.mallocFloat(16);
             value.get(fb);
             fb.flip();
-            glUniformMatrix4fv(uniforms.get(uniformName), false, fb);
+            glUniformMatrix4fv(location, false, fb);
         }
     }
 
     public void setUniform(String uniformName, int value) {
-        glUniform1i(uniforms.get(uniformName), value);
+        Integer location = uniforms.get(uniformName);
+        if (location == null || location < 0) return;
+        glUniform1i(location, value);
     }
 
     public void setUniform(String uniformName, Vector4f value) {
-        glUniform4f(uniforms.get(uniformName), value.x, value.y, value.z, value.w);
+        Integer location = uniforms.get(uniformName);
+        if (location == null || location < 0) return;
+        glUniform4f(location, value.x, value.y, value.z, value.w);
     }
 
     public void setUniform(String uniformName, Vector3f value) {
-        glUniform3f(uniforms.get(uniformName), value.x, value.y, value.z);
+        Integer location = uniforms.get(uniformName);
+        if (location == null || location < 0) return;
+        glUniform3f(location, value.x, value.y, value.z);
     }
 
     public void setUniform(String uniformName, float value) {
-        glUniform1f(uniforms.get(uniformName), value);
+        Integer location = uniforms.get(uniformName);
+        if (location == null || location < 0) return;
+        glUniform1f(location, value);
     }
 
     public void createVertexShader(String shaderCode) throws Exception {
