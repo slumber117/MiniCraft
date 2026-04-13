@@ -22,6 +22,9 @@ public class Player extends Entity {
     // Temperature in Celsius
     public float temperature = 36.6f;
     public String tempState = "Normal";
+    
+    // Environmental Cooldowns
+    public float transmatCooldown = 0f;
 
     public final Inventory inventory = new Inventory();
     public float miningProgress = 0f;
@@ -55,6 +58,7 @@ public class Player extends Entity {
 
         // --- Timers ---
         if (invincibilityTimer > 0) invincibilityTimer -= dt;
+        if (transmatCooldown > 0) transmatCooldown -= dt;
 
         // 1. Survival ticks
         hunger = Math.max(0, hunger - 0.05f * dt);
@@ -72,24 +76,23 @@ public class Player extends Entity {
         
         // 5. Environmental Interactions (Transmat Portal)
         Block floor = world.getBlock((int)position.x, (int)(position.y - 0.5f), (int)position.z);
-        if (floor == Block.TRANSMAT_PAD) {
+        if (floor == Block.TRANSMAT_PAD && transmatCooldown <= 0f) {
             if (position.y < 230) {
                 // Ground portal triggers ascension to Shipyard Sky Deck
                 System.out.println("TRANSMAT: Routing to Orbital Coordinates...");
                 position.y = 241f; // Target altitude
                 velocity.set(0,0,0);
+                transmatCooldown = 3.0f; // Prevent immediate regression loop
             } else if (position.y >= 240) {
                 // Sky portal triggers regression to Mountain peak
                 System.out.println("TRANSMAT: Descending to Base Camp...");
-                // Ground teleport drops them off exactly vertically so gravity resolves ground connection
-                // Assuming base camp is anywhere safely below
-                // We use getSafeSpawnY to find the surface exactly underneath the Shipyard center
+                
                 int cx = (int)Math.floor(position.x / 16.0);
                 int cz = (int)Math.floor(position.z / 16.0);
                 
-                // Ensure chunk generation resolves properly without circular dependencies by directly casting
                 position.y = world.getSafeSpawnY(cx*16+12, cz*16+12) + 2; 
                 velocity.set(0,0,0);
+                transmatCooldown = 3.0f; // Prevent immediate ascension loop
             }
         }
     }
