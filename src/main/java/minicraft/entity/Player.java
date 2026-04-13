@@ -52,8 +52,8 @@ public class Player extends Entity {
     }
 
     @Override
-    public void tick(EntityManager manager, World world, float dt) {
-        super.tick(manager, world, dt);
+    public void tick(EntityManager manager, World world, ParticleManager particleManager, float dt) {
+        super.tick(manager, world, particleManager, dt);
         if (dead) return;
 
         // --- Timers ---

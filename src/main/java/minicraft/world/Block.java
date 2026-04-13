@@ -25,6 +25,7 @@ public enum Block {
     STONE_BRICKS (true, 0, 3.0f, "stone_bricks"),
     WOOD_PLANKS  (true, 0, 1.5f, "wood_planks"),
     OBSIDIAN     (true, 4, 40.0f, "obsidian"),
+    GLASS        (true, 0, 1.0f, "glass"),
 
     // ── Vegetation Variants ────────────────────────────────────────────────
     OAK_WOOD        (true, 0, 2.0f, "wood"),
@@ -145,7 +146,7 @@ public enum Block {
     public boolean isOpaque() {
         if (!solid) return false;
         // Transparent solids
-        if (this == LEAVES || this == WATER || this == SNOW || this == SEA_WEED || this == CORAL || this == ICE) return false;
+        if (this == LEAVES || this == WATER || this == SNOW || this == SEA_WEED || this == CORAL || this == ICE || this == GLASS) return false;
         if (this == OAK_LEAVES || this == REDWOOD_LEAVES || this == MANGO_LEAVES || this == APPLE_LEAVES || this == PEAR_LEAVES || this == JUNGLE_LEAVES) return false;
         return true;
     }

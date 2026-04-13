@@ -48,7 +48,7 @@ public abstract class Entity {
     // ── Abstract API ──────────────────────────────────────────────────────
 
     /** Called once per game tick (~20 times/sec). Override to implement AI. */
-    public void tick(EntityManager manager, minicraft.world.World world, float dt) {
+    public void tick(EntityManager manager, minicraft.world.World world, ParticleManager particleManager, float dt) {
         if (damageFlashTimer > 0) damageFlashTimer -= dt;
     }
 

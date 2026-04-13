@@ -1,0 +1,57 @@
+package minicraft.ship;
+
+import java.util.*;
+
+/**
+ * ShipRegistry — the single source of truth for all ship types.
+ */
+public final class ShipRegistry {
+
+    private static ShipRegistry INSTANCE;
+
+    public static ShipRegistry getInstance() {
+        if (INSTANCE == null) throw new IllegalStateException("ShipRegistry not initialised. Call initialize() first.");
+        return INSTANCE;
+    }
+
+    public static void initialize() {
+        if (INSTANCE != null) return;
+        INSTANCE = new ShipRegistry();
+        INSTANCE.registerAll();
+    }
+
+    private final LinkedHashMap<String, ShipDefinition> registry = new LinkedHashMap<>();
+
+    private ShipRegistry() {}
+
+    private void registerAll() {
+        register(new ShipDefinition(
+            "stalwart",
+            "Stalwart-class Light Frigate",
+            "A reliable UNSC light frigate. Heavy layered alloy plating, twin engine nacelles, forward observation bridge. Slow to turn but devastatingly powerful once at speed.",
+            ShipClass.LIGHT_FRIGATE,
+            StalwartSchematic.build(),
+            "ship_thumb_stalwart",
+            true
+        ));
+    }
+
+    private void register(ShipDefinition def) {
+        if (registry.containsKey(def.id)) {
+            throw new IllegalArgumentException("Duplicate ship ID: " + def.id);
+        }
+        registry.put(def.id, def);
+    }
+
+    public ShipDefinition get(String id) {
+        return registry.get(id);
+    }
+
+    public List<ShipDefinition> getAll() {
+        return Collections.unmodifiableList(new ArrayList<>(registry.values()));
+    }
+
+    public int count() {
+        return registry.size();
+    }
+}

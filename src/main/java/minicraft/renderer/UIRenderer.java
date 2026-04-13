@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.ArrayList;
 
 import java.awt.*;
+import minicraft.ship.ShipRegistry;
+import minicraft.ship.ShipDefinition;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -93,6 +95,14 @@ public class UIRenderer {
 
         if (main.craftingOpen) {
             renderCraftingMenu(player, shader, width, height, main);
+            glDisable(GL_BLEND);
+            glEnable(GL_CULL_FACE);
+            glEnable(GL_DEPTH_TEST);
+            return;
+        }
+
+        if (main.shipConsoleOpen) {
+            renderShipConsoleScreen(player, shader, width, height, main);
             glDisable(GL_BLEND);
             glEnable(GL_CULL_FACE);
             glEnable(GL_DEPTH_TEST);
@@ -269,6 +279,64 @@ public class UIRenderer {
                 drawText(shader, String.valueOf(cursor.getCount()), curX + 10, curY + slotSize - 15, 0.8f);
             }
         }
+    }
+
+    private void renderShipConsoleScreen(Player player, ShaderProgram shader, int width, int height, minicraft.Main main) {
+        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0.05f, 0.1f, 0.85f)); // Deep cyber-blue tint
+        
+        float panelW = 900;
+        float panelH = 600;
+        float sx = (width - panelW) / 2f;
+        float sy = (height - panelH) / 2f;
+        
+        drawRectInternal(shader, sx, sy, panelW, panelH, glassBgColor);
+        drawRectInternal(shader, sx, sy, panelW, 2, new Vector4f(0, 1, 1, 0.5f)); // Cyan border
+        
+        drawText(shader, "UNSC FLEET LOGISTICS NETWORK", sx + 30, sy + 30, 1.4f, new Vector4f(0, 1, 1, 1));
+        drawText(shader, "DRYDOCK STATUS: STANDBY", sx + 30, sy + 65, 0.8f, highlightColor);
+        
+        // Dynamic Ship Registry
+        List<ShipDefinition> ships = ShipRegistry.getInstance().getAll();
+        
+        float btnWidth = 260;
+        float btnHeight = 400;
+        float gap = 30;
+        float startX = sx + (panelW - (Math.min(3, ships.size())*btnWidth + (Math.min(3, ships.size())-1)*gap)) / 2f;
+        float startY = sy + 120;
+        
+        double[] mx = new double[1], my = new double[1];
+        org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
+        float mouseX = (float)mx[0];
+        float mouseY = (float)my[0];
+        
+        for (int i = 0; i < ships.size(); i++) {
+            ShipDefinition def = ships.get(i);
+            float bx = startX + i * (btnWidth + gap);
+            boolean hover = mouseX >= bx && mouseX <= bx + btnWidth && mouseY >= startY && mouseY <= startY + btnHeight;
+            
+            Vector4f bg = hover ? new Vector4f(0, 0.4f, 0.4f, 0.8f) : new Vector4f(0, 0.1f, 0.2f, 0.6f);
+            drawRectInternal(shader, bx, startY, btnWidth, btnHeight, bg);
+            drawRectInternal(shader, bx, startY, btnWidth, 2, new Vector4f(0, 1, 1, hover ? 1f : 0.3f));
+            
+            drawText(shader, def.displayName.toUpperCase(), bx + 15, startY + 20, 0.8f, new Vector4f(1,1,1,1));
+            
+            // Thumbnail / Icon Area
+            drawRectInternal(shader, bx + 20, startY + 60, btnWidth - 40, btnWidth - 40, new Vector4f(0,0,0,0.5f));
+            drawText(shader, "SCHEMATIC PREVIEW", bx + 35, startY + 160, 0.6f, new Vector4f(0.4f, 0.4f, 0.5f, 1));
+
+            // Stats
+            drawText(shader, "CLASS: " + def.shipClass.displayName, bx + 15, startY + btnWidth + 30, 0.65f, new Vector4f(0.8f, 0.8f, 1f, 1f));
+            drawText(shader, "BLOCKS: " + def.getBlockCount(), bx + 15, startY + btnWidth + 55, 0.65f, new Vector4f(0.8f, 0.8f, 1f, 1f));
+            drawText(shader, def.getDimensionsString(), bx + 15, startY + btnWidth + 80, 0.65f, new Vector4f(0.8f, 0.8f, 1f, 1f));
+            
+            // Description (Truncated)
+            String desc = def.description;
+            if (desc.length() > 60) desc = desc.substring(0, 57) + "...";
+            drawText(shader, desc, bx + 15, startY + btnWidth + 110, 0.55f, new Vector4f(0.6f, 0.6f, 0.6f, 1f));
+        }
+        
+        // Mouse Cursor
+        drawRectInternal(shader, mouseX, mouseY, 12, 12, new Vector4f(0, 1, 1, 1));
     }
 
     private void drawSlot(ShaderProgram shader, float x, float y, float size, minicraft.item.ItemStack stack) {
@@ -486,8 +554,8 @@ public class UIRenderer {
         minicraft.entity.ship.ShipEntity ship = player.getRidingShip();
         if (ship == null) return;
 
-        float hudW = 400;
-        float hudH = 110;
+        float hudW = 450;
+        float hudH = 140;
         float sx = (width - hudW) / 2f;
         float sy = 40;
 
@@ -497,15 +565,31 @@ public class UIRenderer {
         drawRectInternal(shader, sx, sy + hudH - 1, hudW, 1, glassBorderColor);
 
         // 2. Telemetry Labels
-        drawText(shader, "VESSEL: UNSC ENCOURAGEMENT", sx + 20, sy + 20, 0.9f, new Vector4f(1, 1, 0, 1));
-        drawText(shader, "STATUS: NEURAL LINK ACTIVE", sx + 20, sy + 45, 0.6f, new Vector4f(0.4f, 1, 0.4f, 1));
+        drawText(shader, "VESSEL: STALWART CLASS FRIGATE", sx + 20, sy + 15, 0.9f, new Vector4f(0, 1, 1, 1));
+        drawText(shader, "STATUS: NEURAL LINK ACTIVE", sx + 20, sy + 40, 0.6f, new Vector4f(0.4f, 1, 0.4f, 1));
         
-        String altStr = String.format("ALTITUDE: %d M", (int)ship.position.y);
-        drawText(shader, altStr, sx + 20, sy + 70, 0.7f, textColor);
+        // Thrust Meter
+        float thrustLvl = ship.currentThrust; // 0 to 1
+        drawPremiumBar(shader, sx + 20, sy + 65, 120, 10, thrustLvl, thirstColor, thirstColor2, "A");
+        drawText(shader, "THRUST", sx + 150, sy + 65, 0.6f, textColor);
 
-        // 3. Heading Compass (Simplified)
-        String head = String.format("HEADING: %d°", (int)(ship.yaw % 360));
-        drawText(shader, head, sx + hudW - 160, sy + 70, 0.7f, highlightColor);
+        // Weapon Selection
+        float wx = sx + hudW - 180;
+        float wy = sy + 15;
+        drawText(shader, "WEAPON SYSTEM", wx, wy, 0.7f, highlightColor);
+        
+        String[] wNames = {"MAC", "MISSILES", "PDW"};
+        minicraft.entity.ship.ShipEntity.WeaponSystem active = ship.activeWeapon;
+        
+        for (int i = 0; i < 3; i++) {
+            boolean isSel = (active.ordinal() == i);
+            Vector4f color = isSel ? new Vector4f(1, 1, 0, 1) : highlightColor;
+            drawText(shader, (isSel ? "> " : "  ") + wNames[i], wx, wy + 25 + i * 20, 0.7f, color);
+        }
+
+        // Heading & Altitude
+        String head = String.format("HDG: %d°  ALT: %dM", (int)(ship.yaw % 360), (int)ship.position.y);
+        drawText(shader, head, sx + 20, sy + hudH - 30, 0.8f, textColor);
     }
 
     private void drawRectInternal(ShaderProgram shader, float x, float y, float w, float h, Vector4f color, String textureName) {

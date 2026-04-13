@@ -174,11 +174,10 @@ public class World {
             if (chunk.getBlock(8, y, 8).solid) { centerPeakY = y + 1; break; }
         }
         
-        if ((centerCell.biome == Biome.MOUNTAINS || centerCell.biome == Biome.SNOWY_PEAKS || centerCell.biome == Biome.HIGHLANDS) && centerPeakY > 160) {
+        // Isolate Shipyard megastructures to a 64x64 chunk geographical grid (1 per massive continent mapping)
+        if (cx % 64 == 0 && cz % 64 == 0 && (centerCell.biome == Biome.MOUNTAINS || centerCell.biome == Biome.SNOWY_PEAKS || centerCell.biome == Biome.HIGHLANDS) && centerPeakY > 160) {
             // Build the shipyard safely above all possible mountain layers (Max peak = ~220)
             structGen.generateFloatingFactory(chunk, 240, centerPeakY);
-            // Spawn ship slightly elevated and offset
-            structGen.generateEncouragementShip(chunk, 5, 245, 8); 
         }
 
         // 2. Random Fortresses, Castles, and Villages (8% chance)
@@ -320,6 +319,14 @@ public class World {
             int rx = startX + (int)(Math.random() * 40000 - 20000);
             int rz = startZ + (int)(Math.random() * 40000 - 20000);
             
+            // Fast math: snap mathematically to the deterministic 64x64 chunk grid constraint (1024x1024 blocks)
+            int cx = (int)Math.floor(rx / 16.0);
+            int cz = (int)Math.floor(rz / 16.0);
+            cx = (cx / 64) * 64; 
+            cz = (cz / 64) * 64;
+            rx = cx * 16;
+            rz = cz * 16;
+            
             // Fast mathematical check using the noise engine
             WorldCell cell = generator.generate(rx, rz);
             if (cell.biome == Biome.MOUNTAINS || cell.biome == Biome.SNOWY_PEAKS || cell.biome == Biome.HIGHLANDS) {
@@ -328,9 +335,6 @@ public class World {
                 
                 // If it's a high peak, a shipyard is guaranteed to build here
                 if (predictedSurfaceY > 160) {
-                    int cx = (int)Math.floor(rx / 16.0);
-                    int cz = (int)Math.floor(rz / 16.0);
-                    
                     // Center the check just like chunk generation does!
                     WorldCell syncCell = generator.generate(cx * 16 + 8, cz * 16 + 8);
                     if ((syncCell.biome == Biome.MOUNTAINS || syncCell.biome == Biome.SNOWY_PEAKS || syncCell.biome == Biome.HIGHLANDS) 
@@ -422,5 +426,21 @@ public class World {
     }
 
     public WeatherManager getWeather() { return weatherManager; }
+
+    /**
+     * Voxel raycast to find the first solid block in a direction.
+     * @return The distance to the hit, or maxDist if no hit.
+     */
+    public float raycast(minicraft.math.Vector3f start, minicraft.math.Vector3f dir, float maxDist) {
+        float step = 0.2f;
+        for (float d = 0; d < maxDist; d += step) {
+            int x = (int) Math.floor(start.x + dir.x * d);
+            int y = (int) Math.floor(start.y + dir.y * d);
+            int z = (int) Math.floor(start.z + dir.z * d);
+            if (getBlock(x, y, z).solid) return d;
+        }
+        return maxDist;
+    }
+
     public void cleanup() { chunks.values().forEach(Chunk::cleanup); chunks.clear(); worldContainers.clear(); }
 }

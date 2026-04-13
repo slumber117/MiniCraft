@@ -20,7 +20,8 @@ public class ItemEntity extends Entity {
     }
 
     @Override
-    public void tick(EntityManager manager, World world, float dt) {
+    public void tick(EntityManager manager, World world, ParticleManager particleManager, float dt) {
+        super.tick(manager, world, particleManager, dt);
         age += dt;
         
         // Basic physics

@@ -23,18 +23,18 @@ public class EntityManager {
     //  Main update
     // ─────────────────────────────────────────────────────────────────────
 
-    public void update(float dt, minicraft.world.World world) {
+    public void update(float dt, minicraft.world.World world, minicraft.entity.ParticleManager particleManager) {
         tickAccum += dt;
         while (tickAccum >= TICK_RATE) {
             tickAccum -= TICK_RATE;
-            tick(TICK_RATE, world);
+            tick(TICK_RATE, world, particleManager);
             spawnHostilesInDarkness(world);
         }
     }
 
-    private void tick(float dt, minicraft.world.World world) {
+    private void tick(float dt, minicraft.world.World world, minicraft.entity.ParticleManager particleManager) {
         for (Entity e : entities) {
-            if (!e.isDead()) e.tick(this, world, dt);
+            if (!e.isDead()) e.tick(this, world, particleManager, dt);
         }
         // Remove dead entities
         Iterator<Entity> it = entities.iterator();

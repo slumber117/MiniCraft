@@ -13,6 +13,8 @@ public class ParticleManager {
         Vector3f vel;
         float life;
         float maxLife;
+        Vector4f color = new Vector4f(0.5f, 0.5f, 0.5f, 1.0f);
+        float scale = 0.1f;
     }
 
     private final List<Particle> particles = new ArrayList<>();
@@ -34,6 +36,24 @@ public class ParticleManager {
         p.vel = new Vector3f((rand.nextFloat() - 0.5f) * 0.1f, 0.4f + rand.nextFloat() * 0.2f, (rand.nextFloat() - 0.5f) * 0.1f);
         p.maxLife = 1.0f + rand.nextFloat() * 1.5f;
         p.life = p.maxLife;
+        p.scale = 0.1f + rand.nextFloat() * 0.1f;
+        p.color = new Vector4f(0.4f, 0.4f, 0.4f, 0.6f);
+        particles.add(p);
+    }
+
+    public void spawnThruster(float x, float y, float z, Vector3f velocity, float size, Vector4f color, float life) {
+        Particle p = new Particle();
+        p.pos = new Vector3f(x, y, z);
+        p.vel = new Vector3f(velocity);
+        // Add slight jitter
+        p.vel.x += (rand.nextFloat() - 0.5f) * 0.5f;
+        p.vel.y += (rand.nextFloat() - 0.5f) * 0.5f;
+        p.vel.z += (rand.nextFloat() - 0.5f) * 0.5f;
+        
+        p.maxLife = life;
+        p.life = life;
+        p.scale = size;
+        p.color = new Vector4f(color);
         particles.add(p);
     }
 
@@ -47,27 +67,30 @@ public class ParticleManager {
             p.life -= dt;
             if (p.life <= 0) it.remove();
         }
-        if (particles.size() > 500) particles.remove(0);
+        if (particles.size() > 2000) particles.remove(0); // Increased cap for ship battle
     }
 
     public void render(ShaderProgram shader, Matrix4f view, Matrix4f proj) {
         shader.setUniform("useLighting", 0.0f);
         for (Particle p : particles) {
             float alpha = p.life / p.maxLife;
-            float scale = 0.05f + (1.0f - alpha) * 0.1f;
+            float currentScale = p.scale * (0.5f + alpha * 0.5f);
             
             Matrix4f model = new Matrix4f()
                 .identity()
                 .translate(p.pos.x, p.pos.y, p.pos.z)
-                .scale(scale, scale, scale);
+                .scale(currentScale, currentScale, currentScale);
                 
-            // Billboard rotation (reset orientation to match camera view)
-            model.m[0] = scale; model.m[1] = 0; model.m[2] = 0;
-            model.m[4] = 0; model.m[5] = scale; model.m[6] = 0;
-            model.m[8] = 0; model.m[9] = 0; model.m[10] = scale;
+            // Billboard rotation
+            model.m[0] = currentScale; model.m[1] = 0; model.m[2] = 0;
+            model.m[4] = 0; model.m[5] = currentScale; model.m[6] = 0;
+            model.m[8] = 0; model.m[9] = 0; model.m[10] = currentScale;
 
             shader.setUniform("modelMatrix", model);
-            shader.setUniform("colorTint", new Vector4f(0.5f, 0.5f, 0.5f, alpha * 0.6f));
+            
+            Vector4f drawColor = new Vector4f(p.color);
+            drawColor.w *= alpha; // Fade out
+            shader.setUniform("colorTint", drawColor);
             quad.render(null);
         }
         shader.setUniform("useLighting", 1.0f);
