@@ -110,7 +110,10 @@ public class EntityManager {
             case ZOMBIE: return new minicraft.entity.monsters.Zombie();
             case SPIDER: return new minicraft.entity.monsters.Spider();
             // Megastructures
-            case STALWART_SHIP: return new ShipEntity(type);
+            case STALWART_SHIP: 
+                // Ships cannot be spawned via generic type-only factory as they require definitions.
+                // Use executeShipSpawn in Main instead.
+                throw new UnsupportedOperationException("Ship entities must be spawned with a ShipDefinition.");
             // Resources
             case ITEM:   return new ItemEntity(minicraft.world.Block.DIRT); // Default, usually overridden
             default:     throw new IllegalArgumentException("Unknown entity type: " + type);

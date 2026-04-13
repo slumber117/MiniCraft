@@ -30,7 +30,7 @@ public abstract class Predator extends Entity {
     }
 
     @Override
-    public void tick(EntityManager manager, minicraft.world.World world, float dt) {
+    public void tick(EntityManager manager, minicraft.world.World world, minicraft.entity.ParticleManager particleManager, float dt) {
         if (dead) { state = EntityState.DEAD; return; }
 
         attackCooldown = Math.max(0, attackCooldown - dt);

@@ -77,26 +77,39 @@ public class Player extends Entity {
         // 5. Environmental Interactions (Transmat Portal)
         Block floor = world.getBlock(
                 (int)Math.floor(position.x), 
-                (int)Math.floor(position.y - 0.5f), 
+                (int)Math.floor(position.y - 0.2f), 
                 (int)Math.floor(position.z)
         );
         if (floor == Block.TRANSMAT_PAD && transmatCooldown <= 0f) {
             if (position.y < 230) {
                 // Ground portal triggers ascension to Shipyard Sky Deck
                 System.out.println("TRANSMAT: Routing to Orbital Coordinates...");
+                
+                // Warp effect at old position
+                for(int i=0; i<10; i++) particleManager.spawnSmoke(position.x, position.y, position.z);
+                
                 position.y = 241f; // Target altitude
                 velocity.set(0,0,0);
                 transmatCooldown = 3.0f; // Prevent immediate regression loop
+                
+                // Warp effect at new position
+                for(int i=0; i<10; i++) particleManager.spawnSmoke(position.x, position.y, position.z);
             } else if (position.y >= 240) {
                 // Sky portal triggers regression to Mountain peak
                 System.out.println("TRANSMAT: Descending to Base Camp...");
                 
+                // Warp effect
+                for(int i=0; i<10; i++) particleManager.spawnSmoke(position.x, position.y, position.z);
+
                 int cx = (int)Math.floor(position.x / 16.0);
                 int cz = (int)Math.floor(position.z / 16.0);
                 
                 position.y = world.getSafeSpawnY(cx*16+12, cz*16+12) + 2; 
                 velocity.set(0,0,0);
                 transmatCooldown = 3.0f; // Prevent immediate ascension loop
+
+                // Warp effect at new location
+                for(int i=0; i<10; i++) particleManager.spawnSmoke(position.x, position.y, position.z);
             }
         }
     }

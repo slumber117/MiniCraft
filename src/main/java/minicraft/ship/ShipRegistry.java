@@ -28,10 +28,22 @@ public final class ShipRegistry {
         register(new ShipDefinition(
             "stalwart",
             "Stalwart-class Light Frigate",
-            "A reliable UNSC light frigate. Heavy layered alloy plating, twin engine nacelles, forward observation bridge. Slow to turn but devastatingly powerful once at speed.",
+            "A reliable UNSC light frigate. Heavy layered alloy plating, twin engine nacelles, forward observation bridge.",
             ShipClass.LIGHT_FRIGATE,
             StalwartSchematic.build(),
             "ship_thumb_stalwart",
+            null, // No 3D mesh (voxel based)
+            true
+        ));
+
+        register(new ShipDefinition(
+            "dawn",
+            "UNSC Forward Unto Dawn",
+            "The legendary Charcoal-class heavy frigate. Features high-fidelity armor plating and refined cinematic geometry. Built for deep space engagement.",
+            ShipClass.HEAVY_FRIGATE,
+            StalwartSchematic.build(), // Still use voxel for mass/hitbox
+            "ship_thumb_dawn",
+            "ship_stalwart", // Link to the 54MB mesh
             true
         ));
     }

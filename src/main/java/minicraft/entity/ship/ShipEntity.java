@@ -31,14 +31,20 @@ public class ShipEntity extends Entity {
     private float currentThrust = 0f; // 0.0 to 1.0
     
     // Stats
-    private static final float MAX_ACCEL = 40.0f;
-    private static final float DRIFT_FRICTION = 0.995f; // Very low friction for "weight"
-    private static final float ROT_SPEED = 25f; // Heavier rotation
+    private static final float MAX_ACCEL = 85.0f; // Higher top speed for massive frigate
+    private static final float DRIFT_FRICTION = 0.9975f; // Carries momentum for much longer
+    private static final float ROT_SPEED = 12.5f; // Significantly heavier, slower turning
+    private final minicraft.ship.ShipDefinition definition;
 
-    public ShipEntity(EntityType type) {
+    public ShipEntity(EntityType type, minicraft.ship.ShipDefinition definition) {
         super(type, type.baseHealth);
+        this.definition = definition;
         this.width = 15f; 
         this.height = 8f;
+    }
+
+    public minicraft.ship.ShipDefinition getDefinition() {
+        return definition;
     }
 
     private float fireCooldown = 0f;

@@ -94,6 +94,10 @@ public class Matrix4f {
         return this;
     }
 
+    public Matrix4f rotateX(float angle) {
+        return rotate(angle, new Vector3f(1, 0, 0));
+    }
+
     public Matrix4f rotateY(float angle) {
         return rotate(angle, new Vector3f(0, 1, 0));
     }

@@ -11,17 +11,19 @@ public final class ShipDefinition {
     public final ShipClass     shipClass;
     public final ShipSchematic schematic;
     public final String        thumbnailId;
+    public final String        modelId;
     public final boolean       driveable;
 
     public ShipDefinition(String id, String displayName, String description,
                           ShipClass shipClass, ShipSchematic schematic,
-                          String thumbnailId, boolean driveable) {
+                          String thumbnailId, String modelId, boolean driveable) {
         this.id          = id;
         this.displayName = displayName;
         this.description = description;
         this.shipClass   = shipClass;
         this.schematic   = schematic;
         this.thumbnailId = thumbnailId;
+        this.modelId     = modelId;
         this.driveable   = driveable;
     }
 

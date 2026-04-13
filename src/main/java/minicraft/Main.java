@@ -24,6 +24,7 @@ import minicraft.world.Block;
 import minicraft.world.WorldGenerator;
 import minicraft.world.WorldCell;
 import minicraft.world.Biome;
+import minicraft.entity.ship.ShipEntity;
 import minicraft.core.GameLoop;
 import minicraft.ship.ShipRegistry;
 import minicraft.ship.ShipDefinition;
@@ -531,8 +532,14 @@ public class Main {
 
         System.out.println("LOGISTICS NETWORK: " + def.displayName + " DEPLOYED.");
 
-        // Phase 3 will add:
-        // entityManager.spawn(new ShipEntity(def, wx, wy, wz));
+        // Spawn actual driveable entity
+        ShipEntity ship = new ShipEntity(EntityType.STALWART_SHIP, def);
+        ship.position.set(wx, wy, wz);
+        entityManager.spawn(ship);
+        
+        // Mount player
+        player.setRiding(ship);
+        ship.setPassenger(player);
     }
 
     private void spawnShipFromSchematic(ShipDefinition def, int wx, int wy, int wz) {

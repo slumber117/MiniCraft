@@ -21,7 +21,13 @@ public class ModelRegistry {
             Mesh zombie = OBJLoader.loadModel("/models/zombie.obj", zombieTexture);
             models.put("zombie", zombie);
 
-            System.out.println("Model Registry: Loaded high-fidelity assets (Pickaxe & Zombie).");
+            // 3. Load the player's custom Stalwart model
+            // This is a 54MB high-fidelity asset!
+            Texture shipTexture = textureRegistry.get("alloy_plate");
+            Mesh shipModel = OBJLoader.loadModel("/models/sof_.obj", shipTexture);
+            models.put("ship_stalwart", shipModel);
+
+            System.out.println("Model Registry: Loaded high-fidelity assets (Pickaxe, Zombie & Stalwart).");
         } catch (Exception e) {
             System.err.println("Failed to load 3D models: " + e.getMessage());
             e.printStackTrace();

@@ -17,8 +17,8 @@ public class Eagle extends Predator {
     }
 
     @Override
-    public void tick(EntityManager manager, minicraft.world.World world, float dt) {
-        super.tick(manager, world, dt);
+    public void tick(EntityManager manager, minicraft.world.World world, minicraft.entity.ParticleManager pm, float dt) {
+        super.tick(manager, world, pm, dt);
         state = EntityState.FLYING;
 
         if (target != null && !target.isDead()) {

@@ -97,7 +97,7 @@ public class StructureGenerator {
         
         // 2. Ground Portal (Mountain Peak Base)
         int portalY = groundY;
-        for (int ly = 399; ly > 0; ly--) {
+        for (int ly = y - 1; ly > 0; ly--) {
             if (chunk.getBlock(12, ly, 12).solid) { portalY = ly + 1; break; }
         }
         

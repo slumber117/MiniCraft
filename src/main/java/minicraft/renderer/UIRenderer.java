@@ -569,7 +569,7 @@ public class UIRenderer {
         drawText(shader, "STATUS: NEURAL LINK ACTIVE", sx + 20, sy + 40, 0.6f, new Vector4f(0.4f, 1, 0.4f, 1));
         
         // Thrust Meter
-        float thrustLvl = ship.currentThrust; // 0 to 1
+        float thrustLvl = ship.getThrustLevel(); // 0 to 1
         drawPremiumBar(shader, sx + 20, sy + 65, 120, 10, thrustLvl, thirstColor, thirstColor2, "A");
         drawText(shader, "THRUST", sx + 150, sy + 65, 0.6f, textColor);
 
@@ -579,7 +579,7 @@ public class UIRenderer {
         drawText(shader, "WEAPON SYSTEM", wx, wy, 0.7f, highlightColor);
         
         String[] wNames = {"MAC", "MISSILES", "PDW"};
-        minicraft.entity.ship.ShipEntity.WeaponSystem active = ship.activeWeapon;
+        minicraft.entity.ship.ShipEntity.WeaponSystem active = ship.getActiveWeapon();
         
         for (int i = 0; i < 3; i++) {
             boolean isSel = (active.ordinal() == i);

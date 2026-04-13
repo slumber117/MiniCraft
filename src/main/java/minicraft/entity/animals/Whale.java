@@ -9,8 +9,8 @@ public class Whale extends PassiveAnimal {
     public Whale() { super(EntityType.WHALE); }
 
     @Override
-    public void tick(EntityManager manager, minicraft.world.World world, float dt) {
-        super.tick(manager, world, dt);
+    public void tick(EntityManager manager, minicraft.world.World world, minicraft.entity.ParticleManager particleManager, float dt) {
+        super.tick(manager, world, particleManager, dt);
         // Keep whale at sea level regardless of terrain
         position.y = SEA_Y;
         velocity.y = 0;

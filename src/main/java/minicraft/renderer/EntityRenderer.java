@@ -148,36 +148,49 @@ public class EntityRenderer {
     }
 
     private void renderStalwartShip(Entity e, ShaderProgram shader, Matrix4f viewMatrix) {
-        // Enormous 80-block hull rendering
-        // Front Section (Neck) + Middle (Hangar) + Rear (Engines)
-        
-        // 1. MAIN HULL
+        if (!(e instanceof minicraft.entity.ship.ShipEntity)) return;
+        minicraft.entity.ship.ShipEntity ship = (minicraft.entity.ship.ShipEntity) e;
+        minicraft.ship.ShipDefinition def = ship.getDefinition();
+
+        // 1. HIGH-FIDELITY MESH OVERRIDE
+        if (def != null && def.modelId != null) {
+            Mesh shipMesh = ModelRegistry.getModel(def.modelId);
+            if (shipMesh != null) {
+                Matrix4f model = new Matrix4f()
+                    .identity()
+                    .translate(e.position.x, e.position.y, e.position.z)
+                    .rotateY((float) Math.toRadians(e.yaw))
+                    .rotateX((float) Math.toRadians(180)) // Compressing Blender vs Engine axes
+                    .scale(2.5f, 2.5f, 2.5f); // Scale factor for the 54MB model
+
+                shader.setUniform("colorTint", new Vector4f(0.5f, 0.52f, 0.55f, 1.0f));
+                shader.setUniform("modelMatrix", model);
+                shipMesh.render(null); // Uses internal alloy texture
+                return;
+            }
+        }
+
+        // 2. FALLBACK VOXEL HULL (Blocky version)
         Matrix4f hull = new Matrix4f()
                 .identity()
                 .translate(e.position.x, e.position.y, e.position.z)
                 .rotateY((float) Math.toRadians(e.yaw))
-                .scale(80f, 6f, 10f); // 80 blocks long
+                .scale(80f, 6f, 10f);
         
-        shader.setUniform("colorTint", new Vector4f(0.5f, 0.52f, 0.55f, 1.0f)); // UNSC Gray
+        shader.setUniform("colorTint", new Vector4f(0.4f, 0.42f, 0.45f, 1.0f));
         shader.setUniform("modelMatrix", hull);
         cubeMesh.render(null);
 
-        // 2. NAMEPLATE: "ENCOURAGEMENT"
-        // Position on the port side of the neck
-        float nx = (float) (e.position.x + Math.sin(Math.toRadians(e.yaw)) * 10);
-        float nz = (float) (e.position.z + Math.cos(Math.toRadians(e.yaw)) * 10);
-        
-        // Use a billboard or a fixed rotation relative to ship
+        // Nameplate
         Matrix4f textModel = new Matrix4f()
                 .identity()
-                .translate(e.position.x + 10, e.position.y + 3.0f, e.position.z + 5.1f) // Relative to hull
+                .translate(e.position.x, e.position.y + 3.0f, e.position.z)
                 .rotateY((float) Math.toRadians(e.yaw + 90))
-                .scale(0.5f, 0.5f, 1.0f);
+                .translate(10, 0, 5.1f)
+                .scale(15, 2, 0.1f);
         
-        // In a real implementation, we'd use the UIRenderer's text drawing logic here,
-        // but for now, we'll use a high-contrast placeholder block to represent the nameplate area.
-        shader.setUniform("colorTint", new Vector4f(0.8f, 0.8f, 0.2f, 1.0f)); // Gold nameplate
-        shader.setUniform("modelMatrix", textModel.scale(15, 2, 0.1f));
+        shader.setUniform("colorTint", new Vector4f(0.8f, 0.8f, 0.2f, 1.0f));
+        shader.setUniform("modelMatrix", textModel);
         cubeMesh.render(null);
     }
 

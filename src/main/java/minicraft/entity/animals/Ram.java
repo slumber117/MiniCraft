@@ -9,9 +9,9 @@ public class Ram extends PassiveAnimal {
     public Ram() { super(EntityType.RAM); }
 
     @Override
-    public void tick(EntityManager manager, minicraft.world.World world, float dt) {
+    public void tick(EntityManager manager, minicraft.world.World world, minicraft.entity.ParticleManager particleManager, float dt) {
         retaliateTimer = Math.max(0, retaliateTimer - dt);
-        super.tick(manager, world, dt);
+        super.tick(manager, world, particleManager, dt);
     }
 
     @Override
