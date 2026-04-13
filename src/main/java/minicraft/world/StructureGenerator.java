@@ -96,16 +96,21 @@ public class StructureGenerator {
         }
         
         // 2. Ground Portal (Mountain Peak Base)
+        int portalY = groundY;
+        for (int ly = 399; ly > 0; ly--) {
+            if (chunk.getBlock(12, ly, 12).solid) { portalY = ly + 1; break; }
+        }
+        
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
                 if (dx == 0 && dz == 0) {
-                    chunk.setBlock(12, groundY, 12, Block.TRANSMAT_PAD);
+                    chunk.setBlock(12, portalY, 12, Block.TRANSMAT_PAD);
                 } else {
-                    chunk.setBlock(12 + dx, groundY, 12 + dz, Block.ALLOY_PLATE);
+                    chunk.setBlock(12 + dx, portalY, 12 + dz, Block.ALLOY_PLATE);
                 }
                 // Clear any terrain that might be blocking the portal base
-                for (int h = 1; h < 4; h++) {
-                    chunk.setBlock(12 + dx, groundY + h, 12 + dz, Block.AIR);
+                for (int h = 1; h < 5; h++) {
+                    chunk.setBlock(12 + dx, portalY + h, 12 + dz, Block.AIR);
                 }
             }
         }

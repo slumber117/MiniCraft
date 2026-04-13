@@ -167,7 +167,12 @@ public class World {
         
         // 1. Guaranteed Shipyards on Highest Mountain Peaks (Centered Check)
         WorldCell centerCell = generator.generate(cx * 16 + 8, cz * 16 + 8);
-        int centerPeakY = getSafeSpawnY(cx * 16 + 8, cz * 16 + 8);
+        
+        // Calculate peak locally since the chunk isn't in the global map yet
+        int centerPeakY = 0;
+        for (int y = Chunk.HEIGHT - 1; y > 0; y--) {
+            if (chunk.getBlock(8, y, 8).solid) { centerPeakY = y + 1; break; }
+        }
         
         if ((centerCell.biome == Biome.MOUNTAINS || centerCell.biome == Biome.SNOWY_PEAKS || centerCell.biome == Biome.HIGHLANDS) && centerPeakY > 160) {
             // Build the shipyard safely above all possible mountain layers (Max peak = ~220)
