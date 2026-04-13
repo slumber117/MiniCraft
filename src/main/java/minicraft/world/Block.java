@@ -78,6 +78,7 @@ public enum Block {
     
     // ── Advanced Scientific blocks ───────────────────────────────────────
     ALLOY_PLATE  (true, 1, 10.0f, "alloy_plate"),
+    TRANSMAT_PAD (false, 1, 10.0f, "alloy_plate"), // Non-solid interaction pad
     SHIP_CONSOLE (true, 0, 2.5f,  "ship_console");
 
     // ── Mesh Types ──

@@ -354,7 +354,7 @@ public class World {
         return new minicraft.math.Vector3f(startX, getSafeSpawnY(startX, startZ), startZ);
     }
 
-    private int getSafeSpawnY(int x, int z) {
+    public int getSafeSpawnY(int x, int z) {
         for (int y = Chunk.HEIGHT - 1; y > 0; y--) {
             Block b = getBlock(x, y, z);
             if (b.solid || b == Block.WATER || b == Block.ICE) return y + 1;

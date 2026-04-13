@@ -83,26 +83,31 @@ public class StructureGenerator {
         // Command Console (Centered)
         chunk.setBlock(8, y + 1, 8, Block.SHIP_CONSOLE);
         
-        // 🏗️ Central Super-Staircase
-        int height = y - groundY;
-        for (int h = 0; h < height; h++) {
-            // Reinforced Central Pillar (4x4)
-            for (int dx = 7; dx <= 8; dx++) {
-                for (int dz = 7; dz <= 8; dz++) {
-                    chunk.setBlock(dx, groundY + h, dz, Block.ALLOY_PLATE);
+        // 🔮 Transmat Portal Network
+        // 1. Sky Portal (Shipyard Deck)
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                if (dx == 0 && dz == 0) {
+                    chunk.setBlock(12, y, 12, Block.TRANSMAT_PAD);
+                } else {
+                    chunk.setBlock(12 + dx, y, 12 + dz, Block.ALLOY_PLATE);
                 }
             }
-
-            // Spiral Steps (Radius 4, perfectly centered)
-            double angle = h * 0.45;
-            int stepX = (int)(Math.cos(angle) * 4) + 8;
-            int stepZ = (int)(Math.sin(angle) * 4) + 8;
-            
-            int lx = Math.max(0, Math.min(15, stepX)); 
-            int lz = Math.max(0, Math.min(15, stepZ));
-            
-            chunk.setBlock(lx, groundY + h, lz, Block.ALLOY_PLATE);
-            if (lx + 1 < 16) chunk.setBlock(lx + 1, groundY + h, lz, Block.ALLOY_PLATE);
+        }
+        
+        // 2. Ground Portal (Mountain Peak Base)
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                if (dx == 0 && dz == 0) {
+                    chunk.setBlock(12, groundY, 12, Block.TRANSMAT_PAD);
+                } else {
+                    chunk.setBlock(12 + dx, groundY, 12 + dz, Block.ALLOY_PLATE);
+                }
+                // Clear any terrain that might be blocking the portal base
+                for (int h = 1; h < 4; h++) {
+                    chunk.setBlock(12 + dx, groundY + h, 12 + dz, Block.AIR);
+                }
+            }
         }
     }
 

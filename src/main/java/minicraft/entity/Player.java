@@ -69,6 +69,29 @@ public class Player extends Entity {
         
         // 4. Effects
         updateHealthEffects(dt);
+        
+        // 5. Environmental Interactions (Transmat Portal)
+        Block floor = world.getBlock((int)position.x, (int)(position.y - 0.5f), (int)position.z);
+        if (floor == Block.TRANSMAT_PAD) {
+            if (position.y < 230) {
+                // Ground portal triggers ascension to Shipyard Sky Deck
+                System.out.println("TRANSMAT: Routing to Orbital Coordinates...");
+                position.y = 241f; // Target altitude
+                velocity.set(0,0,0);
+            } else if (position.y >= 240) {
+                // Sky portal triggers regression to Mountain peak
+                System.out.println("TRANSMAT: Descending to Base Camp...");
+                // Ground teleport drops them off exactly vertically so gravity resolves ground connection
+                // Assuming base camp is anywhere safely below
+                // We use getSafeSpawnY to find the surface exactly underneath the Shipyard center
+                int cx = (int)Math.floor(position.x / 16.0);
+                int cz = (int)Math.floor(position.z / 16.0);
+                
+                // Ensure chunk generation resolves properly without circular dependencies by directly casting
+                position.y = world.getSafeSpawnY(cx*16+12, cz*16+12) + 2; 
+                velocity.set(0,0,0);
+            }
+        }
     }
 
     // Keep the update method for mouse look / independent updates if needed, 
