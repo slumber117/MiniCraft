@@ -71,42 +71,38 @@ public class StructureGenerator {
         chunk.setBlock(x, y + 1, z, Block.CHEST); // Top-tier rewards
     }
 
-    public void generateFloatingFactory(Chunk chunk, int x, int y, int z, int groundY) {
-        // Floating Alloy Platform (16x16) at Y=180
-        for (int dx = 0; dx < 16; dx++) {
-            for (int dz = 0; dz < 16; dz++) {
-                chunk.setBlock(x + dx, y, z + dz, Block.ALLOY_PLATE);
+    public void generateFloatingFactory(Chunk chunk, int y, int groundY) {
+        // Full-Chunk Alloy Platform (16x16) at Y=180
+        // Standardizing to full chunk to prevent clipping and ensure massive scale
+        for (int lx = 0; lx < 16; lx++) {
+            for (int lz = 0; lz < 16; lz++) {
+                chunk.setBlock(lx, y, lz, Block.ALLOY_PLATE);
             }
         }
         
-        // Command Console
-        chunk.setBlock(x + 8, y + 1, z + 8, Block.SHIP_CONSOLE);
+        // Command Console (Centered)
+        chunk.setBlock(8, y + 1, 8, Block.SHIP_CONSOLE);
         
-        // 🏗️ Spiral Staircase (Connecting to mountain)
-        // Tightened and reinforced with a central pillar
+        // 🏗️ Central Super-Staircase
         int height = y - groundY;
         for (int h = 0; h < height; h++) {
-            // Central Pillar for visibility and structure
-            chunk.setBlock(7, groundY + h, 7, Block.ALLOY_PLATE);
-            chunk.setBlock(8, groundY + h, 7, Block.ALLOY_PLATE);
-            chunk.setBlock(7, groundY + h, 8, Block.ALLOY_PLATE);
-            chunk.setBlock(8, groundY + h, 8, Block.ALLOY_PLATE);
+            // Reinforced Central Pillar (4x4)
+            for (int dx = 7; dx <= 8; dx++) {
+                for (int dz = 7; dz <= 8; dz++) {
+                    chunk.setBlock(dx, groundY + h, dz, Block.ALLOY_PLATE);
+                }
+            }
 
-            double angle = h * 0.5;
-            int rsx = (int)(Math.cos(angle) * 3) + 7;
-            int rsz = (int)(Math.sin(angle) * 3) + 7;
+            // Spiral Steps (Radius 4, perfectly centered)
+            double angle = h * 0.45;
+            int stepX = (int)(Math.cos(angle) * 4) + 8;
+            int stepZ = (int)(Math.sin(angle) * 4) + 8;
             
-            int lx = Math.max(0, Math.min(15, rsx)); 
-            int lz = Math.max(0, Math.min(15, rsz));
+            int lx = Math.max(0, Math.min(15, stepX)); 
+            int lz = Math.max(0, Math.min(15, stepZ));
             
             chunk.setBlock(lx, groundY + h, lz, Block.ALLOY_PLATE);
             if (lx + 1 < 16) chunk.setBlock(lx + 1, groundY + h, lz, Block.ALLOY_PLATE);
-        }
-
-        // Docking Pylons (Structural supports)
-        for (int dy = -15; dy < 0; dy++) {
-            chunk.setBlock(x + 2, y + dy, z + 2, Block.ALLOY_PLATE);
-            chunk.setBlock(x + 13, y + dy, z + 13, Block.ALLOY_PLATE);
         }
     }
 

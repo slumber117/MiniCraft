@@ -178,7 +178,7 @@ public class World {
                      
                      // Guaranteed to spawn a Shipyard on high mountain peaks (Y > 150)
                      if (sY > 150) {
-                         structGen.generateFloatingFactory(chunk, sx, 180, sz, sY);
+                         structGen.generateFloatingFactory(chunk, 180, sY);
                          structGen.generateEncouragementShip(chunk, sx + 5, 185, sz);
                      }
                  } else {
