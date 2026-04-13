@@ -71,7 +71,7 @@ public class StructureGenerator {
         chunk.setBlock(x, y + 1, z, Block.CHEST); // Top-tier rewards
     }
 
-    public void generateFloatingFactory(Chunk chunk, int x, int y, int z) {
+    public void generateFloatingFactory(Chunk chunk, int x, int y, int z, int groundY) {
         // Floating Alloy Platform (16x16) at Y=180
         for (int dx = 0; dx < 16; dx++) {
             for (int dz = 0; dz < 16; dz++) {
@@ -82,8 +82,21 @@ public class StructureGenerator {
         // Command Console
         chunk.setBlock(x + 8, y + 1, z + 8, Block.SHIP_CONSOLE);
         
-        // Docking Pylons (Structural supports hanging down)
-        for (int dy = -10; dy < 0; dy++) {
+        // 🏗️ Spiral Staircase (Connecting to mountain)
+        // We start at groundY and circle upward to y
+        int height = y - groundY;
+        for (int h = 0; h < height; h++) {
+            double angle = h * 0.4; // Rotation per step
+            int sx = (int)(Math.cos(angle) * 4) + 8;
+            int sz = (int)(Math.sin(angle) * 4) + 8;
+            
+            // Draw a 2x2 step for stability
+            chunk.setBlock(x + sx, groundY + h, z + sz, Block.ALLOY_PLATE);
+            chunk.setBlock(x + sx + 1, groundY + h, z + sz, Block.ALLOY_PLATE);
+        }
+
+        // Docking Pylons (Structural supports)
+        for (int dy = -15; dy < 0; dy++) {
             chunk.setBlock(x + 2, y + dy, z + 2, Block.ALLOY_PLATE);
             chunk.setBlock(x + 13, y + dy, z + 13, Block.ALLOY_PLATE);
         }

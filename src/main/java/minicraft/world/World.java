@@ -178,7 +178,7 @@ public class World {
                      
                      // 50% chance to spawn a Shipyard above the mountains
                      if (Math.random() < 0.5) {
-                         structGen.generateFloatingFactory(chunk, sx, 180, sz);
+                         structGen.generateFloatingFactory(chunk, sx, 180, sz, sY);
                          structGen.generateEncouragementShip(chunk, sx + 5, 185, sz);
                      }
                  } else {
