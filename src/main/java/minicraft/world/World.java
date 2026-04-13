@@ -335,8 +335,11 @@ public class World {
                         getOrGenerate(cx, cz);
                         System.out.println("Spawn System: Shipyard Target Locked! Coords: " + (cx*16) + ", " + (cz*16));
                         
-                        // Best position for shipyard pad (centralized) matches new height 240
-                        return new minicraft.math.Vector3f(cx * 16 + 8.5f, 241f, cz * 16 + 8.5f);
+                        // Calculate exact ground elevation at portal location
+                        int peakY = getSafeSpawnY(cx * 16 + 12, cz * 16 + 12);
+                        
+                        // Spawn player slightly adjacent to the ground portal (15.5)
+                        return new minicraft.math.Vector3f(cx * 16 + 15.5f, peakY + 1.0f, cz * 16 + 15.5f);
                     }
                 }
             }
