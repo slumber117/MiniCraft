@@ -83,16 +83,24 @@ public class StructureGenerator {
         chunk.setBlock(x + 8, y + 1, z + 8, Block.SHIP_CONSOLE);
         
         // 🏗️ Spiral Staircase (Connecting to mountain)
-        // We start at groundY and circle upward to y
+        // Tightened and reinforced with a central pillar
         int height = y - groundY;
         for (int h = 0; h < height; h++) {
-            double angle = h * 0.4; // Rotation per step
-            int sx = (int)(Math.cos(angle) * 4) + 8;
-            int sz = (int)(Math.sin(angle) * 4) + 8;
+            // Central Pillar for visibility and structure
+            chunk.setBlock(7, groundY + h, 7, Block.ALLOY_PLATE);
+            chunk.setBlock(8, groundY + h, 7, Block.ALLOY_PLATE);
+            chunk.setBlock(7, groundY + h, 8, Block.ALLOY_PLATE);
+            chunk.setBlock(8, groundY + h, 8, Block.ALLOY_PLATE);
+
+            double angle = h * 0.5;
+            int rsx = (int)(Math.cos(angle) * 3) + 7;
+            int rsz = (int)(Math.sin(angle) * 3) + 7;
             
-            // Draw a 2x2 step for stability
-            chunk.setBlock(x + sx, groundY + h, z + sz, Block.ALLOY_PLATE);
-            chunk.setBlock(x + sx + 1, groundY + h, z + sz, Block.ALLOY_PLATE);
+            int lx = Math.max(0, Math.min(15, rsx)); 
+            int lz = Math.max(0, Math.min(15, rsz));
+            
+            chunk.setBlock(lx, groundY + h, lz, Block.ALLOY_PLATE);
+            if (lx + 1 < 16) chunk.setBlock(lx + 1, groundY + h, lz, Block.ALLOY_PLATE);
         }
 
         // Docking Pylons (Structural supports)

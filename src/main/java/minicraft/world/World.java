@@ -176,8 +176,8 @@ public class World {
                  } else if (scell.biome == Biome.MOUNTAINS || scell.biome == Biome.SNOWY_PEAKS) {
                      structGen.generateFortress(chunk, sx, sY, sz, scell.biome);
                      
-                     // 50% chance to spawn a Shipyard above the mountains
-                     if (Math.random() < 0.5) {
+                     // Guaranteed to spawn a Shipyard on high mountain peaks (Y > 150)
+                     if (sY > 150) {
                          structGen.generateFloatingFactory(chunk, sx, 180, sz, sY);
                          structGen.generateEncouragementShip(chunk, sx + 5, 185, sz);
                      }
