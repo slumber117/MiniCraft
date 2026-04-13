@@ -195,6 +195,10 @@ public class World {
                 
                 if (sY > seaLevelY && sY < Chunk.HEIGHT - 60) {
                     Block ground = chunk.getBlock(x, sY - 1, z);
+                    
+                    // CRITICAL: Prevent trees from spawning on water or floating in air
+                    if (ground == Block.WATER || ground == Block.ICE || ground == Block.AIR) continue;
+
                     float treeChance = 0.005f;
                     Block log = Block.OAK_WOOD, leaf = Block.OAK_LEAVES;
 
@@ -297,8 +301,29 @@ public class World {
     }
 
     public minicraft.math.Vector3f findSafeGrassSpawn(int startX, int startZ) {
-        int maxSteps = 100;
+        int maxSteps = 1000; // Increased to find a shipyard
         for (int i = 0; i < maxSteps; i++) {
+            int rx = startX + (int)(Math.random() * 500 - 250);
+            int rz = startZ + (int)(Math.random() * 500 - 250);
+            
+            // Check for Mountain/Snowy Peaks biome which likely has shipyards
+            WorldCell cell = generator.generate(rx, rz);
+            if (cell.biome == Biome.MOUNTAINS || cell.biome == Biome.SNOWY_PEAKS) {
+                int y = getSafeSpawnY(rx, rz);
+                // We want to spawn on the platform if it exists, or just below it
+                Block b = getBlock(rx, 180, rz);
+                if (b == Block.ALLOY_PLATE) {
+                    return new minicraft.math.Vector3f(rx + 0.5f, 181, rz + 0.5f);
+                }
+                
+                Block ground = getBlock(rx, y - 1, rz);
+                if (ground.solid && ground != Block.WATER) {
+                    return new minicraft.math.Vector3f(rx + 0.5f, y, rz + 0.5f);
+                }
+            }
+        }
+        // Fallback to original grass logic
+        for (int i = 0; i < 100; i++) {
             int rx = startX + (int)(Math.random() * 64 - 32);
             int rz = startZ + (int)(Math.random() * 64 - 32);
             int y = getSafeSpawnY(rx, rz);
