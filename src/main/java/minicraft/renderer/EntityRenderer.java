@@ -126,6 +126,11 @@ public class EntityRenderer {
             if (e.getHealth() < e.getMaxHealth() || e.isDead()) {
                 renderHealthBar(e, shader, viewMatrix);
             }
+
+            // Mega-structure Override
+            if (typeName.equalsIgnoreCase("STALWART_SHIP")) {
+                renderStalwartShip(e, shader, viewMatrix);
+            }
         }
     }
 
@@ -140,6 +145,40 @@ public class EntityRenderer {
         shader.setUniform("colorTint", color);
         shader.setUniform("modelMatrix", model);
         mesh.render(null); // Uses internal high-fidelity texture
+    }
+
+    private void renderStalwartShip(Entity e, ShaderProgram shader, Matrix4f viewMatrix) {
+        // Enormous 80-block hull rendering
+        // Front Section (Neck) + Middle (Hangar) + Rear (Engines)
+        
+        // 1. MAIN HULL
+        Matrix4f hull = new Matrix4f()
+                .identity()
+                .translate(e.position.x, e.position.y, e.position.z)
+                .rotateY((float) Math.toRadians(e.yaw))
+                .scale(80f, 6f, 10f); // 80 blocks long
+        
+        shader.setUniform("colorTint", new Vector4f(0.5f, 0.52f, 0.55f, 1.0f)); // UNSC Gray
+        shader.setUniform("modelMatrix", hull);
+        cubeMesh.render(null);
+
+        // 2. NAMEPLATE: "ENCOURAGEMENT"
+        // Position on the port side of the neck
+        float nx = (float) (e.position.x + Math.sin(Math.toRadians(e.yaw)) * 10);
+        float nz = (float) (e.position.z + Math.cos(Math.toRadians(e.yaw)) * 10);
+        
+        // Use a billboard or a fixed rotation relative to ship
+        Matrix4f textModel = new Matrix4f()
+                .identity()
+                .translate(e.position.x + 10, e.position.y + 3.0f, e.position.z + 5.1f) // Relative to hull
+                .rotateY((float) Math.toRadians(e.yaw + 90))
+                .scale(0.5f, 0.5f, 1.0f);
+        
+        // In a real implementation, we'd use the UIRenderer's text drawing logic here,
+        // but for now, we'll use a high-contrast placeholder block to represent the nameplate area.
+        shader.setUniform("colorTint", new Vector4f(0.8f, 0.8f, 0.2f, 1.0f)); // Gold nameplate
+        shader.setUniform("modelMatrix", textModel.scale(15, 2, 0.1f));
+        cubeMesh.render(null);
     }
 
     private void renderHealthBar(Entity e, ShaderProgram shader, Matrix4f viewMatrix) {

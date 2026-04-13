@@ -99,41 +99,45 @@ public class UIRenderer {
             return;
         }
 
-        // 1. Draw Crosshair
-        drawCrosshair(shader, width / 2f, height / 2f);
+        if (player.isRiding()) {
+            renderPilotHUD(player, shader, width, height);
+        } else {
+            // 1. Draw Crosshair
+            drawCrosshair(shader, width / 2f, height / 2f);
 
-        // 2. Draw HUD Elements (Bottom Left)
-        float margin = 30;
-        float barWidth = 220;
-        float barHeight = 14;
-        float spacing = 32; // Increased spacing for icons
-        float currentY = height - margin - barHeight;
+            // 2. Draw HUD Elements (Bottom Left)
+            float margin = 30;
+            float barWidth = 220;
+            float barHeight = 14;
+            float spacing = 32; // Increased spacing for icons
+            float currentY = height - margin - barHeight;
 
-        // Thirst
-        drawPremiumBar(shader, margin, currentY, barWidth, barHeight, player.thirst / player.maxThirst, thirstColor, thirstColor2, "W");
-        currentY -= spacing;
-        
-        // Hunger
-        drawPremiumBar(shader, margin, currentY, barWidth, barHeight, player.hunger / player.maxHunger, hungerColor, hungerColor2, "F");
-        currentY -= spacing;
-        
-        // Health
-        drawPremiumBar(shader, margin, currentY, barWidth, barHeight, player.getHealth() / player.getMaxHealth(), healthColor, healthColor2, "V");
+            // Thirst
+            drawPremiumBar(shader, margin, currentY, barWidth, barHeight, player.thirst / player.maxThirst, thirstColor, thirstColor2, "W");
+            currentY -= spacing;
+            
+            // Hunger
+            drawPremiumBar(shader, margin, currentY, barWidth, barHeight, player.hunger / player.maxHunger, hungerColor, hungerColor2, "F");
+            currentY -= spacing;
+            
+            // Health
+            drawPremiumBar(shader, margin, currentY, barWidth, barHeight, player.getHealth() / player.getMaxHealth(), healthColor, healthColor2, "V");
 
-        // --- Offhand Slot Indicator ---
-        if (player.inventory.getOffhandItem() != null) {
-            drawRectInternal(shader, margin, currentY - 50, 40, 40, glassBgColor);
-            drawText(shader, "L", margin + 14, currentY - 40, 0.8f); // Left hand icon
-        }
+            // --- Offhand Slot Indicator ---
+            if (player.inventory.getOffhandItem() != null) {
+                drawRectInternal(shader, margin, currentY - 50, 40, 40, glassBgColor);
+                drawText(shader, "L", margin + 14, currentY - 40, 0.8f); // Left hand icon
+            }
 
-        // 3. Temperature HUD (Top Right)
-        drawTemperatureHUD(player, shader, width, margin);
+            // 3. Temperature HUD (Top Right)
+            drawTemperatureHUD(player, shader, width, margin);
 
-        // 4. Hotbar
-        renderHotbar(player, shader, width, height);
-        
-        if (player.damageFlashTimer > 0) {
-            drawDamageVignette(shader, width, height, player.damageFlashTimer);
+            // 4. Hotbar
+            renderHotbar(player, shader, width, height);
+            
+            if (player.damageFlashTimer > 0) {
+                drawDamageVignette(shader, width, height, player.damageFlashTimer);
+            }
         }
 
         glDisable(GL_BLEND);
@@ -476,6 +480,32 @@ public class UIRenderer {
 
         drawText(shader, tempText, x, y + 2, 1.0f);
         drawText(shader, player.tempState, x, y + 22, 0.6f, stateColor);
+    }
+
+    private void renderPilotHUD(Player player, ShaderProgram shader, int width, int height) {
+        minicraft.entity.ship.ShipEntity ship = player.getRidingShip();
+        if (ship == null) return;
+
+        float hudW = 400;
+        float hudH = 110;
+        float sx = (width - hudW) / 2f;
+        float sy = 40;
+
+        // 1. Background Hull Glass
+        drawRectInternal(shader, sx, sy, hudW, hudH, glassBgColor);
+        drawRectInternal(shader, sx, sy, hudW, 1, glassBorderColor);
+        drawRectInternal(shader, sx, sy + hudH - 1, hudW, 1, glassBorderColor);
+
+        // 2. Telemetry Labels
+        drawText(shader, "VESSEL: UNSC ENCOURAGEMENT", sx + 20, sy + 20, 0.9f, new Vector4f(1, 1, 0, 1));
+        drawText(shader, "STATUS: NEURAL LINK ACTIVE", sx + 20, sy + 45, 0.6f, new Vector4f(0.4f, 1, 0.4f, 1));
+        
+        String altStr = String.format("ALTITUDE: %d M", (int)ship.position.y);
+        drawText(shader, altStr, sx + 20, sy + 70, 0.7f, textColor);
+
+        // 3. Heading Compass (Simplified)
+        String head = String.format("HEADING: %d°", (int)(ship.yaw % 360));
+        drawText(shader, head, sx + hudW - 160, sy + 70, 0.7f, highlightColor);
     }
 
     private void drawRectInternal(ShaderProgram shader, float x, float y, float w, float h, Vector4f color, String textureName) {

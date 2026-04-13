@@ -11,6 +11,9 @@ public class Player extends Entity {
     public float hunger = 100f;
     public float maxThirst= 100f, thirst = 100f;
     
+    // Piloting
+    private minicraft.entity.ship.ShipEntity ridingShip = null;
+    
     // Combat Stats
     public float damageFlashTimer = 0f;
     private float invincibilityTimer = 0f;
@@ -176,17 +179,26 @@ public class Player extends Entity {
     public void setPosition(float x, float y, float z) { position.set(x, y, z); }
 
     private void updateEnvironment(float dt) {
-        float altitude = camera.getPosition().y;
+        float altitude = position.y;
         float baseTemp = 36.6f;
-        if (altitude > 80) {
-            temperature = baseTemp - (altitude - 80) * 0.1f;
+        
+        // 1. Altitude Cold Factor (Starts at 120, gets lethal by 200)
+        float altitudeColdFactor = Math.max(0, (altitude - 120) * 0.15f);
+        
+        // 2. Armor Insulation Check
+        boolean isInsulated = inventory.getTotalDefense() > 0.05f; // Leather or better
+        if (isInsulated) altitudeColdFactor *= 0.1f; // 90% protection
+
+        if (altitude > 120) {
+            temperature = baseTemp - altitudeColdFactor;
         } else if (altitude < 60) {
             temperature = baseTemp + (60 - altitude) * 0.1f;
         } else {
             temperature = baseTemp;
         }
 
-        if (temperature < 35.0f) tempState = "Cold";
+        if (temperature < 32.0f) tempState = "Severe Hypothermia";
+        else if (temperature < 35.0f) tempState = "Cold";
         else if (temperature > 38.0f) tempState = "Too Warm";
         else tempState = "Normal";
     }
@@ -194,6 +206,8 @@ public class Player extends Entity {
     private void updateHealthEffects(float dt) {
         if (hunger <= 0 || thirst <= 0 || tempState.equals("Cold") || tempState.equals("Too Warm")) {
             health = Math.max(0, health - 0.5f * dt);
+        } else if (tempState.equals("Severe Hypothermia")) {
+            health = Math.max(0, health - 2.5f * dt); // Lethal damage
         } else {
             if (hunger > 80 && thirst > 80) {
                 health = Math.min(maxHealth, health + 0.1f * dt);
@@ -203,6 +217,18 @@ public class Player extends Entity {
 
     public Camera getCamera() {
         return camera;
+    }
+
+    public void setRiding(minicraft.entity.ship.ShipEntity ship) {
+        this.ridingShip = ship;
+    }
+
+    public minicraft.entity.ship.ShipEntity getRidingShip() {
+        return ridingShip;
+    }
+
+    public boolean isRiding() {
+        return ridingShip != null;
     }
 
     public void handleMouseInput(float dx, float dy) {

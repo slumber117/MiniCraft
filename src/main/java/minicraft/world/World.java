@@ -175,6 +175,12 @@ public class World {
                      structGen.generateVillage(chunk, sx, sY, sz, scell.biome);
                  } else if (scell.biome == Biome.MOUNTAINS || scell.biome == Biome.SNOWY_PEAKS) {
                      structGen.generateFortress(chunk, sx, sY, sz, scell.biome);
+                     
+                     // 50% chance to spawn a Shipyard above the mountains
+                     if (Math.random() < 0.5) {
+                         structGen.generateFloatingFactory(chunk, sx, 180, sz);
+                         structGen.generateEncouragementShip(chunk, sx + 5, 185, sz);
+                     }
                  } else {
                      structGen.generateCastle(chunk, sx, sY, sz, scell.biome);
                  }

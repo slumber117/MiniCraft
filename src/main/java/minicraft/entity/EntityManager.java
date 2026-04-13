@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import minicraft.entity.ship.ShipEntity;
 
 /**
  * Manages all active entities in the world.
@@ -108,6 +109,8 @@ public class EntityManager {
             // Monsters
             case ZOMBIE: return new minicraft.entity.monsters.Zombie();
             case SPIDER: return new minicraft.entity.monsters.Spider();
+            // Megastructures
+            case STALWART_SHIP: return new ShipEntity(type);
             // Resources
             case ITEM:   return new ItemEntity(minicraft.world.Block.DIRT); // Default, usually overridden
             default:     throw new IllegalArgumentException("Unknown entity type: " + type);

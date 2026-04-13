@@ -70,4 +70,38 @@ public class StructureGenerator {
         }
         chunk.setBlock(x, y + 1, z, Block.CHEST); // Top-tier rewards
     }
+
+    public void generateFloatingFactory(Chunk chunk, int x, int y, int z) {
+        // Floating Alloy Platform (16x16) at Y=180
+        for (int dx = 0; dx < 16; dx++) {
+            for (int dz = 0; dz < 16; dz++) {
+                chunk.setBlock(x + dx, y, z + dz, Block.ALLOY_PLATE);
+            }
+        }
+        
+        // Command Console
+        chunk.setBlock(x + 8, y + 1, z + 8, Block.SHIP_CONSOLE);
+        
+        // Docking Pylons (Structural supports hanging down)
+        for (int dy = -10; dy < 0; dy++) {
+            chunk.setBlock(x + 2, y + dy, z + 2, Block.ALLOY_PLATE);
+            chunk.setBlock(x + 13, y + dy, z + 13, Block.ALLOY_PLATE);
+        }
+    }
+
+    public void generateEncouragementShip(Chunk chunk, int x, int y, int z) {
+        // 80-block megastructure hull (Simplified profile for construction bay)
+        // This is a placeholder structure representing the "Build" state.
+        for (int dx = 0; dx < 80; dx++) {
+            for (int dy = 0; dy < 8; dy++) {
+                for (int dz = -4; dz <= 4; dz++) {
+                    // Tapered Stalwart silhouette
+                    int width = (dx < 20) ? 2 : (dx > 60 ? 3 : 5);
+                    if (Math.abs(dz) <= width) {
+                        chunk.setBlock(x + dx, y + dy, z + dz, Block.ALLOY_PLATE);
+                    }
+                }
+            }
+        }
+    }
 }

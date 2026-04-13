@@ -414,8 +414,21 @@ public class Main {
             world.update((float) dt, player, particleManager);
             particleManager.update((float) dt);
 
-            // Sync Camera to Player Eye-Level after physics
-            camera.setPosition(player.position.x, player.position.y + 1.6f, player.position.z);
+            // Sync Camera after physics
+            if (player.isRiding()) {
+                minicraft.entity.ship.ShipEntity ship = player.getRidingShip();
+                float ryaw = (float) Math.toRadians(ship.yaw);
+                float dist = 40.0f; // Chase distance for 80-block ship
+                
+                float cx = ship.position.x + (float)Math.sin(ryaw) * dist;
+                float cy = ship.position.y + 12.0f;
+                float cz = ship.position.z + (float)Math.cos(ryaw) * dist;
+                
+                camera.setPosition(cx, cy, cz);
+                camera.setRotation(15.0f, ship.yaw, 0); // Cinematic elevated view
+            } else {
+                camera.setPosition(player.position.x, player.position.y + 1.6f, player.position.z);
+            }
 
             // Update visible chunks based on camera position
             int cx = (int) Math.floor(player.position.x / 16.0);
@@ -529,8 +542,20 @@ public class Main {
         }
 
         // Apply to player velocity (horizontal)
-        player.velocity.x = dx;
-        player.velocity.z = dz;
+        if (player.isRiding()) {
+            boolean w = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
+            boolean s = glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
+            boolean a = glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
+            boolean d = glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
+            boolean space = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+            boolean shift = (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
+            
+            player.getRidingShip().handleInput(w, s, a, d, space, shift, dt);
+            player.velocity.set(0, 0, 0); // No independent walking
+        } else {
+            player.velocity.x = dx;
+            player.velocity.z = dz;
+        }
 
         // Jump
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && player.isGrounded) {
@@ -753,7 +778,7 @@ public class Main {
 
             // 1. INTERACTION CHECK
             Block targeted = world.getBlock(gx, gy, gz);
-            if (targeted == Block.CHEST || targeted == Block.CRAFTING_TABLE || targeted == Block.FURNACE) {
+            if (targeted == Block.CHEST || targeted == Block.CRAFTING_TABLE || targeted == Block.FURNACE || targeted == Block.SHIP_CONSOLE) {
                 if (targeted == Block.CHEST) {
                     activeChest = world.getContainer(gx, gy, gz);
                     chestOpen = true;
@@ -761,6 +786,14 @@ public class Main {
                 } else if (targeted == Block.CRAFTING_TABLE) {
                     craftingOpen = true;
                     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                } else if (targeted == Block.SHIP_CONSOLE) {
+                    // LAUNCH SEQUENCE
+                    world.setBlock(gx, gy, gz, Block.AIR);
+                    // Spawn ship entity at Y=190, offset from the factory to avoid collision
+                    minicraft.entity.ship.ShipEntity ship = (minicraft.entity.ship.ShipEntity) entityManager.spawnAt(EntityType.STALWART_SHIP, gx + 20, 190, gz);
+                    player.setRiding(ship);
+                    ship.setPassenger(player);
+                    System.out.println("LAUNCH COMPLETE: UNSC ENCOURAGEMENT DEPLOYED");
                 }
                 return; // Interaction handled
             }

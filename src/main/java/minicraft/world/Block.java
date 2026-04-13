@@ -74,7 +74,11 @@ public enum Block {
     TORCH        (false, 0, 0f,   "torch", MeshType.CROSS),
     CACTUS       (true,  0, 0.5f, "cactus"),
     SEA_WEED     (false, 0, 0f,   "sea_weed", MeshType.CROSS),
-    CORAL        (true,  0, 0.3f, "coral");
+    CORAL        (true,  0, 0.3f, "coral"),
+    
+    // ── Advanced Scientific blocks ───────────────────────────────────────
+    ALLOY_PLATE  (true, 1, 10.0f, "alloy_plate"),
+    SHIP_CONSOLE (true, 0, 2.5f,  "ship_console");
 
     // ── Mesh Types ──
     public enum MeshType { CUBE, CROSS }
