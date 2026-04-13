@@ -164,25 +164,26 @@ public class World {
         }
 
         // STRUCTURES & RE-POPULATION
-        if (Math.random() < 0.08) {
-             int sx = random.nextInt(8) + 4;
-             int sz = random.nextInt(8) + 4;
-             WorldCell scell = generator.generate(sx + cx * 16, sz + cz * 16);
-             int sY = getSafeSpawnY(sx + cx * 16, sz + cz * 16);
+        // STRUCTURES & RE-POPULATION
+        int sx = random.nextInt(8) + 4;
+        int sz = random.nextInt(8) + 4;
+        WorldCell scell = generator.generate(sx + cx * 16, sz + cz * 16);
+        int structY = getSafeSpawnY(sx + cx * 16, sz + cz * 16);
 
-             if (sY > seaLevelY + 5 && sY < Chunk.HEIGHT - 40) {
+        // 1. Guaranteed Shipyards on Highest Mountain Peaks
+        if ((scell.biome == Biome.MOUNTAINS || scell.biome == Biome.SNOWY_PEAKS) && structY > 160) {
+            structGen.generateFloatingFactory(chunk, 180, structY);
+            structGen.generateEncouragementShip(chunk, sx + 5, 185, sz);
+        }
+        // 2. Random Fortresses, Castles, and Villages (8% chance)
+        else if (Math.random() < 0.08) {
+             if (structY > seaLevelY + 5 && structY < Chunk.HEIGHT - 40) {
                  if (scell.biome == Biome.SAVANNA || scell.biome == Biome.GRASSLAND) {
-                     structGen.generateVillage(chunk, sx, sY, sz, scell.biome);
+                     structGen.generateVillage(chunk, sx, structY, sz, scell.biome);
                  } else if (scell.biome == Biome.MOUNTAINS || scell.biome == Biome.SNOWY_PEAKS) {
-                     structGen.generateFortress(chunk, sx, sY, sz, scell.biome);
-                     
-                     // Guaranteed to spawn a Shipyard on high mountain peaks (Y > 150)
-                     if (sY > 150) {
-                         structGen.generateFloatingFactory(chunk, 180, sY);
-                         structGen.generateEncouragementShip(chunk, sx + 5, 185, sz);
-                     }
+                     structGen.generateFortress(chunk, sx, structY, sz, scell.biome);
                  } else {
-                     structGen.generateCastle(chunk, sx, sY, sz, scell.biome);
+                     structGen.generateCastle(chunk, sx, structY, sz, scell.biome);
                  }
              }
         }
@@ -310,15 +311,15 @@ public class World {
             WorldCell cell = generator.generate(rx, rz);
             if (cell.biome == Biome.MOUNTAINS || cell.biome == Biome.SNOWY_PEAKS) {
                 int y = getSafeSpawnY(rx, rz);
-                // We want to spawn on the platform if it exists, or just below it
-                Block b = getBlock(rx, 180, rz);
-                if (b == Block.ALLOY_PLATE) {
-                    return new minicraft.math.Vector3f(rx + 0.5f, 181, rz + 0.5f);
-                }
                 
-                Block ground = getBlock(rx, y - 1, rz);
-                if (ground.solid && ground != Block.WATER) {
-                    return new minicraft.math.Vector3f(rx + 0.5f, y, rz + 0.5f);
+                // If it's a high peak, a shipyard is guaranteed to build here
+                if (y > 160) {
+                    Block b = getBlock(rx, 180, rz); // Triggers chunk generation
+                    
+                    int cx = (int)Math.floor(rx / 16.0);
+                    int cz = (int)Math.floor(rz / 16.0);
+                    // Best position for shipyard pad
+                    return new minicraft.math.Vector3f(cx * 16 + 8.5f, 181, cz * 16 + 8.5f);
                 }
             }
         }
