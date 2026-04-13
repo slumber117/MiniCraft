@@ -304,7 +304,7 @@ public class Main {
                 world.getOrGenerate(x, z); 
 
         minicraft.math.Vector3f spawnPos = world.findSafeGrassSpawn(8, 8);
-        System.out.println("Spawn System: Discovered grass clearing at " + spawnPos);
+        System.out.println("Spawn System: Transmat to location: " + spawnPos);
         
         // Player (feet)
         player = new Player(camera);

@@ -84,10 +84,10 @@ public enum Biome {
         }
 
         // ── High-altitude: override all climate rules ──────────────────────
-        if (elevation > 0.78f) {
+        if (elevation > 0.60f) {
             return temperature < 0.30f ? SNOWY_PEAKS : MOUNTAINS;
         }
-        if (elevation > 0.60f) {
+        if (elevation > 0.45f) {
             return temperature < 0.35f ? SNOWY_PEAKS : HIGHLANDS;
         }
 

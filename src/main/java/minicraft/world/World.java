@@ -171,7 +171,7 @@ public class World {
         int structY = getSafeSpawnY(sx + cx * 16, sz + cz * 16);
 
         // 1. Guaranteed Shipyards on Highest Mountain Peaks
-        if ((scell.biome == Biome.MOUNTAINS || scell.biome == Biome.SNOWY_PEAKS) && structY > 160) {
+        if ((scell.biome == Biome.MOUNTAINS || scell.biome == Biome.SNOWY_PEAKS || scell.biome == Biome.HIGHLANDS) && structY > 160) {
             structGen.generateFloatingFactory(chunk, 180, structY);
             structGen.generateEncouragementShip(chunk, sx + 5, 185, sz);
         }
@@ -302,15 +302,16 @@ public class World {
     }
 
     public minicraft.math.Vector3f findSafeGrassSpawn(int startX, int startZ) {
-        int maxSteps = 1000; // Increased to find a shipyard
+        int maxSteps = 50000; // Massive search to guarantee finding a mountain continent
         for (int i = 0; i < maxSteps; i++) {
-            int rx = startX + (int)(Math.random() * 500 - 250);
-            int rz = startZ + (int)(Math.random() * 500 - 250);
+            // Expand search radius to 20,000 blocks
+            int rx = startX + (int)(Math.random() * 40000 - 20000);
+            int rz = startZ + (int)(Math.random() * 40000 - 20000);
             
-            // Check for Mountain/Snowy Peaks biome which likely has shipyards
+            // Fast mathematical check using the noise engine
             WorldCell cell = generator.generate(rx, rz);
-            if (cell.biome == Biome.MOUNTAINS || cell.biome == Biome.SNOWY_PEAKS) {
-                // Calculate height natively from generator without forcing chunk load
+            if (cell.biome == Biome.MOUNTAINS || cell.biome == Biome.SNOWY_PEAKS || cell.biome == Biome.HIGHLANDS) {
+                // Calculate height natively
                 int predictedSurfaceY = (int) (cell.elevation * Chunk.HEIGHT);
                 
                 // If it's a high peak, a shipyard is guaranteed to build here
@@ -320,9 +321,10 @@ public class World {
                     
                     // Force the chunk to exist before the player spawns into it
                     getOrGenerate(cx, cz);
+                    System.out.println("Spawn System: Shipyard Target Locked! Coords: " + (cx*16) + ", " + (cz*16));
                     
                     // Best position for shipyard pad (centralized)
-                    return new minicraft.math.Vector3f(cx * 16 + 8.5f, 181, cz * 16 + 8.5f);
+                    return new minicraft.math.Vector3f(cx * 16 + 8.5f, 181f, cz * 16 + 8.5f);
                 }
             }
         }
