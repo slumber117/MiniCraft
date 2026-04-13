@@ -164,19 +164,26 @@ public class World {
         }
 
         // STRUCTURES & RE-POPULATION
-        // STRUCTURES & RE-POPULATION
+        
+        // 1. Guaranteed Shipyards on Highest Mountain Peaks (Centered Check)
+        WorldCell centerCell = generator.generate(cx * 16 + 8, cz * 16 + 8);
+        int centerPeakY = getSafeSpawnY(cx * 16 + 8, cz * 16 + 8);
+        
+        if ((centerCell.biome == Biome.MOUNTAINS || centerCell.biome == Biome.SNOWY_PEAKS || centerCell.biome == Biome.HIGHLANDS) && centerPeakY > 160) {
+            // Build the shipyard safely above all possible mountain layers (Max peak = ~220)
+            structGen.generateFloatingFactory(chunk, 240, centerPeakY);
+            // Spawn ship slightly elevated and offset
+            structGen.generateEncouragementShip(chunk, 5, 245, 8); 
+        }
+
+        // 2. Random Fortresses, Castles, and Villages (8% chance)
+        // Use random offset for organic placement
         int sx = random.nextInt(8) + 4;
         int sz = random.nextInt(8) + 4;
         WorldCell scell = generator.generate(sx + cx * 16, sz + cz * 16);
         int structY = getSafeSpawnY(sx + cx * 16, sz + cz * 16);
 
-        // 1. Guaranteed Shipyards on Highest Mountain Peaks
-        if ((scell.biome == Biome.MOUNTAINS || scell.biome == Biome.SNOWY_PEAKS || scell.biome == Biome.HIGHLANDS) && structY > 160) {
-            structGen.generateFloatingFactory(chunk, 180, structY);
-            structGen.generateEncouragementShip(chunk, sx + 5, 185, sz);
-        }
-        // 2. Random Fortresses, Castles, and Villages (8% chance)
-        else if (Math.random() < 0.08) {
+        if (Math.random() < 0.08) {
              if (structY > seaLevelY + 5 && structY < Chunk.HEIGHT - 40) {
                  if (scell.biome == Biome.SAVANNA || scell.biome == Biome.GRASSLAND) {
                      structGen.generateVillage(chunk, sx, structY, sz, scell.biome);
@@ -319,12 +326,18 @@ public class World {
                     int cx = (int)Math.floor(rx / 16.0);
                     int cz = (int)Math.floor(rz / 16.0);
                     
-                    // Force the chunk to exist before the player spawns into it
-                    getOrGenerate(cx, cz);
-                    System.out.println("Spawn System: Shipyard Target Locked! Coords: " + (cx*16) + ", " + (cz*16));
-                    
-                    // Best position for shipyard pad (centralized)
-                    return new minicraft.math.Vector3f(cx * 16 + 8.5f, 181f, cz * 16 + 8.5f);
+                    // Center the check just like chunk generation does!
+                    WorldCell syncCell = generator.generate(cx * 16 + 8, cz * 16 + 8);
+                    if ((syncCell.biome == Biome.MOUNTAINS || syncCell.biome == Biome.SNOWY_PEAKS || syncCell.biome == Biome.HIGHLANDS) 
+                        && (int)(syncCell.elevation * Chunk.HEIGHT) > 160) {
+                        
+                        // Force the chunk to exist before the player spawns into it
+                        getOrGenerate(cx, cz);
+                        System.out.println("Spawn System: Shipyard Target Locked! Coords: " + (cx*16) + ", " + (cz*16));
+                        
+                        // Best position for shipyard pad (centralized) matches new height 240
+                        return new minicraft.math.Vector3f(cx * 16 + 8.5f, 241f, cz * 16 + 8.5f);
+                    }
                 }
             }
         }
