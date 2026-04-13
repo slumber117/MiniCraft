@@ -75,7 +75,11 @@ public class Player extends Entity {
         updateHealthEffects(dt);
         
         // 5. Environmental Interactions (Transmat Portal)
-        Block floor = world.getBlock((int)position.x, (int)(position.y - 0.5f), (int)position.z);
+        Block floor = world.getBlock(
+                (int)Math.floor(position.x), 
+                (int)Math.floor(position.y - 0.5f), 
+                (int)Math.floor(position.z)
+        );
         if (floor == Block.TRANSMAT_PAD && transmatCooldown <= 0f) {
             if (position.y < 230) {
                 // Ground portal triggers ascension to Shipyard Sky Deck
