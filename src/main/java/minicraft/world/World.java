@@ -310,15 +310,18 @@ public class World {
             // Check for Mountain/Snowy Peaks biome which likely has shipyards
             WorldCell cell = generator.generate(rx, rz);
             if (cell.biome == Biome.MOUNTAINS || cell.biome == Biome.SNOWY_PEAKS) {
-                int y = getSafeSpawnY(rx, rz);
+                // Calculate height natively from generator without forcing chunk load
+                int predictedSurfaceY = (int) (cell.elevation * Chunk.HEIGHT);
                 
                 // If it's a high peak, a shipyard is guaranteed to build here
-                if (y > 160) {
-                    Block b = getBlock(rx, 180, rz); // Triggers chunk generation
-                    
+                if (predictedSurfaceY > 160) {
                     int cx = (int)Math.floor(rx / 16.0);
                     int cz = (int)Math.floor(rz / 16.0);
-                    // Best position for shipyard pad
+                    
+                    // Force the chunk to exist before the player spawns into it
+                    getOrGenerate(cx, cz);
+                    
+                    // Best position for shipyard pad (centralized)
                     return new minicraft.math.Vector3f(cx * 16 + 8.5f, 181, cz * 16 + 8.5f);
                 }
             }
