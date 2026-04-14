@@ -24,7 +24,6 @@ import minicraft.world.Block;
 import minicraft.world.WorldGenerator;
 import minicraft.world.WorldCell;
 import minicraft.world.Biome;
-import minicraft.entity.ship.ShipEntity;
 import minicraft.core.GameLoop;
 import minicraft.ship.ShipRegistry;
 import minicraft.ship.ShipDefinition;
@@ -128,7 +127,6 @@ public class Main {
 
     private boolean prevC = false, prevE = false;
     private boolean prevEnter = false, prevUp = false, prevDown = false;
-    private boolean prevArrowLeft = false, prevArrowRight = false;
 
     // ── Particles ─────────────────────────────────────────────────────────
     public minicraft.entity.ParticleManager particleManager;
@@ -348,7 +346,7 @@ public class Main {
 
         // ── Register fixed-tick systems ───────────────────────────────────
         gameLoop.addTickable(dt -> {
-            entityManager.update(dt, world, particleManager);
+            entityManager.update(dt, world);
             world.update(dt, player, particleManager);
             particleManager.update(dt);
         });
@@ -420,19 +418,12 @@ public class Main {
             // NOTE: player.isRiding() and getRidingShip() are stubbed until
             // Phase 3 builds ShipEntity. The else-branch handles all cases now.
             if (player.isRiding()) {
-                minicraft.entity.ship.ShipEntity ship = player.getRidingShip();
-                float ryaw = (float) Math.toRadians(ship.yaw);
-                float dist = 40.0f;
-                camera.setPosition(
-                        ship.position.x + (float) Math.sin(ryaw) * dist,
-                        ship.position.y + 12.0f,
-                        ship.position.z + (float) Math.cos(ryaw) * dist);
-                camera.setRotation(15.0f, ship.yaw, 0);
+                // Phase 3: ShipEntity camera sync goes here
+                // minicraft.entity.ship.ShipEntity ship = player.getRidingShip();
+                // ...
+                camera.setPosition(player.position.x, player.position.y + 1.6f, player.position.z);
             } else {
-                camera.setPosition(
-                        player.position.x,
-                        player.position.y + 1.6f,
-                        player.position.z);
+                camera.setPosition(player.position.x, player.position.y + 1.6f, player.position.z);
             }
 
             // ── 5. Chunk streaming ────────────────────────────────────────
@@ -532,14 +523,8 @@ public class Main {
 
         System.out.println("LOGISTICS NETWORK: " + def.displayName + " DEPLOYED.");
 
-        // Spawn actual driveable entity
-        ShipEntity ship = new ShipEntity(EntityType.STALWART_SHIP, def);
-        ship.position.set(wx, wy, wz);
-        entityManager.spawn(ship);
-        
-        // Mount player
-        player.setRiding(ship);
-        ship.setPassenger(player);
+        // Phase 3 will add:
+        // entityManager.spawn(new ShipEntity(def, wx, wy, wz));
     }
 
     private void spawnShipFromSchematic(ShipDefinition def, int wx, int wy, int wz) {
@@ -588,39 +573,7 @@ public class Main {
         }
 
         if (player.isRiding()) {
-            boolean w = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
-            boolean s = glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
-            boolean a = glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
-            boolean d = glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
-            boolean space = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
-            boolean shift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS
-                    || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
-                    
-            minicraft.entity.ship.ShipEntity ship = player.getRidingShip();
-            ship.handleInput(w, s, a, d, space, shift, dt);
-            
-            // Weapon Switching
-            boolean arrowL = glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS;
-            boolean arrowR = glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS;
-            if (arrowL && !prevArrowLeft) ship.prevWeapon();
-            if (arrowR && !prevArrowRight) ship.nextWeapon();
-            prevArrowLeft = arrowL;
-            prevArrowRight = arrowR;
-            
-            // Firing
-            boolean mouseL = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-            if (mouseL && !prevMouseLeftDown) {
-                float camYaw = (float) Math.toRadians(camera.getRotation().y);
-                float camPitch = (float) Math.toRadians(camera.getRotation().x);
-                org.joml.Vector3f lookDir = new org.joml.Vector3f(
-                    (float) (Math.sin(camYaw) * Math.cos(camPitch)),
-                    (float) (-Math.sin(camPitch)),
-                    (float) (-Math.cos(camYaw) * Math.cos(camPitch))
-                );
-                ship.fireActiveWeapon(entityManager, world, particleManager, lookDir);
-            }
-            prevMouseLeftDown = mouseL;
-
+            // Phase 3: ship input routing goes here once ShipEntity is built
             player.velocity.set(0, 0, 0);
         } else {
             player.velocity.x = dx;
