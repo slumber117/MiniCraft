@@ -36,6 +36,12 @@ public class UIRenderer {
     private final Vector4f highlightColor   = new Vector4f(1.00f, 1.00f, 1.00f, 0.15f);
     private final Vector4f textColor        = new Vector4f(1.00f, 1.00f, 1.00f, 1.0f);
     private final Vector4f crosshairColor   = new Vector4f(1.00f, 1.00f, 1.00f, 0.8f);
+    
+    // Tactical HUD Colors
+    private final Vector4f tactOrange = new Vector4f(0.98f, 0.45f, 0.08f, 1.0f);
+    private final Vector4f tactBlue   = new Vector4f(0.38f, 0.65f, 0.98f, 1.0f);
+    private final Vector4f tactGreen  = new Vector4f(0.13f, 0.77f, 0.36f, 1.0f);
+    private final Vector4f tactDim    = new Vector4f(0.1f, 0.1f, 0.1f, 0.6f);
 
     public UIRenderer(TextureRegistry textures) {
         this.textures = textures;
@@ -103,6 +109,14 @@ public class UIRenderer {
 
         if (main.shipConsoleOpen) {
             renderShipConsoleScreen(player, shader, width, height, main);
+            glDisable(GL_BLEND);
+            glEnable(GL_CULL_FACE);
+            glEnable(GL_DEPTH_TEST);
+            return;
+        }
+
+        if (main.furnaceOpen || main.cookerOpen) {
+            renderFacilityScreen(player, shader, width, height, main);
             glDisable(GL_BLEND);
             glEnable(GL_CULL_FACE);
             glEnable(GL_DEPTH_TEST);
@@ -339,6 +353,73 @@ public class UIRenderer {
         drawRectInternal(shader, mouseX, mouseY, 12, 12, new Vector4f(0, 1, 1, 1));
     }
 
+    private void renderFacilityScreen(Player player, ShaderProgram shader, int width, int height, minicraft.Main main) {
+        if (main.activeFacility == null) return;
+        
+        // Darken background
+        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.75f));
+        
+        float panelW = 700;
+        float panelH = 500;
+        float sx = (width - panelW) / 2f;
+        float sy = (height - panelH) / 2f;
+        
+        String title = main.furnaceOpen ? "INDUSTRIAL SMELTER" : "HIGH-EFFICIENCY COOKER";
+        Vector4f titleCol = main.furnaceOpen ? tactOrange : tactBlue;
+
+        drawRectInternal(shader, sx, sy, panelW, panelH, glassBgColor);
+        drawRectInternal(shader, sx, sy, panelW, 2, titleCol);
+        drawText(shader, title, sx + 30, sy + 30, 1.2f, titleCol);
+
+        // --- Facility Grid (Center) ---
+        float cx = sx + panelW/2f;
+        float cy = sy + 180;
+        float slotSize = 80;
+
+        // 1. Input Slot
+        drawSlot(shader, cx - 180, cy - 40, slotSize, main.activeFacility.getSlot(0));
+        drawText(shader, "INPUT", cx - 180, cy - 65, 0.6f, highlightColor);
+
+        // 2. Fuel Slot
+        drawSlot(shader, cx - 40, cy + 60, slotSize, main.activeFacility.getSlot(1));
+        drawText(shader, "FUEL", cx - 40, cy + 40, 0.6f, highlightColor);
+        
+        // Fuel Progress Bar (Flame)
+        float fuelRatio = main.activeFacility.getFuelRatio();
+        Vector4f flameCol = new Vector4f(1, 0.5f, 0, 0.8f);
+        drawRectInternal(shader, cx - 35, cy + 145, (slotSize + 70) * fuelRatio, 6, flameCol);
+
+        // 3. Output Slot
+        drawSlot(shader, cx + 100, cy - 40, slotSize, main.activeFacility.getSlot(2));
+        drawText(shader, "OUTPUT", cx + 100, cy - 65, 0.6f, highlightColor);
+
+        // --- Processing Arrow ---
+        float prog = main.activeFacility.getProgress();
+        drawRectInternal(shader, cx - 75, cy - 5, 150, 10, new Vector4f(1,1,1,0.1f));
+        drawRectInternal(shader, cx - 75, cy - 5, 150 * prog, 10, titleCol);
+        if (prog > 0) drawText(shader, (int)(prog * 100) + "%", cx - 15, cy + 15, 0.6f, textColor);
+
+        // --- Player Inventory ---
+        float invStartX = sx + (panelW - (64 + 15) * 9) / 2f;
+        float invStartY = sy + 320;
+        drawText(shader, "INVENTORY", invStartX, invStartY - 25, 0.6f, highlightColor);
+        minicraft.item.ItemStack[] pInv = player.inventory.getMainInventory();
+        for (int i = 0; i < 27; i++) {
+            int row = i / 9;
+            int col = i % 9;
+            drawSlot(shader, invStartX + col * 79, invStartY + row * 79, 64, pInv[i]);
+        }
+
+        // --- Cursor ItemStack ---
+        minicraft.item.ItemStack cursor = player.inventory.getCursorStack();
+        if (cursor != null && !cursor.isEmpty()) {
+            double[] mx = new double[1], my = new double[1];
+            org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
+            drawItemIcon(shader, cursor.getItem(), (float)mx[0]-32, (float)my[0]-32, 64);
+            if (cursor.getCount() > 1) drawText(shader, String.valueOf(cursor.getCount()), (float)mx[0]-25, (float)my[0]+20, 0.8f);
+        }
+    }
+
     private void drawSlot(ShaderProgram shader, float x, float y, float size, minicraft.item.ItemStack stack) {
         // Slot Shadow/Background
         drawRectInternal(shader, x, y, size, size, new Vector4f(0, 0, 0, 0.6f));
@@ -554,42 +635,81 @@ public class UIRenderer {
         minicraft.entity.ship.ShipEntity ship = player.getRidingShip();
         if (ship == null) return;
 
-        float hudW = 450;
-        float hudH = 140;
-        float sx = (width - hudW) / 2f;
-        float sy = 40;
+        // --- 1. Top Header ---
+        drawRectInternal(shader, 0, 0, width, 60, tactDim);
+        drawRectInternal(shader, 0, 60, width, 2, glassBorderColor);
+        drawText(shader, "AEGIS-7 TACTICAL HUB", 40, 15, 1.2f, tactOrange);
+        drawText(shader, "VESSEL: " + ship.getDefinition().displayName.toUpperCase() + " // LINK STATUS: NOMINAL", 40, 42, 0.5f, highlightColor);
+        drawText(shader, "SYSTEM TIME: " + System.currentTimeMillis() % 1000000, width - 250, 20, 0.8f, textColor);
 
-        // 1. Background Hull Glass
-        drawRectInternal(shader, sx, sy, hudW, hudH, glassBgColor);
-        drawRectInternal(shader, sx, sy, hudW, 1, glassBorderColor);
-        drawRectInternal(shader, sx, sy + hudH - 1, hudW, 1, glassBorderColor);
+        // --- 2. Left: Vital Telemetry ---
+        float lx = 40, ly = 120;
+        drawText(shader, "VITAL TELEMETRY", lx, ly, 0.6f, tactOrange);
+        ly += 30;
+        drawTacticalBar(shader, lx, ly, 220, 10, ship.getHealth() / ship.getMaxHealth(), tactGreen, "HULL INTEGRITY");
+        ly += 45;
+        drawTacticalBar(shader, lx, ly, 220, 10, ship.getShieldPct(), tactBlue, "SHIELD CAPACITY");
+        ly += 45;
+        drawTacticalBar(shader, lx, ly, 220, 10, ship.getEnergyPct(), new Vector4f(0.9f, 0.9f, 0, 1), "POWER CORE");
+        ly += 45;
+        drawTacticalBar(shader, lx, ly, 220, 10, ship.getFuelPct(), tactOrange, "FUEL RESERVES");
 
-        // 2. Telemetry Labels
-        drawText(shader, "VESSEL: STALWART CLASS FRIGATE", sx + 20, sy + 15, 0.9f, new Vector4f(0, 1, 1, 1));
-        drawText(shader, "STATUS: NEURAL LINK ACTIVE", sx + 20, sy + 40, 0.6f, new Vector4f(0.4f, 1, 0.4f, 1));
+        // --- 3. Center: Radar / Navigation ---
+        float radarSize = 350;
+        float rx = (width - radarSize) / 2f;
+        float ry = (height - radarSize) / 2f;
+        drawRectInternal(shader, rx, ry, radarSize, radarSize, new Vector4f(1, 1, 1, 0.05f)); // Grid box
+        drawRectInternal(shader, rx + radarSize/2f - 1, ry, 2, radarSize, glassBorderColor); // Vertical cross
+        drawRectInternal(shader, rx, ry + radarSize/2f - 1, radarSize, 2, glassBorderColor); // Horizontal cross
         
-        // Thrust Meter
-        float thrustLvl = ship.getThrustLevel(); // 0 to 1
-        drawPremiumBar(shader, sx + 20, sy + 65, 120, 10, thrustLvl, thirstColor, thirstColor2, "A");
-        drawText(shader, "THRUST", sx + 150, sy + 65, 0.6f, textColor);
+        // Target Reticle (Animated)
+        float anim = (float) Math.sin(System.currentTimeMillis() / 200.0) * 10f;
+        drawCrosshair(shader, width/2f, height/2f);
+        drawRectInternal(shader, width/2f - 25 - anim/2f, height/2f - 25 - anim/2f, 50+anim, 50+anim, new Vector4f(1, 0.5f, 0, 0.2f));
 
-        // Weapon Selection
-        float wx = sx + hudW - 180;
-        float wy = sy + 15;
-        drawText(shader, "WEAPON SYSTEM", wx, wy, 0.7f, highlightColor);
-        
-        String[] wNames = {"MAC", "MISSILES", "PDW"};
+        // Navigation Vector
+        drawText(shader, "VECTOR: " + (int)ship.yaw + "°", rx, ry + radarSize + 20, 0.7f, tactOrange);
+        drawText(shader, "MAG: " + String.format("%.1f", ship.getVelocityKms()) + " KM/S", rx + 150, ry + radarSize + 20, 0.7f, textColor);
+
+        // --- 4. Right: Weapons Matrix ---
+        float wx = width - 260, wy = 120;
+        drawText(shader, "WEAPONS MATRIX", wx, wy, 0.6f, tactOrange);
+        wy += 30;
+        String[] weapons = {"MAC CANNON", "ARCHER PODS", "PULSE LASER"};
         minicraft.entity.ship.ShipEntity.WeaponSystem active = ship.getActiveWeapon();
-        
-        for (int i = 0; i < 3; i++) {
-            boolean isSel = (active.ordinal() == i);
-            Vector4f color = isSel ? new Vector4f(1, 1, 0, 1) : highlightColor;
-            drawText(shader, (isSel ? "> " : "  ") + wNames[i], wx, wy + 25 + i * 20, 0.7f, color);
+        for (int i = 0; i < weapons.length; i++) {
+            boolean sel = (active.ordinal() == i);
+            drawRectInternal(shader, wx, wy + i * 50, 220, 40, sel ? new Vector4f(1, 0.5f, 0, 0.2f) : tactDim);
+            drawRectInternal(shader, wx, wy + i * 50, 2, 40, sel ? tactOrange : highlightColor);
+            drawText(shader, weapons[i], wx + 15, wy + 12 + i * 50, 0.7f, sel ? textColor : highlightColor);
         }
 
-        // Heading & Altitude
-        String head = String.format("HDG: %d°  ALT: %dM", (int)(ship.yaw % 360), (int)ship.position.y);
-        drawText(shader, head, sx + 20, sy + hudH - 30, 0.8f, textColor);
+        // --- 5. Data Fields (Bottom Row) ---
+        float bfY = height - 120;
+        float bfGap = 160;
+        float bfX = (width - bfGap * 3) / 2f;
+        drawTacticalField(shader, bfX, bfY, "X-COORD", String.valueOf((int)ship.position.x));
+        drawTacticalField(shader, bfX + bfGap, bfY, "Y-COORD", String.valueOf((int)ship.position.y));
+        drawTacticalField(shader, bfX + bfGap * 2, bfY, "Z-COORD", String.valueOf((int)ship.position.z));
+
+        // --- 6. System Log Ticker ---
+        drawRectInternal(shader, 0, height - 40, width, 40, tactDim);
+        long tickerTime = System.currentTimeMillis() / 50;
+        float tickerX = width - (tickerTime % (width + 1000));
+        drawText(shader, "[24:12:08] SYSTEM NOMINAL // NEURAL LINK STABLE // SHIELDS AT 100% // READY FOR SLIPSPACE JUMP", tickerX, height - 28, 0.6f, new Vector4f(0.5f, 0.5f, 0.5f, 1));
+    }
+
+    private void drawTacticalBar(ShaderProgram shader, float x, float y, float w, float h, float fill, Vector4f color, String label) {
+        drawText(shader, label, x, y - 12, 0.45f, highlightColor);
+        drawRectInternal(shader, x, y, w, h, new Vector4f(0.05f, 0.05f, 0.05f, 0.8f));
+        drawRectInternal(shader, x, y, w * fill, h, color);
+        drawRectInternal(shader, x, y, w, 1, glassBorderColor);
+    }
+
+    private void drawTacticalField(ShaderProgram shader, float x, float y, String label, String value) {
+        drawRectInternal(shader, x, y, 2, 40, tactOrange);
+        drawText(shader, label, x + 10, y, 0.45f, highlightColor);
+        drawText(shader, value, x + 10, y + 18, 0.9f, textColor);
     }
 
     private void drawRectInternal(ShaderProgram shader, float x, float y, float w, float h, Vector4f color, String textureName) {

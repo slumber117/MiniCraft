@@ -47,13 +47,8 @@ public class Missile extends Projectile {
 
     @Override
     protected void onImpact(World world, ParticleManager pm) {
-        // Create explosion effect
-        for (int i = 0; i < 20; i++) {
-            pm.spawnSmoke(position.x, position.y, position.z);
-            pm.spawnThruster(position.x, position.y, position.z,
-                new Vector3f((float)Math.random()-0.5f, (float)Math.random()-0.5f, (float)Math.random()-0.5f).mul(5f),
-                1.5f, new Vector4f(1.0f, 0.5f, 0.0f, 1.0f), 0.8f);
-        }
+        // Create thermal explosion
+        pm.spawnExplosion(position.x, position.y, position.z, 3.5f);
         System.out.println("MISSILE IMPACT at " + position);
     }
 }

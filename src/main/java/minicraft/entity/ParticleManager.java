@@ -41,6 +41,23 @@ public class ParticleManager {
         particles.add(p);
     }
 
+    public void spawnExplosion(float x, float y, float z, float intensity) {
+        int count = (int) (20 * intensity);
+        for (int i = 0; i < count; i++) {
+            // Thermal Flash (Fire)
+            Vector3f fireballVel = new Vector3f(
+                (rand.nextFloat() - 0.5f) * 12f * intensity,
+                (rand.nextFloat() - 0.5f) * 12f * intensity,
+                (rand.nextFloat() - 0.5f) * 12f * intensity
+            );
+            spawnThruster(x, y, z, fireballVel, 2.5f * intensity, 
+                new Vector4f(1.0f, 0.6f, 0.0f, 1.0f), 0.5f + rand.nextFloat() * 0.5f);
+            
+            // Plume (Smoke)
+            spawnSmoke(x + (rand.nextFloat()-0.5f) * 2f, y + (rand.nextFloat()-0.5f) * 2f, z + (rand.nextFloat()-0.5f) * 2f);
+        }
+    }
+
     public void spawnThruster(float x, float y, float z, Vector3f velocity, float size, Vector4f color, float life) {
         Particle p = new Particle();
         p.pos = new Vector3f(x, y, z);
@@ -70,8 +87,10 @@ public class ParticleManager {
         if (particles.size() > 2000) particles.remove(0); // Increased cap for ship battle
     }
 
-    public void render(ShaderProgram shader, Matrix4f view, Matrix4f proj) {
+    public void render(ShaderProgram shader, minicraft.renderer.TextureRegistry registry, Matrix4f view, Matrix4f proj) {
         shader.setUniform("useLighting", 0.0f);
+        minicraft.renderer.Texture particleTex = (registry != null) ? registry.get("alloy_plate") : null;
+        
         for (Particle p : particles) {
             float alpha = p.life / p.maxLife;
             float currentScale = p.scale * (0.5f + alpha * 0.5f);
@@ -81,17 +100,13 @@ public class ParticleManager {
                 .translate(p.pos.x, p.pos.y, p.pos.z)
                 .scale(currentScale, currentScale, currentScale);
                 
-            // Billboard rotation
-            model.m[0] = currentScale; model.m[1] = 0; model.m[2] = 0;
-            model.m[4] = 0; model.m[5] = currentScale; model.m[6] = 0;
-            model.m[8] = 0; model.m[9] = 0; model.m[10] = currentScale;
-
+            // Billboard rotation (keep facing camera)
             shader.setUniform("modelMatrix", model);
             
             Vector4f drawColor = new Vector4f(p.color);
             drawColor.w *= alpha; // Fade out
             shader.setUniform("colorTint", drawColor);
-            quad.render(null);
+            quad.render(particleTex);
         }
         shader.setUniform("useLighting", 1.0f);
     }

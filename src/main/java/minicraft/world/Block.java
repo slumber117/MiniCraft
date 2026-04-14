@@ -98,8 +98,9 @@ public enum Block {
 
     // ── Advanced Scientific blocks ───────────────────────────────────────
     ALLOY_PLATE(true, 1, 10.0f, "alloy_plate"),
-    TRANSMAT_PAD(true, 1, 10.0f, "transmat_pad"), // Solid structural logic interaction pad
-    SHIP_CONSOLE(true, 0, 2.5f, "ship_console");
+    TRANSMAT_PAD(true, 1, 10.0f, "transmat_pad"),
+    SHIP_CONSOLE(true, 0, 2.5f, "ship_console"),
+    COOKER(true, 0, 3.0f, "cooker_top", "stone", "cooker_side"); // High-efficiency food preparation unit
 
     // ── Mesh Types ──
     public enum MeshType {
@@ -179,7 +180,7 @@ public enum Block {
             return false;
         // Transparent solids
         if (this == LEAVES || this == WATER || this == SNOW || this == SEA_WEED || this == CORAL || this == ICE
-                || this == GLASS)
+                || this == GLASS || this == TRANSMAT_PAD)
             return false;
         if (this == OAK_LEAVES || this == REDWOOD_LEAVES || this == MANGO_LEAVES || this == APPLE_LEAVES
                 || this == PEAR_LEAVES || this == JUNGLE_LEAVES)

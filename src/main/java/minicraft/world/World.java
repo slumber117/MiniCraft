@@ -25,6 +25,7 @@ public class World {
     private final TextureRegistry textures;
     private final Map<Long, Chunk> chunks = new HashMap<>();
     private final Map<String, minicraft.entity.Inventory> worldContainers = new HashMap<>();
+    private final Map<String, minicraft.entity.ProcessingFacility> worldFacilities = new HashMap<>();
     private final StructureGenerator structGen = new StructureGenerator();
     private final CaveCarver caveCarver;
     private final int renderDistance; 
@@ -39,6 +40,7 @@ public class World {
     }
 
     public WorldGenerator getGenerator() { return generator; }
+    public WeatherManager getWeatherManager() { return weatherManager; }
 
 
     private final Matrix4f chunkMatrix = new Matrix4f();
@@ -60,8 +62,24 @@ public class World {
 
     public void setBlock(int gx, int gy, int gz, Block b) {
         if (gy < 0 || gy >= Chunk.HEIGHT) return;
-        Chunk chunk = getOrGenerate(Math.floorDiv(gx, Chunk.WIDTH), Math.floorDiv(gz, Chunk.DEPTH));
-        chunk.setBlock(Math.floorMod(gx, Chunk.WIDTH), gy, Math.floorMod(gz, Chunk.DEPTH), b);
+        int cx = Math.floorDiv(gx, Chunk.WIDTH);
+        int cz = Math.floorDiv(gz, Chunk.DEPTH);
+        int lx = Math.floorMod(gx, Chunk.WIDTH);
+        int lz = Math.floorMod(gz, Chunk.DEPTH);
+
+        Chunk chunk = getOrGenerate(cx, cz);
+        chunk.setBlock(lx, gy, lz, b);
+
+        // Mark neighbor chunks as dirty if on boundary
+        if (lx == 0) markChunkDirty(cx - 1, cz);
+        if (lx == Chunk.WIDTH - 1) markChunkDirty(cx + 1, cz);
+        if (lz == 0) markChunkDirty(cx, cz - 1);
+        if (lz == Chunk.DEPTH - 1) markChunkDirty(cx, cz + 1);
+    }
+
+    private void markChunkDirty(int cx, int cz) {
+        Chunk neighbor = chunks.get(key(cx, cz));
+        if (neighbor != null) neighbor.markDirty();
     }
 
     public float getLight(int gx, int gy, int gz) {
@@ -175,9 +193,14 @@ public class World {
         }
         
         // Isolate Shipyard megastructures to a 64x64 chunk geographical grid (1 per massive continent mapping)
-        if (cx % 64 == 0 && cz % 64 == 0 && (centerCell.biome == Biome.MOUNTAINS || centerCell.biome == Biome.SNOWY_PEAKS || centerCell.biome == Biome.HIGHLANDS) && centerPeakY > 160) {
+        // FORCE a shipyard at (0,0) to ensure the player always has a way to the ship deck
+        boolean isInitialSpawn = (cx == 0 && cz == 0);
+        boolean isPeak = (centerCell.biome == Biome.MOUNTAINS || centerCell.biome == Biome.SNOWY_PEAKS || centerCell.biome == Biome.HIGHLANDS) && centerPeakY > 160;
+
+        if (isInitialSpawn || (cx % 64 == 0 && cz % 64 == 0 && isPeak)) {
             // Build the shipyard safely above all possible mountain layers (Max peak = ~220)
-            structGen.generateFloatingFactory(chunk, 240, centerPeakY);
+            int targetY = Math.max(240, centerPeakY + 20);
+            structGen.generateFloatingFactory(chunk, targetY, centerPeakY);
         }
 
         // 2. Random Fortresses, Castles, and Villages (8% chance)
@@ -333,12 +356,14 @@ public class World {
                 // Calculate height natively
                 int predictedSurfaceY = (int) (cell.elevation * Chunk.HEIGHT);
                 
-                // If it's a high peak, a shipyard is guaranteed to build here
-                if (predictedSurfaceY > 160) {
+                // If it's a high peak OR the initial spawn chunk (0,0), a shipyard is guaranteed to build here
+                boolean isInitialSpawnChunk = (cx == 0 && cz == 0);
+                if (predictedSurfaceY > 160 || isInitialSpawnChunk) {
                     // Center the check just like chunk generation does!
                     WorldCell syncCell = generator.generate(cx * 16 + 8, cz * 16 + 8);
-                    if ((syncCell.biome == Biome.MOUNTAINS || syncCell.biome == Biome.SNOWY_PEAKS || syncCell.biome == Biome.HIGHLANDS) 
-                        && (int)(syncCell.elevation * Chunk.HEIGHT) > 160) {
+                    boolean isShipyardBiome = (syncCell.biome == Biome.MOUNTAINS || syncCell.biome == Biome.SNOWY_PEAKS || syncCell.biome == Biome.HIGHLANDS);
+                    
+                    if (isInitialSpawnChunk || (isShipyardBiome && (int)(syncCell.elevation * Chunk.HEIGHT) > 160)) {
                         
                         // Force the chunk to exist before the player spawns into it
                         getOrGenerate(cx, cz);
@@ -402,6 +427,81 @@ public class World {
             worldContainers.put(key, inv);
         }
         return worldContainers.get(key);
+    }
+
+    public minicraft.entity.ProcessingFacility getFacility(int x, int y, int z) {
+        String key = x + "," + y + "," + z;
+        return worldFacilities.computeIfAbsent(key, k -> new minicraft.entity.ProcessingFacility());
+    }
+
+    public void tick(float dt, minicraft.item.ProcessingManager pm) {
+        weatherManager.update(dt);
+        
+        // Update Facilities (Furnaces/Cookers)
+        for (Map.Entry<String, minicraft.entity.ProcessingFacility> entry : worldFacilities.entrySet()) {
+            String[] parts = entry.getKey().split(",");
+            int fx = Integer.parseInt(parts[0]);
+            int fy = Integer.parseInt(parts[1]);
+            int fz = Integer.parseInt(parts[2]);
+            
+            Block b = getBlock(fx, fy, fz);
+            if (b != Block.FURNACE && b != Block.COOKER) continue;
+            
+            minicraft.entity.ProcessingFacility fac = entry.getValue();
+            boolean isCooker = (b == Block.COOKER);
+            
+            // 1. Handle Fuel Consumption
+            if (fac.remainingFuelTime <= 0) {
+                minicraft.item.ItemStack fuelStack = fac.getSlot(1);
+                if (fuelStack != null) {
+                    float fuelVal = pm.getFuelTime(fuelStack.getItem().getName(), isCooker);
+                    if (fuelVal > 0) {
+                        fac.remainingFuelTime = fuelVal;
+                        fac.maxFuelTime = fuelVal;
+                        fuelStack.remove(1);
+                        if (fuelStack.getCount() <= 0) fac.setSlot(1, null);
+                    }
+                }
+            }
+
+            // 2. Handle Processing
+            minicraft.item.ItemStack input = fac.getSlot(0);
+            if (input != null && fac.remainingFuelTime > 0) {
+                minicraft.item.Recipe res = isCooker ? pm.getCookerResult(input.getItem().getName()) : pm.getFurnaceResult(input.getItem().getName());
+                
+                if (res != null) {
+                    // Check if output slot is compatible
+                    minicraft.item.ItemStack output = fac.getSlot(2);
+                    if (output == null || (output.getItem().equals(res.getResult()) && output.getCount() < 64)) {
+                        fac.isActive = true;
+                        fac.processProgress += dt / pm.getProcessTime(input.getItem().getName());
+                        fac.remainingFuelTime -= dt;
+
+                        if (fac.processProgress >= 1.0f) {
+                            input.remove(1);
+                            if (input.getCount() <= 0) fac.setSlot(0, null);
+                            
+                            if (output == null) {
+                                fac.setSlot(2, new minicraft.item.ItemStack(res.getResult(), res.getResultCount()));
+                            } else {
+                                output.add(res.getResultCount());
+                            }
+                            fac.processProgress = 0;
+                        }
+                    } else {
+                        fac.isActive = false;
+                        fac.processProgress = 0;
+                    }
+                } else {
+                    fac.isActive = false;
+                    fac.processProgress = 0;
+                }
+            } else {
+                fac.isActive = false;
+                fac.processProgress = 0;
+                if (fac.remainingFuelTime > 0) fac.remainingFuelTime -= dt * 0.5f; // Passive fuel drain
+            }
+        }
     }
 
     private void populateLoot(minicraft.entity.Inventory inv, int x, int y, int z) {

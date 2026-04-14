@@ -9,14 +9,20 @@ import minicraft.math.Vector4f;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Renders all physical entities in the world as colored 3D bounding boxes.
+ * Supports "Baking" of voxel-based ships for high-performance movement of massive structures.
  */
 public class EntityRenderer {
 
     private Mesh cubeMesh;
     private final Map<String, String> entityTextures = new HashMap<>();
+    
+    // Cache for baked procedural ship models (e.g., Castle-class, Stalwart)
+    private final Map<String, VoxelBaker.BakedShip> bakedShips = new HashMap<>();
 
     public EntityRenderer(TextureRegistry textures) {
         float[] positions = new float[] {
@@ -76,7 +82,11 @@ public class EntityRenderer {
         entityTextures.put("SPIDER", "char_spider");
     }
 
-    public void render(EntityManager manager, ShaderProgram shader, TextureRegistry textures, Matrix4f viewMatrix) {
+    public void render(EntityManager manager, ShaderProgram shader, TextureRegistry textures, Matrix4f viewMatrix, float sunBrightness) {
+        // Sync global lighting to the entity shader
+        shader.setUniform("sunBrightness", sunBrightness);
+        shader.setUniform("useLighting", 1.0f);
+        
         for (Entity e : manager.getAll()) {
             if (e.isDead() || e.type == minicraft.entity.EntityType.PLAYER) continue;
 
@@ -128,8 +138,8 @@ public class EntityRenderer {
             }
 
             // Mega-structure Override
-            if (typeName.equalsIgnoreCase("STALWART_SHIP")) {
-                renderStalwartShip(e, shader, viewMatrix);
+            if (e instanceof minicraft.entity.ship.ShipEntity) {
+                renderStalwartShip(e, shader, textures, viewMatrix);
             }
         }
     }
@@ -147,14 +157,14 @@ public class EntityRenderer {
         mesh.render(null); // Uses internal high-fidelity texture
     }
 
-    private void renderStalwartShip(Entity e, ShaderProgram shader, Matrix4f viewMatrix) {
+    private void renderStalwartShip(Entity e, ShaderProgram shader, TextureRegistry textures, Matrix4f viewMatrix) {
         if (!(e instanceof minicraft.entity.ship.ShipEntity)) return;
         minicraft.entity.ship.ShipEntity ship = (minicraft.entity.ship.ShipEntity) e;
         minicraft.ship.ShipDefinition def = ship.getDefinition();
 
         // 1. HIGH-FIDELITY MESH OVERRIDE
-        if (def != null && def.modelId != null) {
-            Mesh shipMesh = ModelRegistry.getModel(def.modelId);
+        if (def != null && def.meshId != null) {
+            Mesh shipMesh = ModelRegistry.getModel(def.meshId);
             if (shipMesh != null) {
                 Matrix4f model = new Matrix4f()
                     .identity()
@@ -170,7 +180,34 @@ public class EntityRenderer {
             }
         }
 
-        // 2. FALLBACK VOXEL HULL (Blocky version)
+        // 2. BAKED VOXEL SCHEMATIC RENDERING (Procedural Hulls)
+        if (def != null && def.schematic != null) {
+            if (!bakedShips.containsKey(def.id)) {
+                System.out.println("BAKING SHIP MODEL: " + def.displayName);
+                bakedShips.put(def.id, VoxelBaker.bake(def.schematic, textures));
+            }
+
+            VoxelBaker.BakedShip baked = bakedShips.get(def.id);
+            if (baked != null) {
+                for (Map.Entry<String, Mesh> entry : baked.meshes.entrySet()) {
+                    Matrix4f model = new Matrix4f()
+                        .identity()
+                        .translate(e.position.x, e.position.y, e.position.z)
+                        .rotateY((float) Math.toRadians(e.yaw));
+                    
+                    // Offset so ship rotates around its geometric centre (JOML vs minicraft.math conversion)
+                    model.translate(-baked.centreOffset.x(), -baked.centreOffset.y(), -baked.centreOffset.z());
+
+                    // Industrial Tint: pushes the alloy_plate texture into the "Light Gray" range requested
+                    shader.setUniform("colorTint", new Vector4f(1.3f, 1.3f, 1.35f, 1.0f));
+                    shader.setUniform("modelMatrix", model);
+                    entry.getValue().render(null);
+                }
+                return;
+            }
+        }
+
+        // 3. FALLBACK VOXEL HULL (Blocky version)
         Matrix4f hull = new Matrix4f()
                 .identity()
                 .translate(e.position.x, e.position.y, e.position.z)

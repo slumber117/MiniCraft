@@ -112,8 +112,11 @@ public class Main {
     public boolean craftingOpen = false;
     public boolean inventoryOpen = false;
     public boolean chestOpen = false;
+    public boolean furnaceOpen = false;
+    public boolean cookerOpen = false;
     public boolean shipConsoleOpen = false;
     public minicraft.entity.Inventory activeChest = null;
+    public minicraft.entity.ProcessingFacility activeFacility = null;
 
     // ── Shipyard ──────────────────────────────────────────────────────────
     public int drydockX = 0, drydockY = 0, drydockZ = 0;
@@ -124,8 +127,10 @@ public class Main {
     public int inventoryIndex = 0;
     public int chestIndex = 0;
     public final CraftingManager craftingManager = new CraftingManager();
+    public final minicraft.item.ProcessingManager processingManager = new minicraft.item.ProcessingManager();
 
     private boolean prevC = false, prevE = false;
+    private boolean prevF = false, prevG = false;
     private boolean prevEnter = false, prevUp = false, prevDown = false;
 
     // ── Particles ─────────────────────────────────────────────────────────
@@ -231,6 +236,8 @@ public class Main {
                     craftingOpen = false;
                     inventoryOpen = false;
                     chestOpen = false;
+                    furnaceOpen = false;
+                    cookerOpen = false;
                     shipConsoleOpen = false;
                     glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
                     firstMouse = true;
@@ -245,6 +252,8 @@ public class Main {
                     handleInventoryClick();
                 else if (chestOpen)
                     handleChestClick();
+                else if (furnaceOpen || cookerOpen)
+                    handleFacilityClick();
                 else if (shipConsoleOpen)
                     handleShipConsoleClick();
             }
@@ -338,6 +347,13 @@ public class Main {
         ToolItem pick = new ToolItem("Wooden Pickaxe", ToolItem.ToolType.PICKAXE, 0, 2.0f, "item_pick_wood");
         player.inventory.add(sword, 1);
         player.inventory.add(pick, 1);
+        
+        // Testing kits for new Facilities
+        player.inventory.add(Block.COOKER, 1);
+        player.inventory.add(Block.FURNACE, 1);
+        player.inventory.add(Block.COAL_ORE, 15);
+        player.inventory.add(Block.IRON_ORE, 5);
+        player.inventory.add(new Item("RAW_MEAT"), 5);
 
         camera.setPosition(spawnPos.x, spawnPos.y + 1.6f, spawnPos.z);
 
@@ -346,8 +362,8 @@ public class Main {
 
         // ── Register fixed-tick systems ───────────────────────────────────
         gameLoop.addTickable(dt -> {
-            entityManager.update(dt, world);
-            world.update(dt, player, particleManager);
+            entityManager.update(dt, world, particleManager);
+            world.tick(dt, processingManager);
             particleManager.update(dt);
         });
 
@@ -418,10 +434,19 @@ public class Main {
             // NOTE: player.isRiding() and getRidingShip() are stubbed until
             // Phase 3 builds ShipEntity. The else-branch handles all cases now.
             if (player.isRiding()) {
-                // Phase 3: ShipEntity camera sync goes here
-                // minicraft.entity.ship.ShipEntity ship = player.getRidingShip();
-                // ...
-                camera.setPosition(player.position.x, player.position.y + 1.6f, player.position.z);
+                minicraft.entity.ship.ShipEntity ship = player.getRidingShip();
+                float distance = 120.0f; // Far back for massive frigate
+                float yawRad = (float) Math.toRadians(ship.yaw);
+                float cos = (float) Math.cos(yawRad);
+                float sin = (float) Math.sin(yawRad);
+                
+                // Position camera behind and above the ship
+                camera.setPosition(
+                    ship.position.x + sin * distance,
+                    ship.position.y + 35.0f,
+                    ship.position.z + cos * distance
+                );
+                camera.setRotation(camera.getRotation().x, ship.yaw, 0); // Preserve user pitch, follow ship yaw
             } else {
                 camera.setPosition(player.position.x, player.position.y + 1.6f, player.position.z);
             }
@@ -460,9 +485,10 @@ public class Main {
                     isUnderwater ? new Vector4f(0.4f, 0.6f, 1.0f, 1.0f) : whiteTint);
 
             world.render(shaderProgram, player.position);
-
-            entityRenderer.render(entityManager, shaderProgram, textures, viewMatrix);
-            particleManager.render(shaderProgram, viewMatrix, projectionMatrix);
+            
+            float sun = world.getWeatherManager().getSunBrightness();
+            entityRenderer.render(entityManager, shaderProgram, textures, viewMatrix, sun);
+            particleManager.render(shaderProgram, textures, viewMatrix, projectionMatrix);
 
             glEnable(GL_BLEND);
             weatherRenderer.render(player.position, world.getWeather(), shaderProgram, dt);
@@ -511,8 +537,8 @@ public class Main {
                 for (int dz = -20; dz <= 80; dz++)
                     world.setBlock(wx + dx, wy + dy, wz + dz, Block.AIR);
 
-        // Place schematic blocks
-        spawnShipFromSchematic(def, wx, wy, wz);
+        // Place schematic blocks (REMOVED: flyable ships use VoxelBaker entities only)
+        // spawnShipFromSchematic(def, wx, wy, wz);
 
         // Teleport player to the bridge
         org.joml.Vector3i bridge = def.schematic.bridgeLocalPos;
@@ -521,10 +547,16 @@ public class Main {
                 wy + bridge.y + 1.1f,
                 wz + bridge.z + 0.5f);
 
-        System.out.println("LOGISTICS NETWORK: " + def.displayName + " DEPLOYED.");
+        // 3. Create the ShipEntity for physics and piloting
+        minicraft.entity.ship.ShipEntity ship = new minicraft.entity.ship.ShipEntity(minicraft.entity.EntityType.SHIP, def);
+        ship.position.set(wx, wy, wz);
+        entityManager.spawn(ship);
 
-        // Phase 3 will add:
-        // entityManager.spawn(new ShipEntity(def, wx, wy, wz));
+        // 4. Force player into Neural Link (Riding State)
+        player.setRiding(ship);
+        ship.setPassenger(player);
+        
+        System.out.println("NEURAL LINK ESTABLISHED: Pilot synchronized with " + def.displayName);
     }
 
     private void spawnShipFromSchematic(ShipDefinition def, int wx, int wy, int wz) {
@@ -573,7 +605,32 @@ public class Main {
         }
 
         if (player.isRiding()) {
-            // Phase 3: ship input routing goes here once ShipEntity is built
+            minicraft.entity.ship.ShipEntity ship = player.getRidingShip();
+            boolean w = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
+            boolean s = glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
+            boolean a = glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
+            boolean d = glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
+            boolean space = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+            boolean shift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
+            
+            ship.handleInput(w, s, a, d, space, shift, dt);
+
+            // Weapons
+            if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && !prevF) ship.nextWeapon();
+            if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS && !prevG) ship.prevWeapon();
+            prevF = glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS;
+            prevG = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
+
+            if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+                ship.fireActiveWeapon(entityManager, world, particleManager, getLookDirection());
+            }
+
+            // Exit ship
+            if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
+                ship.setPassenger(null);
+                player.setRiding(null);
+                System.out.println("NEURAL LINK SEVERED: Local control restored.");
+            }
             player.velocity.set(0, 0, 0);
         } else {
             player.velocity.x = dx;
@@ -709,6 +766,58 @@ public class Main {
                 shipConsoleOpen = false;
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
                 firstMouse = true;
+                return;
+            }
+        }
+    }
+
+    private void handleFacilityClick() {
+        if (activeFacility == null) return;
+        
+        double[] mx = new double[1], my = new double[1];
+        glfwGetCursorPos(window, mx, my);
+        int[] winW = new int[1], winH = new int[1];
+        glfwGetWindowSize(window, winW, winH);
+        float x = (float) mx[0] * ((float) framebufferW / Math.max(1, winW[0]));
+        float y = (float) my[0] * ((float) framebufferH / Math.max(1, winH[0]));
+        
+        float panelW = 700, panelH = 500;
+        float sx = (framebufferW - panelW) / 2f, sy = (framebufferH - panelH) / 2f;
+        float cx = sx + panelW/2f, cy = sy + 180;
+        float slotSize = 80;
+
+        // ── 1. Facility Slots ──
+        // Input
+        if (x >= cx - 180 && x <= cx - 100 && y >= cy - 40 && y <= cy + 40) {
+            minicraft.item.ItemStack clicked = activeFacility.getSlot(0);
+            activeFacility.setSlot(0, player.inventory.getCursorStack());
+            player.inventory.setCursorStack(clicked);
+            return;
+        }
+        // Fuel
+        if (x >= cx - 40 && x <= cx + 40 && y >= cy + 60 && y <= cy + 140) {
+            minicraft.item.ItemStack clicked = activeFacility.getSlot(1);
+            activeFacility.setSlot(1, player.inventory.getCursorStack());
+            player.inventory.setCursorStack(clicked);
+            return;
+        }
+        // Output
+        if (x >= cx + 100 && x <= cx + 180 && y >= cy - 40 && y <= cy + 40) {
+            minicraft.item.ItemStack clicked = activeFacility.getSlot(2);
+            activeFacility.setSlot(2, player.inventory.getCursorStack());
+            player.inventory.setCursorStack(clicked);
+            return;
+        }
+
+        // ── 2. Player Inventory Grid ──
+        float invStartX = sx + (panelW - (64 + 15) * 9) / 2f;
+        float invStartY = sy + 320;
+        for (int i = 0; i < 27; i++) {
+            int r = i / 9, c = i % 9;
+            float slotX = invStartX + c * 79;
+            float slotY = invStartY + r * 79;
+            if (x >= slotX && x <= slotX + 64 && y >= slotY && y <= slotY + 64) {
+                player.inventory.clickSlot(i, false);
                 return;
             }
         }
@@ -866,6 +975,16 @@ public class Main {
     // Combat + placement
     // ─────────────────────────────────────────────────────────────────────
 
+    private org.joml.Vector3f getLookDirection() {
+        float pitch = (float) Math.toRadians(camera.getRotation().x);
+        float yaw = (float) Math.toRadians(camera.getRotation().y);
+        return new org.joml.Vector3f(
+            (float) (Math.sin(yaw) * Math.cos(pitch)),
+            (float) -Math.sin(pitch),
+            (float) (-Math.cos(yaw) * Math.cos(pitch))
+        );
+    }
+
     private void handlePlayerAttack(float dt) {
         if (!prevMouseLeftDown)
             player.meleeAttack(entityManager);
@@ -948,6 +1067,14 @@ public class Main {
                 if (targeted == Block.CHEST) {
                     activeChest = world.getContainer(gx, gy, gz);
                     chestOpen = true;
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                } else if (targeted == Block.FURNACE) {
+                    activeFacility = world.getFacility(gx, gy, gz);
+                    furnaceOpen = true;
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                } else if (targeted == Block.COOKER) {
+                    activeFacility = world.getFacility(gx, gy, gz);
+                    cookerOpen = true;
                     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 } else if (targeted == Block.CRAFTING_TABLE) {
                     craftingOpen = true;

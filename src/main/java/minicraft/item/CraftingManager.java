@@ -23,7 +23,7 @@ public class CraftingManager {
         recipes.add(new Recipe("Stone Pickaxe", Recipe.Category.TOOLS, stonePickIng,
                 new ToolItem("Stone Pick", ToolItem.ToolType.PICKAXE, 1, 4.0f, "item_pick_stone"), 1));
 
-        Map<Item, Integer> stoneAxeIng = new HasMap<>();
+        Map<Item, Integer> stoneAxeIng = new HashMap<>();
         stoneAxeIng.put(new Item("STONE", Block.STONE), 3);
         recipes.add(new Recipe("Stone Axe", Recipe.Category.TOOLS, stoneAxeIng,
                 new ToolItem("Stone Axe", ToolItem.ToolType.AXE, 1, 4.0f, "item_axe_stone"), 1));
@@ -34,7 +34,7 @@ public class CraftingManager {
         recipes.add(new Recipe("Iron Pickaxe", Recipe.Category.TOOLS, ironPickIng,
                 new ToolItem("Iron Pick", ToolItem.ToolType.PICKAXE, 2, 8.0f, "item_pick_iron"), 1));
 
-        Map<Item, Integer> ironAxeIng = new HasMap<>();
+        Map<Item, Integer> ironAxeIng = new HashMap<>();
         ironAxeIng.put(new Item("IRON", Block.IRON_ORE), 3);
         recipes.add(new Recipe("Iron Axe", Recipe.Category.TOOLS, ironAxeIng,
                 new ToolItem("Iron Axe", ToolItem.ToolType.AXE, 1, 4.0f, "item_axe_iron"), 1));
@@ -65,6 +65,13 @@ public class CraftingManager {
         tableIng.put(new Item("WOOD", Block.WOOD), 4);
         recipes.add(new Recipe("Crafting Table", Recipe.Category.BLOCKS, tableIng,
                 new Item("CRAFTING_TABLE", Block.CRAFTING_TABLE), 1));
+
+        // 5. Ship Console (Advanced)
+        Map<Item, Integer> consoleIng = new HashMap<>();
+        consoleIng.put(new Item("IRON_ORE", Block.IRON_ORE), 10);
+        consoleIng.put(new Item("GOLD_ORE", Block.GOLD_ORE), 2);
+        recipes.add(new Recipe("Ship Console", Recipe.Category.BLOCKS, consoleIng,
+                new Item("SHIP_CONSOLE", Block.SHIP_CONSOLE), 1));
 
         // 4. Primitive Torch (from Wood)
         Map<Item, Integer> torchIng = new HashMap<>();

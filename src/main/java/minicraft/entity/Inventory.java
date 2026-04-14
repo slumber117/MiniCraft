@@ -163,6 +163,7 @@ public class Inventory {
     public ItemStack[] getHotbar() { return hotbar; }
     public ItemStack[] getMainInventory() { return mainInventory; }
     public ItemStack getCursorStack() { return cursorStack; }
+    public void setCursorStack(ItemStack stack) { this.cursorStack = stack; }
     public int getSelectedIndex() { return selectedIndex; }
     public void setSelectedIndex(int index) {
         if (index >= 0 && index < HOTBAR_SIZE) this.selectedIndex = index;

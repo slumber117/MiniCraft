@@ -32,7 +32,8 @@ public enum EntityType {
     ITEM    ("Item",    Category.NPC,       1f,  0.3f, 0.3f, "Anywhere"),
 
     // ── Megastructures ────────────────────────────────────────────────────
-    STALWART_SHIP ("Stalwart Ship", Category.NPC, 5000f, 10f, 5f, "Sky"),
+    SHIP          ("Ship",          Category.NPC,       5000f, 15f,  8f,   "Sky"),
+    STALWART_SHIP ("Stalwart Ship", Category.NPC,       5000f, 10f,  5f,   "Sky"),
     SHIP_MISSILE  ("Archer Missile", Category.NPC, 10f, 0.4f, 0.4f, "Weapon"),
 
     // ── Meta ──────────────────────────────────────────────────────────────

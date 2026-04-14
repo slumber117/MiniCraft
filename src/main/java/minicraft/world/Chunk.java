@@ -48,7 +48,12 @@ public class Chunk {
         if (blocks[i] == block) return;
         
         blocks[i] = block;
-        sectionDirty[y / SECTION_SIZE] = true;
+        int sIdx = y / SECTION_SIZE;
+        sectionDirty[sIdx] = true;
+
+        // Mark neighbor sections dirty if on boundary
+        if (y > 0 && y % SECTION_SIZE == 0) sectionDirty[sIdx - 1] = true;
+        if (y < HEIGHT - 1 && y % SECTION_SIZE == SECTION_SIZE - 1) sectionDirty[sIdx + 1] = true;
     }
 
     public void markDirty() {
