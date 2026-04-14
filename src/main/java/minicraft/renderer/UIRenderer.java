@@ -25,23 +25,21 @@ public class UIRenderer {
     private final TextureRegistry textures;
     
     // Premium Color Palette
-    private final Vector4f healthColor      = new Vector4f(0.95f, 0.15f, 0.15f, 1.0f); // Crimson
-    private final Vector4f healthColor2     = new Vector4f(0.60f, 0.05f, 0.05f, 1.0f); // Deep Ruby
-    private final Vector4f hungerColor      = new Vector4f(0.95f, 0.65f, 0.05f, 1.0f); // Golden
-    private final Vector4f hungerColor2     = new Vector4f(0.65f, 0.45f, 0.00f, 1.0f); // Warm Clay
-    private final Vector4f thirstColor      = new Vector4f(0.15f, 0.75f, 0.95f, 1.0f); // Sky
-    private final Vector4f thirstColor2     = new Vector4f(0.05f, 0.35f, 0.65f, 1.0f); // Deep Ocean
-    private final Vector4f glassBgColor     = new Vector4f(0.00f, 0.00f, 0.00f, 0.5f); 
-    private final Vector4f glassBorderColor = new Vector4f(1.00f, 1.00f, 1.00f, 0.25f);
-    private final Vector4f highlightColor   = new Vector4f(1.00f, 1.00f, 1.00f, 0.15f);
+    // Tactical HUD Colors
+    private final Vector4f healthColor      = new Vector4f(1.00f, 0.10f, 0.10f, 1.0f); // Pure Red
+    private final Vector4f healthColor2     = new Vector4f(0.70f, 0.00f, 0.00f, 1.0f); // Dark Red
+    private final Vector4f hungerColor      = new Vector4f(1.00f, 0.50f, 0.00f, 1.0f); // Vital Orange
+    private final Vector4f hungerColor2     = new Vector4f(0.80f, 0.30f, 0.00f, 1.0f); // Burnt Orange
+    private final Vector4f glassBgColor     = new Vector4f(0.02f, 0.02f, 0.05f, 0.35f); // Faint Blue Tint
+    private final Vector4f glassBorderColor = new Vector4f(0.00f, 0.90f, 1.00f, 0.40f); // Cyan Tactical Glow
+    private final Vector4f highlightColor   = new Vector4f(0.00f, 0.90f, 1.00f, 0.20f); 
     private final Vector4f textColor        = new Vector4f(1.00f, 1.00f, 1.00f, 1.0f);
     private final Vector4f crosshairColor   = new Vector4f(1.00f, 1.00f, 1.00f, 0.8f);
-    
-    // Tactical HUD Colors
-    private final Vector4f tactOrange = new Vector4f(0.98f, 0.45f, 0.08f, 1.0f);
-    private final Vector4f tactBlue   = new Vector4f(0.38f, 0.65f, 0.98f, 1.0f);
-    private final Vector4f tactGreen  = new Vector4f(0.13f, 0.77f, 0.36f, 1.0f);
-    private final Vector4f tactDim    = new Vector4f(0.1f, 0.1f, 0.1f, 0.6f);
+    private final Vector4f thirstColor      = new Vector4f(0.15f, 0.75f, 0.95f, 1.0f); // Sky (Legacy compatibility)
+    private final Vector4f tactOrange = new Vector4f(1.00f, 0.45f, 0.00f, 1.0f);
+    private final Vector4f tactBlue   = new Vector4f(0.20f, 0.80f, 1.00f, 1.0f);
+    private final Vector4f tactGreen  = new Vector4f(0.00f, 1.00f, 0.40f, 1.0f);
+    private final Vector4f tactDim    = new Vector4f(0.05f, 0.05f, 0.10f, 0.5f);
 
     public UIRenderer(TextureRegistry textures) {
         this.textures = textures;
@@ -85,45 +83,15 @@ public class UIRenderer {
         // --- INVENTORY V3 ---
         if (main.inventoryOpen) {
             renderInventoryScreenV3(player, shader, width, height, main);
-            glDisable(GL_BLEND);
-            glEnable(GL_CULL_FACE);
-            glEnable(GL_DEPTH_TEST);
-            return;
-        }
-
-        if (main.chestOpen) {
+        } else if (main.chestOpen) {
             renderChestScreen(player, shader, width, height, main);
-            glDisable(GL_BLEND);
-            glEnable(GL_CULL_FACE);
-            glEnable(GL_DEPTH_TEST);
-            return;
-        }
-
-        if (main.craftingOpen) {
+        } else if (main.craftingOpen) {
             renderCraftingMenu(player, shader, width, height, main);
-            glDisable(GL_BLEND);
-            glEnable(GL_CULL_FACE);
-            glEnable(GL_DEPTH_TEST);
-            return;
-        }
-
-        if (main.shipConsoleOpen) {
+        } else if (main.shipConsoleOpen) {
             renderShipConsoleScreen(player, shader, width, height, main);
-            glDisable(GL_BLEND);
-            glEnable(GL_CULL_FACE);
-            glEnable(GL_DEPTH_TEST);
-            return;
-        }
-
-        if (main.furnaceOpen || main.cookerOpen) {
+        } else if (main.furnaceOpen || main.cookerOpen) {
             renderFacilityScreen(player, shader, width, height, main);
-            glDisable(GL_BLEND);
-            glEnable(GL_CULL_FACE);
-            glEnable(GL_DEPTH_TEST);
-            return;
-        }
-
-        if (player.isRiding()) {
+        } else if (player.isRiding()) {
             renderPilotHUD(player, shader, width, height);
         } else {
             // 1. Draw Crosshair
@@ -131,27 +99,35 @@ public class UIRenderer {
 
             // 2. Draw HUD Elements (Bottom Left)
             float margin = 30;
-            float barWidth = 220;
-            float barHeight = 14;
-            float spacing = 32; // Increased spacing for icons
+            float barWidth = 240;
+            float barHeight = 16;
             float currentY = height - margin - barHeight;
 
-            // Thirst
-            drawPremiumBar(shader, margin, currentY, barWidth, barHeight, player.thirst / player.maxThirst, thirstColor, thirstColor2, "W");
-            currentY -= spacing;
-            
-            // Hunger
-            drawPremiumBar(shader, margin, currentY, barWidth, barHeight, player.hunger / player.maxHunger, hungerColor, hungerColor2, "F");
-            currentY -= spacing;
-            
+            // Stats Framework (Hollow)
+            drawTacticalFrame(shader, margin - 10, currentY - 50, barWidth + 20, 100);
+
             // Health
             drawPremiumBar(shader, margin, currentY, barWidth, barHeight, player.getHealth() / player.getMaxHealth(), healthColor, healthColor2, "V");
+            currentY -= 32;
+
+            // Hunger
+            drawPremiumBar(shader, margin, currentY, barWidth, barHeight, player.hunger / player.maxHunger, hungerColor, hungerColor2, "F");
 
             // --- Offhand Slot Indicator ---
             if (player.inventory.getOffhandItem() != null) {
                 drawRectInternal(shader, margin, currentY - 50, 40, 40, glassBgColor);
                 drawText(shader, "L", margin + 14, currentY - 40, 0.8f); // Left hand icon
             }
+
+            // --- Coordinates (Left) ---
+            drawTacticalFrame(shader, 20, 20, 220, 75);
+            drawText(shader, "[ POSITION DATA ]", 35, 35, 0.45f, tactBlue);
+            String coordsX = String.format("X: %05d", (int)player.position.x);
+            String coordsY = String.format("Y: %05d", (int)player.position.y);
+            String coordsZ = String.format("Z: %05d", (int)player.position.z);
+            drawText(shader, coordsX, 35, 52, 0.55f);
+            drawText(shader, coordsY, 130, 52, 0.55f);
+            drawText(shader, coordsZ, 35, 70, 0.55f);
 
             // 3. Temperature HUD (Top Right)
             drawTemperatureHUD(player, shader, width, margin);
@@ -162,6 +138,27 @@ public class UIRenderer {
             if (player.damageFlashTimer > 0) {
                 drawDamageVignette(shader, width, height, player.damageFlashTimer);
             }
+        }
+
+        // --- Global Cursor Rendering (For Menus) ---
+        if (main.inventoryOpen || main.chestOpen || main.craftingOpen || 
+            main.shipConsoleOpen || main.furnaceOpen || main.cookerOpen) {
+            
+            double[] mx = new double[1], my = new double[1];
+            org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
+            float mouseX = (float)mx[0];
+            float mouseY = (float)my[0];
+
+            // 1. Cursor ItemStack (Attached to Mouse) - Except in some screens if handled locally
+            // We'll handle it globally here for consistency
+            minicraft.item.ItemStack cursor = player.inventory.getCursorStack();
+            if (cursor != null && !cursor.isEmpty()) {
+                drawItemIcon(shader, cursor.getItem(), mouseX - 32, mouseY - 32, 64);
+                if (cursor.getCount() > 1) drawText(shader, String.valueOf(cursor.getCount()), mouseX - 25, mouseY + 20, 0.8f);
+            }
+
+            // 2. Blocky Cursor (Tactical Blue Glow)
+            drawRectInternal(shader, mouseX, mouseY, 32, 32, tactBlue, "blocky_cursor");
         }
 
         glDisable(GL_BLEND);
@@ -185,9 +182,8 @@ public class UIRenderer {
         float sx = (width - panelW) / 2f;
         float sy = (height - panelH) / 2f;
         
-        drawRectInternal(shader, sx, sy, panelW, panelH, glassBgColor);
-        drawRectInternal(shader, sx, sy, panelW, 2, glassBorderColor);
-        drawText(shader, "LOOT CONTAINER", sx + 30, sy + 30, 1.2f, new Vector4f(0.4f, 1.0f, 0.4f, 1.0f));
+        drawTacticalFrame(shader, sx, sy, panelW, panelH);
+        drawText(shader, "LOOT CONTAINER", sx + 30, sy + 30, 1.2f, tactGreen);
 
         // 1. Render Chest Contents (Top 3x9)
         minicraft.item.ItemStack[] chestInv = main.activeChest.getMainInventory();
@@ -248,9 +244,8 @@ public class UIRenderer {
         float sy = (height - panelH) / 2f;
         
         // --- 1. Main Background ---
-        drawRectInternal(shader, sx, sy, panelW, panelH, glassBgColor);
-        drawRectInternal(shader, sx, sy, panelW, 2, glassBorderColor);
-        drawText(shader, "PLAYER INVENTORY", sx + 30, sy + 30, 1.2f, new Vector4f(0.9f, 0.9f, 0.4f, 1.0f));
+        drawTacticalFrame(shader, sx, sy, panelW, panelH);
+        drawText(shader, "PLAYER INVENTORY", sx + 30, sy + 30, 1.2f, tactOrange);
 
         // --- 2. Main 3x9 Grid ---
         minicraft.item.ItemStack[] mainInv = player.inventory.getMainInventory();
@@ -362,7 +357,7 @@ public class UIRenderer {
         float panelW = 700;
         float panelH = 500;
         float sx = (width - panelW) / 2f;
-        float sy = (height - panelH) / 2f;
+        float sy = height - panelH - 80; // Above hotbar
         
         String title = main.furnaceOpen ? "INDUSTRIAL SMELTER" : "HIGH-EFFICIENCY COOKER";
         Vector4f titleCol = main.furnaceOpen ? tactOrange : tactBlue;
@@ -410,14 +405,19 @@ public class UIRenderer {
             drawSlot(shader, invStartX + col * 79, invStartY + row * 79, 64, pInv[i]);
         }
 
-        // --- Cursor ItemStack ---
+        // --- Cursor ---
+        double[] mx = new double[1], my = new double[1];
+        org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
+        float mouseX = (float)mx[0];
+        float mouseY = (float)my[0];
+
+        // 1. Cursor ItemStack (Attached to Mouse)
         minicraft.item.ItemStack cursor = player.inventory.getCursorStack();
         if (cursor != null && !cursor.isEmpty()) {
-            double[] mx = new double[1], my = new double[1];
-            org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
-            drawItemIcon(shader, cursor.getItem(), (float)mx[0]-32, (float)my[0]-32, 64);
-            if (cursor.getCount() > 1) drawText(shader, String.valueOf(cursor.getCount()), (float)mx[0]-25, (float)my[0]+20, 0.8f);
+            drawItemIcon(shader, cursor.getItem(), mouseX - 32, mouseY - 32, 64);
+            if (cursor.getCount() > 1) drawText(shader, String.valueOf(cursor.getCount()), mouseX - 25, mouseY + 20, 0.8f);
         }
+
     }
 
     private void drawSlot(ShaderProgram shader, float x, float y, float size, minicraft.item.ItemStack stack) {
@@ -463,60 +463,73 @@ public class UIRenderer {
 
     private void renderCraftingMenu(Player player, ShaderProgram shader, int width, int height, minicraft.Main main) {
         // Darken background
-        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.75f));
+        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.85f));
         
         float menuW = 600;
         float menuH = 500;
         float startX = (width - menuW) / 2f;
         float startY = (height - menuH) / 2f;
         
-        // 1. Draw Main Background (Glass Style)
-        drawRectInternal(shader, startX, startY, menuW, menuH, new Vector4f(0.12f, 0.12f, 0.12f, 0.95f));
+        // --- 1. Smithing Table Background ---
+        drawRectInternal(shader, startX, startY, menuW, menuH, textColor, "crafting_menu_bg");
         drawRectInternal(shader, startX, startY, menuW, 2, glassBorderColor); 
         
-        // 2. Render Tabs
+        // 2. Render Tabs (Wooden Buttons)
         Recipe.Category[] cats = Recipe.Category.values();
-        float tabW = menuW / cats.length;
+        float tabW = (menuW - 40) / cats.length;
         for (int i = 0; i < cats.length; i++) {
-            float tx = startX + i * tabW;
+            float tx = startX + 20 + i * tabW;
             boolean active = (main.activeCategory == cats[i]);
             
-            // Tab Background
-            Vector4f tabColor = active ? new Vector4f(0.25f, 0.25f, 0.25f, 1.0f) : new Vector4f(0.15f, 0.15f, 0.15f, 0.8f);
-            drawRectInternal(shader, tx, startY, tabW, 40, tabColor);
-            if (active) drawRectInternal(shader, tx, startY + 38, tabW, 2, new Vector4f(1, 1, 0, 1));
+            // Wood Button
+            drawRectInternal(shader, tx, startY + 10, tabW - 4, 35, active ? new Vector4f(1.2f, 1.2f, 1.2f, 1.0f) : new Vector4f(0.8f, 0.8f, 0.8f, 1.0f), "button_wood");
+            if (active) drawRectInternal(shader, tx, startY + 43, tabW - 4, 2, tactOrange);
             
-            drawText(shader, cats[i].name(), tx + (tabW/2f) - (cats[i].name().length()*4), startY + 12, 0.8f, active ? textColor : highlightColor);
+            drawText(shader, cats[i].name(), tx + (tabW/2f) - (cats[i].name().length()*4), startY + 20, 0.7f, active ? textColor : new Vector4f(0,0,0,0.8f));
         }
 
-        // 3. Render Recipe List
+        // 3. Render Recipe List (In the main forge area)
         List<Recipe> filtered = new java.util.ArrayList<>();
         for (Recipe r : main.craftingManager.getRecipes()) {
             if (r.getCategory() == main.activeCategory) filtered.add(r);
         }
 
-        float listX = startX + 20;
-        for (int i = 0; i < filtered.size(); i++) {
-            Recipe r = filtered.get(i);
-            float ry = startY + 60 + i * 40;
-            boolean selected = (i == main.recipeIndex);
+        float listX = startX + 35;
+        int maxItems = 9;
+        for (int i = 0; i < Math.min(filtered.size() - main.recipeScrollOffset, maxItems); i++) {
+            int actualIndex = i + main.recipeScrollOffset;
+            Recipe r = filtered.get(actualIndex);
+            float ry = startY + 70 + i * 40;
+            boolean selected = (actualIndex == main.recipeIndex);
             
             if (selected) {
-                drawRectInternal(shader, listX, ry, 360, 35, highlightColor);
-                drawRectInternal(shader, listX - 2, ry, 4, 35, new Vector4f(1, 1, 0, 1));
+                drawRectInternal(shader, listX - 10, ry - 2, 350, 38, highlightColor);
+                drawRectInternal(shader, listX - 12, ry - 2, 4, 38, tactOrange);
             }
             
-            drawText(shader, r.getName(), listX + 15, ry + 8, 1.0f, selected ? new Vector4f(1, 1, 0, 1) : textColor);
+            drawText(shader, r.getName(), listX + 15, ry + 8, 1.0f, selected ? tactOrange : textColor);
         }
 
-        // 4. Recipe Details Pane (Right)
+        // Scrollbar Track (Tactical)
+        if (filtered.size() > maxItems) {
+            float sbX = startX + 380;
+            float sbY = startY + 70;
+            float sbH = maxItems * 40 - 5;
+            drawRectInternal(shader, sbX, sbY, 4, sbH, tactDim);
+            float thumbH = (sbH / (float)filtered.size()) * maxItems;
+            float thumbY = sbY + (sbH / (float)filtered.size()) * main.recipeScrollOffset;
+            drawRectInternal(shader, sbX, thumbY, 4, thumbH, tactBlue);
+        }
+
+        // 4. Recipe Details Pane (Right Wood)
         if (main.recipeIndex >= 0 && main.recipeIndex < filtered.size()) {
             Recipe selectedRecipe = filtered.get(main.recipeIndex);
-            float detailX = startX + 390;
-            float detailY = startY + 60;
+            float detailX = startX + 395;
+            float detailY = startY + 70;
             
-            drawRectInternal(shader, detailX, detailY, 190, menuH - 120, glassBgColor);
-            drawText(shader, "REQUIRED:", detailX + 10, detailY + 10, 0.7f, highlightColor);
+            // Requirement Panel
+            drawRectInternal(shader, detailX, detailY, 175, menuH - 140, new Vector4f(0,0,0,0.4f));
+            drawText(shader, "REQUIRED:", detailX + 10, detailY + 10, 0.7f, tactOrange);
             
             int k = 0;
             boolean canCraft = true;
@@ -525,22 +538,52 @@ public class UIRenderer {
                 boolean sufficient = owned >= entry.getValue();
                 if (!sufficient) canCraft = false;
                 
-                Vector4f color = sufficient ? new Vector4f(0.4f, 1.0f, 0.4f, 1.0f) : new Vector4f(1.0f, 0.4f, 0.4f, 1.0f);
+                Vector4f color = sufficient ? tactGreen : new Vector4f(1.0f, 0.4f, 0.4f, 1.0f);
                 drawText(shader, entry.getKey().getName(), detailX + 15, detailY + 40 + k*45, 0.6f, color);
                 drawText(shader, owned + " / " + entry.getValue(), detailX + 15, detailY + 58 + k*45, 0.7f, color);
                 k++;
             }
             
-            float btnX = startX + menuW - 180;
-            float btnY = startY + menuH - 70;
-            drawRectInternal(shader, btnX, btnY, 160, 50, canCraft ? new Vector4f(0.2f, 0.6f, 0.2f, 0.9f) : new Vector4f(0.3f, 0.3f, 0.3f, 0.8f));
-            drawText(shader, "CRAFT ITEM", btnX + 25, btnY + 15, 0.9f);
+            float btnX = startX + menuW - 190;
+            float btnY = startY + menuH - 65;
+            // Craft Button (Wooden Plank)
+            drawRectInternal(shader, btnX, btnY, 170, 45, canCraft ? textColor : new Vector4f(0.5f,0.5f,0.5f,0.8f), "button_wood");
+            drawText(shader, "FORGE ITEM", btnX + 35, btnY + 15, 0.85f, canCraft ? new Vector4f(0,0,0,1) : new Vector4f(0.2f,0.2f,0.2f,0.8f));
         }
 
-        // Mouse Cursor
+        // Global Cursor (Hidden system)
         double[] mx = new double[1], my = new double[1];
         org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
-        drawRectInternal(shader, (float)mx[0], (float)my[0], 12, 12, new Vector4f(1,1,1,1));
+        float mouseX = (float)mx[0];
+        float mouseY = (float)my[0];
+        drawRectInternal(shader, mouseX, mouseY, 32, 32, textColor, "blocky_cursor");
+    }
+
+    private void drawTacticalFrame(ShaderProgram shader, float x, float y, float w, float h) {
+        // Base Glass (Tinted)
+        drawRectInternal(shader, x, y, w, h, glassBgColor);
+        
+        // Thin Outline
+        drawRectInternal(shader, x, y, w, 1, glassBorderColor); // Top
+        drawRectInternal(shader, x, y + h - 1, w, 1, glassBorderColor); // Bottom
+        drawRectInternal(shader, x, y, 1, h, glassBorderColor); // Left
+        drawRectInternal(shader, x + w - 1, y, 1, h, glassBorderColor); // Right
+        
+        // Tactical Corners (Reinforced)
+        float cLen = 12;
+        float cThick = 3;
+        // Top Left
+        drawRectInternal(shader, x, y, cLen, cThick, tactBlue);
+        drawRectInternal(shader, x, y, cThick, cLen, tactBlue);
+        // Top Right
+        drawRectInternal(shader, x + w - cLen, y, cLen, cThick, tactBlue);
+        drawRectInternal(shader, x + w - cThick, y, cThick, cLen, tactBlue);
+        // Bottom Left
+        drawRectInternal(shader, x, y + h - cThick, cLen, cThick, tactBlue);
+        drawRectInternal(shader, x, y + h - cLen, cThick, cLen, tactBlue);
+        // Bottom Right
+        drawRectInternal(shader, x + w - cLen, y + h - cThick, cLen, cThick, tactBlue);
+        drawRectInternal(shader, x + w - cThick, y + h - cLen, cThick, cLen, tactBlue);
     }
 
     private void renderWeather(ShaderProgram shader, int width, int height, minicraft.world.WeatherManager weather) {

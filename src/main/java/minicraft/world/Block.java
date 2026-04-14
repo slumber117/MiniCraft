@@ -146,16 +146,25 @@ public enum Block {
     }
 
     public String getTextureForFace(Face face) {
+        return getTextureForFace(face, false);
+    }
+
+    public String getTextureForFace(Face face, boolean lit) {
+        String base = "";
         switch (face) {
-            case TOP:
-                return topTexture;
-            case BOTTOM:
-                return bottomTexture;
-            case SIDE:
-                return sideTexture;
-            default:
-                return sideTexture;
+            case TOP:    base = topTexture; break;
+            case BOTTOM: base = bottomTexture; break;
+            case SIDE:   base = sideTexture; break;
+            default:     base = sideTexture; break;
         }
+        
+        if (lit) {
+            // Check if a _lit version exists by convention
+            if (this == FURNACE || this == COOKER) {
+                return base + "_lit";
+            }
+        }
+        return base;
     }
 
     public float getPaddingForFace(Face face) {

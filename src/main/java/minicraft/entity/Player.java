@@ -223,7 +223,7 @@ public class Player extends Entity {
 
     private void updateEnvironment(float dt) {
         float altitude = position.y;
-        float baseTemp = 36.6f;
+        float baseTemp = 15.0f; // Sea level "Okay" temperature
         
         // 1. Altitude Cold Factor (Starts at 120, gets lethal by 200)
         float altitudeColdFactor = Math.max(0, (altitude - 120) * 0.15f);
@@ -232,28 +232,29 @@ public class Player extends Entity {
         boolean isInsulated = inventory.getTotalDefense() > 0.05f; // Leather or better
         if (isInsulated) altitudeColdFactor *= 0.1f; // 90% protection
 
-        if (altitude > 120) {
-            temperature = baseTemp - altitudeColdFactor;
-        } else if (altitude < 60) {
-            temperature = baseTemp + (60 - altitude) * 0.1f;
-        } else {
-            temperature = baseTemp;
-        }
+        temperature = baseTemp - altitudeColdFactor;
 
-        if (temperature < 32.0f) tempState = "Severe Hypothermia";
-        else if (temperature < 35.0f) tempState = "Cold";
-        else if (temperature > 38.0f) tempState = "Too Warm";
-        else tempState = "Normal";
+        if (temperature < -5.0f) tempState = "Severe Hypothermia";
+        else if (temperature < 10.0f) tempState = "Cold";
+        else if (temperature < 20.0f) tempState = "Okay";
+        else if (temperature > 30.0f) tempState = "Too Warm";
+        else tempState = "Warm";
     }
 
     private void updateHealthEffects(float dt) {
-        if (hunger <= 0 || thirst <= 0 || tempState.equals("Cold") || tempState.equals("Too Warm")) {
-            health = Math.max(0, health - 0.5f * dt);
-        } else if (tempState.equals("Severe Hypothermia")) {
-            health = Math.max(0, health - 2.5f * dt); // Lethal damage
-        } else {
+        if (tempState.equals("Severe Hypothermia")) {
+            health = Math.max(0, health - 2.5f * dt); // Lethal
+        } else if (tempState.equals("Cold") || tempState.equals("Too Warm")) {
+            health = Math.max(0, health - 0.5f * dt); // Stress damage
+        }
+        
+        // Normal survival (Hunger/Thirst)
+        if (hunger <= 0 || thirst <= 0) {
+            health = Math.max(0, health - 1.0f * dt);
+        } else if (tempState.equals("Okay") || tempState.equals("Warm")) {
+            // Regeneration
             if (hunger > 80 && thirst > 80) {
-                health = Math.min(maxHealth, health + 0.1f * dt);
+                health = Math.min(maxHealth, health + 0.15f * dt);
             }
         }
     }

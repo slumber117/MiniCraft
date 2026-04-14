@@ -194,7 +194,7 @@ public class ShipEntity extends Entity {
         float sin = (float) Math.sin(Math.toRadians(yaw));
         
         // Use actual thruster mounts from the schematic
-        for (minicraft.ship.ThrusterMount mount : definition.schematic.thrusters) {
+        for (minicraft.ship.ThrusterMount mount : definition.schematic.getThrusterMounts()) {
             // Only show plumes for rear engines during forward thrust, or lateral for turning
             // For simplicity, we show all major thrusters scaled by currentThrust
             

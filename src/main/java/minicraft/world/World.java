@@ -449,6 +449,7 @@ public class World {
             
             minicraft.entity.ProcessingFacility fac = entry.getValue();
             boolean isCooker = (b == Block.COOKER);
+            boolean wasActive = fac.isActive;
             
             // 1. Handle Fuel Consumption
             if (fac.remainingFuelTime <= 0) {
@@ -500,6 +501,10 @@ public class World {
                 fac.isActive = false;
                 fac.processProgress = 0;
                 if (fac.remainingFuelTime > 0) fac.remainingFuelTime -= dt * 0.5f; // Passive fuel drain
+            }
+
+            if (wasActive != fac.isActive) {
+                markChunkDirty(Math.floorDiv(fx, 16), Math.floorDiv(fz, 16));
             }
         }
     }

@@ -13,5 +13,6 @@ public class ItemStack {
     public int getCount() { return count; }
     public void setCount(int count) { this.count = count; }
     public void add(int amount) { this.count += amount; }
+    public void remove(int amount) { this.count -= amount; }
     public boolean isEmpty() { return item == null || count <= 0; }
 }

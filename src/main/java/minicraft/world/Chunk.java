@@ -220,7 +220,13 @@ public class Chunk {
             }
         }
 
-        String tex = b.getTextureForFace(f);
+        boolean lit = false;
+        if (b == Block.FURNACE || b == Block.COOKER) {
+            minicraft.entity.ProcessingFacility fac = world.getFacility(gx, y, gz);
+            if (fac != null && fac.isActive) lit = true;
+        }
+
+        String tex = b.getTextureForFace(f, lit);
         if (tex == null) return;
         float uvPadding = b.getPaddingForFace(f);
 

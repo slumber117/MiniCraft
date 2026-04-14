@@ -124,6 +124,7 @@ public class Main {
     // ── Crafting ──────────────────────────────────────────────────────────
     public Recipe.Category activeCategory = Recipe.Category.TOOLS;
     public int recipeIndex = 0;
+    public int recipeScrollOffset = 0;
     public int inventoryIndex = 0;
     public int chestIndex = 0;
     public final CraftingManager craftingManager = new CraftingManager();
@@ -399,8 +400,8 @@ public class Main {
             lastTime = now;
 
             // ── Cursor mode ───────────────────────────────────────────────
-            if (inventoryOpen || craftingOpen || shipConsoleOpen || chestOpen) {
-                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            if (inventoryOpen || craftingOpen || shipConsoleOpen || chestOpen || furnaceOpen || cookerOpen) {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
             } else {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             }
@@ -782,9 +783,12 @@ public class Main {
         float y = (float) my[0] * ((float) framebufferH / Math.max(1, winH[0]));
         
         float panelW = 700, panelH = 500;
-        float sx = (framebufferW - panelW) / 2f, sy = (framebufferH - panelH) / 2f;
+        float sx = (framebufferW - panelW) / 2f, sy = framebufferH - panelH - 80;
         float cx = sx + panelW/2f, cy = sy + 180;
         float slotSize = 80;
+
+        // Hide system cursor while menu is open
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
         // ── 1. Facility Slots ──
         // Input
@@ -804,6 +808,17 @@ public class Main {
         // Output
         if (x >= cx + 100 && x <= cx + 180 && y >= cy - 40 && y <= cy + 40) {
             minicraft.item.ItemStack clicked = activeFacility.getSlot(2);
+            if (clicked != null && !clicked.isEmpty() && (player.inventory.getCursorStack() == null || player.inventory.getCursorStack().isEmpty())) {
+                // Quick Move to inventory if cursor is empty
+                for (int i = 0; i < 27; i++) {
+                    if (player.inventory.getMainInventory()[i] == null || player.inventory.getMainInventory()[i].isEmpty()) {
+                        player.inventory.getMainInventory()[i] = clicked;
+                        activeFacility.setSlot(2, null);
+                        return;
+                    }
+                }
+            }
+            // Standard swap
             activeFacility.setSlot(2, player.inventory.getCursorStack());
             player.inventory.setCursorStack(clicked);
             return;
@@ -958,10 +973,19 @@ public class Main {
         boolean isUp = glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS;
         boolean isDown = glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS;
         boolean isEnter = glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS;
-        if (isUp && !prevUp)
+        
+        if (isUp && !prevUp) {
             recipeIndex = (recipeIndex - 1 + filtered.size()) % Math.max(1, filtered.size());
-        if (isDown && !prevDown)
+            // Adjust scroll offset
+            if (recipeIndex < recipeScrollOffset) recipeScrollOffset = recipeIndex;
+            if (recipeIndex == filtered.size() - 1) recipeScrollOffset = Math.max(0, filtered.size() - 10);
+        }
+        if (isDown && !prevDown) {
             recipeIndex = (recipeIndex + 1) % Math.max(1, filtered.size());
+            // Adjust scroll offset
+            if (recipeIndex >= recipeScrollOffset + 10) recipeScrollOffset = recipeIndex - 9;
+            if (recipeIndex == 0) recipeScrollOffset = 0;
+        }
         if (isEnter && !prevEnter && recipeIndex < filtered.size())
             craftingManager.craft(filtered.get(recipeIndex), player.inventory);
 
@@ -1067,24 +1091,24 @@ public class Main {
                 if (targeted == Block.CHEST) {
                     activeChest = world.getContainer(gx, gy, gz);
                     chestOpen = true;
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
                 } else if (targeted == Block.FURNACE) {
                     activeFacility = world.getFacility(gx, gy, gz);
                     furnaceOpen = true;
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
                 } else if (targeted == Block.COOKER) {
                     activeFacility = world.getFacility(gx, gy, gz);
                     cookerOpen = true;
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
                 } else if (targeted == Block.CRAFTING_TABLE) {
                     craftingOpen = true;
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
                 } else if (targeted == Block.SHIP_CONSOLE) {
                     shipConsoleOpen = true;
                     drydockX = gx;
                     drydockY = gy - 1;
                     drydockZ = gz;
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
                 }
                 return;
             }
