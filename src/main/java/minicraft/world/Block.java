@@ -10,7 +10,7 @@ public enum Block {
     BEDROCK(true, 9999, -1f, 0f, "stone"),
     GRASS(true, 0, 0.6f, 0.1f, "grass_top", "dirt", "grass"),
     DIRT(true, 0, 0.5f, 0.1f, "dirt"),
-    STONE(true, 1, 1.5f, 0.5f, "stone"),
+    STONE(true, 0, 1.5f, 0.5f, "stone"),
     SAND(true, 0, 0.5f, 0.1f, "sand"),
     RED_SAND(true, 0, 0.5f, 0.1f, "red_sand"),
     WATER(false, 0, 0f, 0f, "water"),
@@ -101,7 +101,7 @@ public enum Block {
     TRANSMAT_PAD(true, 1, 10.0f, 5.0f, "transmat_pad"),
     SHIP_CONSOLE(true, 0, 2.5f, 10.0f, "ship_console"),
     COOKER(true, 0, 3.0f, 10.0f, "cooker_top", "stone", "cooker_side"), // High-efficiency food preparation unit
-    STONE_DARK(true, 2, 5.0f, 1.0f, "stone_dark"), // Deep layer industrial stone
+    STONE_DARK(true, 0, 5.0f, 1.0f, "stone_dark"), // Deep layer industrial stone
     LAVA(false, 0, 0f, 0f, "lava"), // High-intensity surface liquid hazard
     MAGMA(true, 0, 1.0f, 5.0f, "magma"); // Glowing underground solid hazard
 

@@ -108,7 +108,7 @@ public abstract class Entity {
     public void damage(float amount) {
         if (dead) return;
         health -= amount;
-        damageFlashTimer = 1.0f;
+        damageFlashTimer = 0.35f;
         if (health <= 0) {
             health = 0;
             dead = true;

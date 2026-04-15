@@ -92,7 +92,7 @@ public class EntityRenderer {
 
             String typeName = e.type.name();
             Vector4f color = new Vector4f(1, 1, 1, 1);
-            if (e.damageFlashTimer > 0) color = new Vector4f(1, 0.5f, 0.5f, 1);
+            if (e.damageFlashTimer > 0) color = new Vector4f(1.0f, 0.1f, 0.1f, 1.0f);
 
             // --- HIGH-FIDELITY 3D NPC OVERRIDE ---
             if (typeName.equalsIgnoreCase("ZOMBIE")) {
