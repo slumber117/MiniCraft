@@ -28,6 +28,11 @@ public class Player extends Entity {
 
     public final Inventory inventory = new Inventory();
     public float miningProgress = 0f;
+
+    // Leveling
+    public int level = 1;
+    public float xp = 0;
+    public float xpToNextLevel = 15f;
     
     public boolean isGrounded = false;
     private Camera camera;
@@ -68,8 +73,9 @@ public class Player extends Entity {
         applyGravity(dt);
         resolveMovement(dt, world);
 
-        // 3. Environment (Temp)
+        // 3. Environment (Temp & Hazards)
         updateEnvironment(dt);
+        checkBlockHazards(dt, world);
         
         // 4. Effects
         updateHealthEffects(dt);
@@ -159,7 +165,7 @@ public class Player extends Entity {
         velocity.z *= 0.8f;
     }
 
-    public void meleeAttack(EntityManager manager) {
+    public void meleeAttack(EntityManager manager, ParticleManager pm) {
         float range = 3.0f;
         float cos45 = (float) Math.cos(Math.toRadians(45));
 
@@ -177,7 +183,11 @@ public class Player extends Entity {
             
             float dot = dx * fx + dz * fz;
             if (dot > cos45) { 
+                boolean wasDead = e.isDead();
                 e.damage(20f); 
+                if (!wasDead && e.isDead()) {
+                    addXp(e.getType().isHostile() ? 10f : 2f, pm);
+                }
                 e.applyKnockback(dx * 4f, 1.5f, dz * 4f);
             }
         }
@@ -228,11 +238,18 @@ public class Player extends Entity {
         // 1. Altitude Cold Factor (Starts at 120, gets lethal by 200)
         float altitudeColdFactor = Math.max(0, (altitude - 120) * 0.15f);
         
-        // 2. Armor Insulation Check
-        boolean isInsulated = inventory.getTotalDefense() > 0.05f; // Leather or better
-        if (isInsulated) altitudeColdFactor *= 0.1f; // 90% protection
+        // 2. Armor Insulation
+        float insulation = inventory.getTotalInsulation();
+        float protection = Math.min(0.95f, insulation);
+        
+        // Cold protection
+        float effectiveCold = altitudeColdFactor * (1.0f - protection);
+        temperature = baseTemp - effectiveCold;
 
-        temperature = baseTemp - altitudeColdFactor;
+        // 3. Leather Thermal Stress: If at sea level (warm) and wearing leather, it heats you up
+        if (baseTemp >= 15.0f && inventory.getFullSetTier() != null && inventory.getFullSetTier().equalsIgnoreCase("Leather")) {
+            temperature += 10.0f; // Heats up the player
+        }
 
         if (temperature < -5.0f) tempState = "Severe Hypothermia";
         else if (temperature < 10.0f) tempState = "Cold";
@@ -242,6 +259,11 @@ public class Player extends Entity {
     }
 
     private void updateHealthEffects(float dt) {
+        // Calculate dynamic max health based on armor set
+        float armorHealthBonus = inventory.getTotalHealthBonus();
+        float currentMaxHealth = 100f * (1.0f + armorHealthBonus);
+        this.maxHealth = currentMaxHealth; 
+
         if (tempState.equals("Severe Hypothermia")) {
             health = Math.max(0, health - 2.5f * dt); // Lethal
         } else if (tempState.equals("Cold") || tempState.equals("Too Warm")) {
@@ -275,7 +297,39 @@ public class Player extends Entity {
         return ridingShip != null;
     }
 
+    private void checkBlockHazards(float dt, World world) {
+        // Check blocks at feet and head
+        Block b1 = world.getBlock((int)Math.floor(position.x), (int)Math.floor(position.y), (int)Math.floor(position.z));
+        Block b2 = world.getBlock((int)Math.floor(position.x), (int)Math.floor(position.y + 1.2f), (int)Math.floor(position.z));
+        
+        if (b1 == Block.LAVA || b2 == Block.LAVA) {
+            damage(80f * dt); // Instant high-damage vaporization
+            // Kick player back to safety
+            velocity.y = 5.0f; 
+        } else if (b1 == Block.MAGMA || b2 == Block.MAGMA) {
+            damage(15f * dt); // Heat burn
+        }
+    }
+
     public void handleMouseInput(float dx, float dy) {
         camera.handleMouseInput(dx, dy);
+    }
+
+    public void addXp(float amount, ParticleManager pm) {
+        if (level >= 100) return;
+        this.xp += amount;
+        while (this.xp >= xpToNextLevel && level < 100) {
+            levelUp(pm);
+        }
+    }
+
+    private void levelUp(ParticleManager pm) {
+        this.xp -= xpToNextLevel;
+        this.level++;
+        this.health = this.maxHealth; // Refill health
+        this.xpToNextLevel *= 1.15f;
+        if (pm != null) {
+            pm.spawnLevelUp(position.x, position.y, position.z);
+        }
     }
 }

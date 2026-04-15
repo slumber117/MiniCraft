@@ -474,8 +474,20 @@ public class Main {
             updateAtmosphere(dt);
 
             shaderProgram.setUniform("torchPos", player.position);
-            shaderProgram.setUniform("torchStrength",
-                    player.inventory.hasTorchEquipped() ? 1.0f : 0.0f);
+            
+            // Handheld Torch logic
+            float torchPower = player.inventory.hasTorchEquipped() ? 1.0f : 0.0f;
+            shaderProgram.setUniform("torchStrength", torchPower);
+
+            // Armor Glow logic (Uranium/Plutonium)
+            minicraft.math.Vector3f armorGlow = player.inventory.getDominantGlow();
+            if (armorGlow != null) {
+                shaderProgram.setUniform("glowColor", armorGlow);
+                shaderProgram.setUniform("glowStrength", 1.0f);
+            } else {
+                shaderProgram.setUniform("glowColor", new minicraft.math.Vector3f(0,0,0));
+                shaderProgram.setUniform("glowStrength", 0.0f);
+            }
 
             boolean isUnderwater = world.getBlock(
                     (int) Math.floor(player.position.x),
@@ -485,7 +497,7 @@ public class Main {
             shaderProgram.setUniform("colorTint",
                     isUnderwater ? new Vector4f(0.4f, 0.6f, 1.0f, 1.0f) : whiteTint);
 
-            world.render(shaderProgram, player.position);
+            world.render(shaderProgram, player.position, 1.0f);
             
             float sun = world.getWeatherManager().getSunBrightness();
             entityRenderer.render(entityManager, shaderProgram, textures, viewMatrix, sun);
@@ -584,7 +596,7 @@ public class Main {
             return;
         }
 
-        float speed = 8.0f;
+        float speed = 8.0f * player.inventory.getTotalSpeedMod();
         float yaw = (float) Math.toRadians(camera.getRotation().y);
         float dx = 0, dz = 0;
 
@@ -850,35 +862,42 @@ public class Main {
         boolean isShift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS
                 || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
 
-        float panelW = 800;
-        float panelH = 500;
-        float sx = (framebufferW - panelW) / 2f;
-        float sy = (framebufferH - panelH) / 2f;
-        float slotSize = 64;
-        float gap = 15;
+        // ── Must exactly match UIRenderer.renderInventoryScreen constants ──
+        final float SLOT = 58f;
+        final float GAP  = 8f;
+        final float COLS = 9f;
+        final float ROWS = 4f;
 
-        float invX = sx + 240;
+        float gridW  = COLS * SLOT + (COLS - 1) * GAP;
+        float panelW = gridW + 60f;
+        float panelH = ROWS * SLOT + (ROWS - 1) * GAP + 110f;
+        float sx     = (framebufferW - panelW) / 2f;
+        float sy     = (framebufferH - panelH) / 2f;
+
+        float gridStartX = sx + (panelW - gridW) / 2f;
+        float mainGridY  = sy + 52f;
+
+        // ── Main 3×9 grid ──────────────────────────────────────────────────
         for (int i = 0; i < 27; i++) {
-            float slotX = invX + 40 + (i % 9) * (slotSize + gap);
-            float slotY = sy + 100 + (i / 9) * (slotSize + gap);
-            if (x >= slotX && x <= slotX + slotSize && y >= slotY && y <= slotY + slotSize) {
-                if (isShift)
-                    player.inventory.quickMove(i, false);
-                else
-                    player.inventory.clickSlot(i, false);
+            int col = i % 9, row = i / 9;
+            float slotX = gridStartX + col * (SLOT + GAP);
+            float slotY = mainGridY  + row * (SLOT + GAP);
+            if (x >= slotX && x <= slotX + SLOT && y >= slotY && y <= slotY + SLOT) {
+                if (isShift) player.inventory.quickMove(i, false);
+                else         player.inventory.clickSlot(i, false);
                 return;
             }
         }
 
-        float hbX = (framebufferW - ((slotSize + gap) * 9)) / 2f;
-        float hbY = sy + panelH - 80;
+        // ── Hotbar row ─────────────────────────────────────────────────────
+        // Separator line sits at mainGridY + 3*(SLOT+GAP) + 6, hotbar row 14px below
+        float sepY       = mainGridY + 3 * (SLOT + GAP) + 6f;
+        float hotbarRowY = sepY + 14f;
         for (int i = 0; i < 9; i++) {
-            float slotX = hbX + i * (slotSize + gap);
-            if (x >= slotX && x <= slotX + slotSize && y >= hbY && y <= hbY + slotSize) {
-                if (isShift)
-                    player.inventory.quickMove(i, true);
-                else
-                    player.inventory.clickSlot(i, true);
+            float slotX = gridStartX + i * (SLOT + GAP);
+            if (x >= slotX && x <= slotX + SLOT && y >= hotbarRowY && y <= hotbarRowY + SLOT) {
+                if (isShift) player.inventory.quickMove(i, true);
+                else         player.inventory.clickSlot(i, true);
                 return;
             }
         }
@@ -1011,7 +1030,7 @@ public class Main {
 
     private void handlePlayerAttack(float dt) {
         if (!prevMouseLeftDown)
-            player.meleeAttack(entityManager);
+            player.meleeAttack(entityManager, particleManager);
 
         Vector3f pos = camera.getPosition();
         float pitch = (float) Math.toRadians(camera.getRotation().x);
@@ -1059,6 +1078,7 @@ public class Main {
             if (miningProgress >= 1.0f) {
                 world.setBlock(gx, gy, gz, Block.AIR);
                 miningProgress = player.miningProgress = 0f;
+                player.addXp(b.xpValue, particleManager);
                 if (toolLevel >= b.requiredHarvestLevel) {
                     ItemEntity drop = new ItemEntity(b);
                     drop.setPosition(gx + 0.5f, gy + 0.5f, gz + 0.5f);
@@ -1179,7 +1199,11 @@ public class Main {
             return;
 
         Mesh model = null;
-        if (heldItem.getName().contains("Pickaxe"))
+        if (heldItem.getName().equalsIgnoreCase("Iron Pickaxe"))
+            model = ModelRegistry.getModel("pickaxe_iron");
+        else if (heldItem.getName().equalsIgnoreCase("Stone Pickaxe"))
+            model = ModelRegistry.getModel("pickaxe_stone");
+        else if (heldItem.getName().contains("Pickaxe"))
             model = ModelRegistry.getModel("pickaxe_wooden");
         if (model == null)
             return;

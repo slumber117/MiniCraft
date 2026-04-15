@@ -66,7 +66,7 @@ public class Chunk {
     }
 
     public void buildMesh(TextureRegistry registry, World world) {
-        recalculateColumnLighting();
+        recalculateLighting(world);
         for (int s = 0; s < NUM_SECTIONS; s++) {
             if (sectionDirty[s]) {
                 buildSectionMesh(s, registry, world);
@@ -138,52 +138,70 @@ public class Chunk {
         }
     }
 
-    private void recalculateColumnLighting() {
+
+    private void recalculateLighting(World world) {
+        Arrays.fill(skyLightMap, 0.0f);
+        Arrays.fill(blockLightMap, 0.0f);
+        
+        Queue<int[]> skyQueue = new LinkedList<>();
+        Queue<int[]> blockQueue = new LinkedList<>();
+
+        // 1. Initial Pass: Sky Light (Top-down) and Light Sources
         for (int x = 0; x < WIDTH; x++) {
             for (int z = 0; z < DEPTH; z++) {
-                float skyLight = 1.0f;
+                boolean hitSolid = false;
                 for (int y = HEIGHT - 1; y >= 0; y--) {
                     int i = idx(x, y, z);
-                    // Light is blocked by solid blocks
-                    if (blocks[i] != null && blocks[i].solid) {
-                        skyLight = 0.0f;
+                    Block b = blocks[i];
+                    
+                    // Sky Light start
+                    if (!hitSolid) {
+                        if (b != null && b.isOpaque()) hitSolid = true;
+                        else {
+                            skyLightMap[i] = 1.0f;
+                            skyQueue.add(new int[]{x, y, z, 30});
+                        }
                     }
-                    skyLightMap[i] = skyLight;
-                }
-            }
-        }
-        propagateTorchLight();
-    }
 
-    private void propagateTorchLight() {
-        Arrays.fill(blockLightMap, 0.0f);
-        for (int x = 0; x < WIDTH; x++) {
-            for (int y = 0; y < HEIGHT; y++) {
-                for (int z = 0; z < DEPTH; z++) {
-                    if (blocks[idx(x, y, z)] == Block.TORCH) {
-                        applyLightSource(x, y, z, 1.0f, 8);
+                    // Block Light sources
+                    if (b == Block.TORCH || b == Block.LAVA || b == Block.MAGMA) {
+                        blockLightMap[i] = 1.0f;
+                        blockQueue.add(new int[]{x, y, z, 30});
                     }
                 }
             }
         }
+
+        // 2. Propagate Sky Light (Lateral bleed into caves)
+        propagate(skyLightMap, skyQueue, false);
+        
+        // 3. Propagate Block Light (BFS)
+        propagate(blockLightMap, blockQueue, true);
     }
 
-    private void applyLightSource(int sx, int sy, int sz, float strength, int range) {
-        for (int dx = -range; dx <= range; dx++) {
-            for (int dy = -range; dy <= range; dy++) {
-                for (int dz = -range; dz <= range; dz++) {
-                    int x = sx + dx, y = sy + dy, z = sz + dz;
-                    if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT || z < 0 || z >= DEPTH) continue;
-                    float d = (float) Math.sqrt(dx*dx + dy*dy + dz*dz);
-                    if (d > range) continue;
+    private void propagate(float[] lightMap, Queue<int[]> queue, boolean blocksLight) {
+        int[] dx = {1, -1, 0, 0, 0, 0};
+        int[] dy = {0, 0, 1, -1, 0, 0};
+        int[] dz = {0, 0, 0, 0, 1, -1};
+
+        while (!queue.isEmpty()) {
+            int[] curr = queue.poll();
+            int sx = curr[0], sy = curr[1], sz = curr[2], level = curr[3];
+            if (level <= 1) continue;
+
+            for (int i = 0; i < 6; i++) {
+                int nx = sx + dx[i], ny = sy + dy[i], nz = sz + dz[i];
+                if (nx < 0 || nx >= WIDTH || ny < 0 || ny >= HEIGHT || nz < 0 || nz >= DEPTH) continue;
+
+                int ni = idx(nx, ny, nz);
+                float nextVal = (level - 1) / 30.0f;
+                
+                if (lightMap[ni] < nextVal) {
+                    Block b = blocks[ni];
+                    if (b != null && b.isOpaque()) continue;
                     
-                    float light = 0f;
-                    if (d <= 2.0f)      light = 0.95f;
-                    else if (d <= 4.0f) light = 0.65f;
-                    else if (d <= 8.0f) light = 0.35f;
-                    
-                    int i = idx(x, y, z);
-                    blockLightMap[i] = Math.max(blockLightMap[i], light * strength);
+                    lightMap[ni] = nextVal;
+                    queue.add(new int[]{nx, ny, nz, level - 1});
                 }
             }
         }

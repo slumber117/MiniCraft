@@ -38,18 +38,16 @@ public class CavernCarver {
     // ── Tuning ────────────────────────────────────────────────────────────
 
     /** Primary noise scale — controls chamber size. Smaller = bigger chambers. */
-    private static final double NOISE_A_SCALE = 0.022;
-
-    /** Secondary noise scale — slightly higher freq for irregular walls. */
-    private static final double NOISE_B_SCALE = 0.034;
+    private static final double NOISE_A_SCALE = 0.045;
+    private static final double NOISE_B_SCALE = 0.065;
 
     /**
      * Carve threshold for each noise field.
      * Value in [-1, 1]. Intersection of both < threshold defines carved space.
      * Higher threshold = more carved, larger caverns.
      */
-    private static final double THRESHOLD_A = -0.10;
-    private static final double THRESHOLD_B = -0.15;
+    private static final double THRESHOLD_A = -0.22;
+    private static final double THRESHOLD_B = -0.28;
 
     /** Depth fraction at which caverns start appearing (below surface). */
     private static final float CAVERN_START_DEPTH = 0.15f;
@@ -60,10 +58,10 @@ public class CavernCarver {
     /**
      * Depth fraction below which caverns are suppressed again (solid bedrock zone).
      */
-    private static final float CAVERN_END_DEPTH = 0.88f;
+    private static final float CAVERN_END_DEPTH = 0.98f;
 
     /** Below this depth fraction, caverns become MAGMA_CHAMBERs. */
-    private static final float MAGMA_DEPTH = 0.72f;
+    private static final float MAGMA_DEPTH = 0.85f;
 
     /** Above this depth fraction and small, caverns become GROTTOs. */
     private static final float GROTTO_MAX_DEPTH = 0.25f;
@@ -111,8 +109,8 @@ public class CavernCarver {
         // Peaks at CAVERN_PEAK_DEPTH, falls off toward start and end.
         double depthGain = depthEnvelope(depthFraction);
 
-        double threshA = THRESHOLD_A + depthGain * 0.20;
-        double threshB = THRESHOLD_B + depthGain * 0.20;
+        double threshA = THRESHOLD_A + depthGain * 0.12;
+        double threshB = THRESHOLD_B + depthGain * 0.12;
 
         // ── 4. Domain warp ─────────────────────────────────────────────────
         double warpScale = 0.015;

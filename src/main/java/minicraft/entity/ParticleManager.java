@@ -74,6 +74,22 @@ public class ParticleManager {
         particles.add(p);
     }
 
+    public void spawnLevelUp(float x, float y, float z) {
+        int count = 60;
+        for (int i = 0; i < count; i++) {
+            float angle = (float) (Math.random() * Math.PI * 2);
+            float speed = 2.0f + (float) Math.random() * 3.0f;
+            Vector3f vel = new Vector3f(
+                (float) Math.cos(angle) * speed,
+                (float) Math.random() * 5.0f,
+                (float) Math.sin(angle) * speed
+            );
+            // Gold color
+            Vector4f color = new Vector4f(1.0f, 0.84f, 0.0f, 1.0f);
+            spawnThruster(x, y, z, vel, 0.3f, color, 1.5f + (float) Math.random());
+        }
+    }
+
     public void update(float dt) {
         Iterator<Particle> it = particles.iterator();
         while (it.hasNext()) {

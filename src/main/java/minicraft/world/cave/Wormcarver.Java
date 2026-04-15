@@ -36,14 +36,14 @@ public class WormCarver {
     private static final int SPAGHETTI_WORMS_PER_CHUNK = 2;
 
     /** Maximum steps a worm walks before dying. */
-    private static final int TUNNEL_MAX_STEPS    = 180;
-    private static final int NOODLE_MAX_STEPS    = 120;
-    private static final int SPAGHETTI_MAX_STEPS = 280;
+    private static final int TUNNEL_MAX_STEPS    = 140;
+    private static final int NOODLE_MAX_STEPS    = 100;
+    private static final int SPAGHETTI_MAX_STEPS = 220;
 
     /** Base radius of the carved sphere at each worm step. */
-    private static final float TUNNEL_BASE_RADIUS    = 2.8f;
-    private static final float NOODLE_BASE_RADIUS    = 1.2f;
-    private static final float SPAGHETTI_BASE_RADIUS = 2.2f;
+    private static final float TUNNEL_BASE_RADIUS    = 2.1f;
+    private static final float NOODLE_BASE_RADIUS    = 1.0f;
+    private static final float SPAGHETTI_BASE_RADIUS = 1.6f;
 
     /** How much the radius varies along the worm's length. */
     private static final float RADIUS_VARIANCE = 0.6f;

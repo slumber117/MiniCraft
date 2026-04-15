@@ -65,4 +65,5 @@ public enum EntityType {
     public boolean isPassive()  { return category == Category.PASSIVE; }
     public boolean isPredator() { return category == Category.PREDATOR; }
     public boolean isNPC()      { return category == Category.NPC; }
+    public boolean isHostile()  { return category == Category.MONSTER || category == Category.PREDATOR; }
 }

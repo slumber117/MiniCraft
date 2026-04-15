@@ -128,10 +128,13 @@ public class Inventory {
         if (index < 0 || index >= target.length) return;
 
         ItemStack clicked = target[index];
-        
-        // SWAP LOGIC
-        target[index] = cursorStack;
-        cursorStack = clicked;
+        // Normalize empties to null so we never hold a ghost stack
+        if (clicked != null && clicked.isEmpty()) clicked = null;
+        if (cursorStack != null && cursorStack.isEmpty()) cursorStack = null;
+
+        // Standard Minecraft pick-up / place / swap
+        target[index] = cursorStack;   // put what we're holding into the slot (may be null)
+        cursorStack   = clicked;       // pick up what was in the slot (may be null)
     }
 
     public void quickMove(int index, boolean isHotbar) {
@@ -186,6 +189,44 @@ public class Inventory {
         if (leggings != null) total += leggings.getProtection();
         if (boots != null) total += boots.getProtection();
         return Math.min(0.95f, total);
+    }
+
+    /**
+     * Returns the name of the tier if a full set is equipped, otherwise null.
+     */
+    public String getFullSetTier() {
+        if (helmet == null || chestplate == null || leggings == null || boots == null) return null;
+        String tier = helmet.getTierName();
+        if (tier.equals(chestplate.getTierName()) && 
+            tier.equals(leggings.getTierName()) && 
+            tier.equals(boots.getTierName())) {
+            return tier;
+        }
+        return null;
+    }
+
+    public float getTotalHealthBonus() {
+        String set = getFullSetTier();
+        if (set == null) return 0f;
+        return helmet.getHealthBonus(); // Stats are shared across pieces of same set
+    }
+
+    public float getTotalSpeedMod() {
+        String set = getFullSetTier();
+        if (set == null) return 1.0f;
+        return helmet.getSpeedModifier();
+    }
+
+    public float getTotalInsulation() {
+        String set = getFullSetTier();
+        if (set == null) return 0f;
+        return helmet.getInsulation();
+    }
+
+    public minicraft.math.Vector3f getDominantGlow() {
+        String set = getFullSetTier();
+        if (set == null) return null;
+        return helmet.getGlowColor();
     }
     public minicraft.item.ArmorItem getHelmet() { return helmet; }
     public minicraft.item.ArmorItem getChestplate() { return chestplate; }

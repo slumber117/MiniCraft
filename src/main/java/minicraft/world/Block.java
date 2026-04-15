@@ -6,101 +6,104 @@ package minicraft.world;
 public enum Block {
 
     // ── Environment ───────────────────────────────────────────────────────
-    AIR(false, 0, 0f, ""),
-    BEDROCK(true, 9999, -1f, "stone"),
-    GRASS(true, 0, 0.6f, "grass_top", "dirt", "grass"),
-    DIRT(true, 0, 0.5f, "dirt"),
-    STONE(true, 1, 1.5f, "stone"),
-    SAND(true, 0, 0.5f, "sand"),
-    RED_SAND(true, 0, 0.5f, "red_sand"),
-    WATER(false, 0, 0f, "water"),
-    WOOD(true, 0, 2.0f, "wood"),
-    LEAVES(true, 0, 0.2f, "leaves"),
-    SNOW(true, 0, 0.1f, "snow"),
-    ICE(true, 1, 2.0f, "ice"),
-    PODZOL(true, 0, 0.6f, "podzol_top", "dirt", "podzol_side"),
+    AIR(false, 0, 0f, 0f, ""),
+    BEDROCK(true, 9999, -1f, 0f, "stone"),
+    GRASS(true, 0, 0.6f, 0.1f, "grass_top", "dirt", "grass"),
+    DIRT(true, 0, 0.5f, 0.1f, "dirt"),
+    STONE(true, 1, 1.5f, 0.5f, "stone"),
+    SAND(true, 0, 0.5f, 0.1f, "sand"),
+    RED_SAND(true, 0, 0.5f, 0.1f, "red_sand"),
+    WATER(false, 0, 0f, 0f, "water"),
+    WOOD(true, 0, 2.0f, 1.0f, "wood"),
+    LEAVES(true, 0, 0.2f, 0.05f, "leaves"),
+    SNOW(true, 0, 0.1f, 0.05f, "snow"),
+    ICE(true, 1, 2.0f, 0.2f, "ice"),
+    PODZOL(true, 0, 0.6f, 0.1f, "podzol_top", "dirt", "podzol_side"),
 
     // ── Construction ──────────────────────────────────────────────────────
-    SAND_BRICKS(true, 0, 2.0f, "sand_bricks"),
-    STONE_BRICKS(true, 0, 3.0f, "stone_bricks"),
-    WOOD_PLANKS(true, 0, 1.5f, "wood_planks"),
-    IRON_PLATE(true, 0, 2.0f, "iron_plating"),
-    OBSIDIAN(true, 4, 40.0f, "obsidian"),
-    GLASS(true, 0, 1.0f, "glass"),
+    SAND_BRICKS(true, 0, 2.0f, 1.0f, "sand_bricks"),
+    STONE_BRICKS(true, 0, 3.0f, 1.5f, "stone_bricks"),
+    WOOD_PLANKS(true, 0, 1.5f, 0.5f, "wood_planks"),
+    IRON_PLATE(true, 0, 2.0f, 1.0f, "iron_plating"),
+    OBSIDIAN(true, 4, 40.0f, 50.0f, "obsidian"),
+    GLASS(true, 0, 1.0f, 0.5f, "glass"),
 
     // ── Vegetation Variants ────────────────────────────────────────────────
-    OAK_WOOD(true, 0, 2.0f, "wood"),
-    OAK_LEAVES(true, 0, 0.2f, "leaves"),
-    REDWOOD_WOOD(true, 0, 3.0f, "redwood_wood"),
-    REDWOOD_LEAVES(true, 0, 0.2f, "redwood_leaves"),
-    MANGO_WOOD(true, 0, 2.0f, "mango_wood"),
-    MANGO_LEAVES(true, 0, 0.2f, "fruit_leaves_mango"),
-    APPLE_WOOD(true, 0, 2.0f, "apple_wood"),
-    APPLE_LEAVES(true, 0, 0.2f, "fruit_leaves_apple"),
-    PEAR_WOOD(true, 0, 2.0f, "pear_wood"),
-    PEAR_LEAVES(true, 0, 0.2f, "fruit_leaves_pear"),
-    JUNGLE_WOOD(true, 0, 2.5f, "jungle_wood"),
-    JUNGLE_LEAVES(true, 0, 0.2f, "jungle_leaves"),
+    OAK_WOOD(true, 0, 2.0f, 1.0f, "wood"),
+    OAK_LEAVES(true, 0, 0.2f, 0.05f, "leaves"),
+    REDWOOD_WOOD(true, 0, 3.0f, 2.0f, "redwood_wood"),
+    REDWOOD_LEAVES(true, 0, 0.2f, 0.05f, "redwood_leaves"),
+    MANGO_WOOD(true, 0, 2.0f, 1.0f, "mango_wood"),
+    MANGO_LEAVES(true, 0, 0.2f, 0.05f, "fruit_leaves_mango"),
+    APPLE_WOOD(true, 0, 2.0f, 1.0f, "apple_wood"),
+    APPLE_LEAVES(true, 0, 0.2f, 0.05f, "fruit_leaves_apple"),
+    PEAR_WOOD(true, 0, 2.0f, 1.0f, "pear_wood"),
+    PEAR_LEAVES(true, 0, 0.2f, 0.05f, "fruit_leaves_pear"),
+    JUNGLE_WOOD(true, 0, 2.5f, 1.5f, "jungle_wood"),
+    JUNGLE_LEAVES(true, 0, 0.2f, 0.05f, "jungle_leaves"),
 
     // ── Basic Ores ────────────────────────────────────────────────────────
-    COAL_ORE(true, 1, 3.0f, "coal_ore"),
-    IRON_ORE(true, 1, 3.5f, "iron_ore"),
-    COPPER_ORE(true, 1, 3.0f, "copper_ore"),
-    TIN_ORE(true, 1, 3.0f, "tin_ore"),
+    COAL_ORE(true, 1, 3.0f, 2.0f, "coal_ore"),
+    IRON_ORE(true, 1, 3.5f, 5.0f, "iron_ore"),
+    COPPER_ORE(true, 1, 3.0f, 3.0f, "copper_ore"),
+    TIN_ORE(true, 1, 3.0f, 3.0f, "tin_ore"),
 
-    GOLD_ORE(true, 2, 5.0f, "gold_ore"),
-    TANZANITE_ORE(true, 2, 5.0f, "tanzanite_ore"),
-    SILVER_ORE(true, 2, 5.0f, "silver_ore"),
-    NICKEL_ORE(true, 2, 5.0f, "nickel_ore"),
-    PLATINUM_ORE(false, 1, 3, "platinum_ore"),
+    GOLD_ORE(true, 2, 5.0f, 10.0f, "gold_ore"),
+    TANZANITE_ORE(true, 2, 5.0f, 15.0f, "tanzanite_ore"),
+    SILVER_ORE(true, 2, 5.0f, 8.0f, "silver_ore"),
+    NICKEL_ORE(true, 2, 5.0f, 7.0f, "nickel_ore"),
+    PLATINUM_ORE(false, 1, 3, 10.0f, "platinum_ore"),
 
-    DIAMOND_ORE(true, 3, 30.0f, "diamond_ore"),
-    EMERALD_ORE(true, 3, 25.0f, "emerald_ore"),
-    RUBY_ORE(true, 3, 25.0f, "ruby_ore"),
-    TOPAZ_ORE(true, 3, 20.0f, "topaz_ore"),
-    AQUAMARINE_ORE(true, 3, 20.0f, "aquamarine_ore"),
-    PERIDOT_ORE(true, 3, 20.0f, "peridot_ore"),
-    LAPIS_ORE(false, 1, 3, "lapis_ore"),
-    SAPPHIRE_ORE(false, 1, 3, "sapphire_ore"),
-    AMETHYST_ORE(false, 1, 3, "amethyst_ore"),
-    JADE_ORE(false, 1, 3, "jade_ore"),
-    OPAL_ORE(false, 1, 3, "opal_ore"),
-    QUARTZ_ORE(false, 1, 3, "quartz_ore"),
-    PYRITE_ORE(false, 1, 3, "pyrite_ore"),
-    MITHRIL_ORE(false, 1, 3, "mithril_ore"),
-    ADAMANTINE_ORE(false, 1, 3, "adamantine_ore"),
-    ORICHALCUM_ORE(false, 1, 3, "orichalcum_ore"),
-    PLUTONIUM_ORE(false, 1, 3, "plutonium_ore"),
-    URANIUM_ORE(false, 1, 3, "uranium_ore"),
-    NEPTUNIUM_ORE(false, 1, 3, "neptunium_ore"),
+    DIAMOND_ORE(true, 3, 30.0f, 20.0f, "diamond_ore"),
+    EMERALD_ORE(true, 3, 25.0f, 18.0f, "emerald_ore"),
+    RUBY_ORE(true, 3, 25.0f, 18.0f, "ruby_ore"),
+    TOPAZ_ORE(true, 3, 20.0f, 15.0f, "topaz_ore"),
+    AQUAMARINE_ORE(true, 3, 20.0f, 15.0f, "aquamarine_ore"),
+    PERIDOT_ORE(true, 3, 20.0f, 15.0f, "peridot_ore"),
+    LAPIS_ORE(false, 1, 3, 5.0f, "lapis_ore"),
+    SAPPHIRE_ORE(false, 1, 3, 15.0f, "sapphire_ore"),
+    AMETHYST_ORE(false, 1, 3, 12.0f, "amethyst_ore"),
+    JADE_ORE(false, 1, 3, 10.0f, "jade_ore"),
+    OPAL_ORE(false, 1, 3, 15.0f, "opal_ore"),
+    QUARTZ_ORE(false, 1, 3, 3.0f, "quartz_ore"),
+    PYRITE_ORE(false, 1, 3, 4.0f, "pyrite_ore"),
+    MITHRIL_ORE(false, 1, 3, 25.0f, "mithril_ore"),
+    ADAMANTINE_ORE(false, 1, 3, 40.0f, "adamantine_ore"),
+    ORICHALCUM_ORE(false, 1, 3, 35.0f, "orichalcum_ore"),
+    PLUTONIUM_ORE(false, 1, 3, 50.0f, "plutonium_ore"),
+    URANIUM_ORE(false, 1, 3, 45.0f, "uranium_ore"),
+    NEPTUNIUM_ORE(false, 1, 3, 45.0f, "neptunium_ore"),
 
-    TUNGSTEN_ORE(true, 2, 10.0f, "tungsten_ore"),
-    TITANIUM_ORE(true, 2, 10.0f, "titanium_ore"),
+    TUNGSTEN_ORE(true, 2, 10.0f, 12.0f, "tungsten_ore"),
+    TITANIUM_ORE(true, 2, 10.0f, 12.0f, "titanium_ore"),
 
     // Ores dropped from bosses
-    DRAGON_SCALE_ORE(false, 1, 3, "dragon_scale_ore"),
+    DRAGON_SCALE_ORE(false, 1, 3, 100.0f, "dragon_scale_ore"),
 
-    BRONZE_BLOCK(true, 0, 5.0f, "bronze_block"),
-    CRAFTING_TABLE(true, 0, 2.5f, "crafting_table"),
-    FURNACE(true, 0, 3.5f, "furnace"),
-    ALLOY_FORGE(true, 0, 4.0f, "alloy_forge"),
-    CHEST(true, 0, 2.5f, "chest"),
+    BRONZE_BLOCK(true, 0, 5.0f, 2.0f, "bronze_block"),
+    CRAFTING_TABLE(true, 0, 2.5f, 5.0f, "crafting_table"),
+    FURNACE(true, 0, 3.5f, 10.0f, "furnace"),
+    ALLOY_FORGE(true, 0, 4.0f, 15.0f, "alloy_forge"),
+    CHEST(true, 0, 2.5f, 5.0f, "chest"),
 
     // ── Vegetation & Undersea ─────────────────────────────────────────────
-    TALL_GRASS(false, 0, 0f, "tall_grass", MeshType.CROSS),
-    FLOWER_RED(false, 0, 0f, "flower_red", MeshType.CROSS),
-    FLOWER_BLUE(false, 0, 0f, "flower_blue", MeshType.CROSS),
-    MUSHROOM(false, 0, 0f, "mushroom", MeshType.CROSS),
-    TORCH(false, 0, 0f, "torch", MeshType.CROSS),
-    CACTUS(true, 0, 0.5f, "cactus"),
-    SEA_WEED(false, 0, 0f, "sea_weed", MeshType.CROSS),
-    CORAL(true, 0, 0.3f, "coral"),
+    TALL_GRASS(false, 0, 0f, 0f, "tall_grass", MeshType.CROSS),
+    FLOWER_RED(false, 0, 0f, 0f, "flower_red", MeshType.CROSS),
+    FLOWER_BLUE(false, 0, 0f, 0f, "flower_blue", MeshType.CROSS),
+    MUSHROOM(false, 0, 0f, 0f, "mushroom", MeshType.CROSS),
+    TORCH(false, 0, 0f, 1.0f, "torch", MeshType.CROSS),
+    CACTUS(true, 0, 0.5f, 0.5f, "cactus"),
+    SEA_WEED(false, 0, 0f, 0f, "sea_weed", MeshType.CROSS),
+    CORAL(true, 0, 0.3f, 1.0f, "coral"),
 
     // ── Advanced Scientific blocks ───────────────────────────────────────
-    ALLOY_PLATE(true, 1, 10.0f, "alloy_plate"),
-    TRANSMAT_PAD(true, 1, 10.0f, "transmat_pad"),
-    SHIP_CONSOLE(true, 0, 2.5f, "ship_console"),
-    COOKER(true, 0, 3.0f, "cooker_top", "stone", "cooker_side"); // High-efficiency food preparation unit
+    ALLOY_PLATE(true, 1, 10.0f, 2.0f, "alloy_plate"),
+    TRANSMAT_PAD(true, 1, 10.0f, 5.0f, "transmat_pad"),
+    SHIP_CONSOLE(true, 0, 2.5f, 10.0f, "ship_console"),
+    COOKER(true, 0, 3.0f, 10.0f, "cooker_top", "stone", "cooker_side"), // High-efficiency food preparation unit
+    STONE_DARK(true, 2, 5.0f, 1.0f, "stone_dark"), // Deep layer industrial stone
+    LAVA(false, 0, 0f, 0f, "lava"), // High-intensity surface liquid hazard
+    MAGMA(true, 0, 1.0f, 5.0f, "magma"); // Glowing underground solid hazard
 
     // ── Mesh Types ──
     public enum MeshType {
@@ -115,16 +118,18 @@ public enum Block {
     public final float paddingSide;
     public final int requiredHarvestLevel;
     public final float hardness;
+    public final float xpValue;
     public final MeshType meshType;
-
-    Block(boolean solid, int requiredHarvestLevel, float hardness, String textureName) {
-        this(solid, requiredHarvestLevel, hardness, textureName, MeshType.CUBE);
+    
+    Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String textureName) {
+        this(solid, requiredHarvestLevel, hardness, xpValue, textureName, MeshType.CUBE);
     }
 
-    Block(boolean solid, int requiredHarvestLevel, float hardness, String textureName, MeshType meshType) {
+    Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String textureName, MeshType meshType) {
         this.solid = solid;
         this.requiredHarvestLevel = requiredHarvestLevel;
         this.hardness = hardness;
+        this.xpValue = xpValue;
         this.meshType = meshType;
         this.topTexture = textureName;
         this.bottomTexture = textureName;
@@ -133,10 +138,11 @@ public enum Block {
         this.paddingSide = solid ? 1.0f : 0.0f;
     }
 
-    Block(boolean solid, int requiredHarvestLevel, float hardness, String top, String bottom, String side) {
+    Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String top, String bottom, String side) {
         this.solid = solid;
         this.requiredHarvestLevel = requiredHarvestLevel;
         this.hardness = hardness;
+        this.xpValue = xpValue;
         this.meshType = MeshType.CUBE;
         this.topTexture = top;
         this.bottomTexture = bottom;

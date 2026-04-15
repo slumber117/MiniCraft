@@ -41,6 +41,7 @@ public class World {
 
     public WorldGenerator getGenerator() { return generator; }
     public WeatherManager getWeatherManager() { return weatherManager; }
+    public Biome getBiome(int gx, int gz) { return generator.generate(gx, gz).biome; }
 
 
     private final Matrix4f chunkMatrix = new Matrix4f();
@@ -158,25 +159,39 @@ public class World {
                     if (y == BEDROCK_Y) b = Block.BEDROCK;
                     else if (y == surfaceY) b = getSurfaceBlock(cell.biome);
                     else if (y >= surfaceY - DIRT_LAYERS) b = getFillerBlock(cell.biome);
-                    else b = Block.STONE;
+                    else {
+                        // Automated Stone Tiers
+                        boolean isDeep = y < 15;
+                        boolean isMountainCore = (cell.biome == Biome.MOUNTAINS || cell.biome == Biome.SNOWY_PEAKS) && y > (surfaceY - 30);
+                        
+                        if (isDeep || isMountainCore) b = Block.STONE_DARK;
+                        else b = Block.STONE;
+                    }
                     chunk.setBlock(x, y, z, b);
                 }
 
                 if (cell.isWater) {
                     for (int y = surfaceY + 1; y <= seaLevelY; y++) chunk.setBlock(x, y, z, Block.WATER);
-                    // Undersea life
-                    if (cell.biome == Biome.OCEAN && surfaceY < seaLevelY - 3 && Math.random() < 0.05) {
-                        chunk.setBlock(x, surfaceY + 1, z, Math.random() < 0.7 ? Block.SEA_WEED : Block.CORAL);
-                    }
                 }
 
-                // CAVE SYSTEM
+                // CAVE SYSTEM & VOLCANICS
                 for (int y = BEDROCK_Y + 1; y < surfaceY; y++) {
                     CaveCell caveCell = caveCarver.query(gx, y, gz, cell, surfaceY);
                     if (caveCell.isCarved) {
-                        Block b = (caveCell.type == CaveType.UNDERWATER) ? Block.WATER : Block.AIR;
+                        Block b = Block.AIR;
+                        if (caveCell.type == CaveType.UNDERWATER) b = Block.WATER;
+                        else if (y < 15 && Math.random() < 0.05) b = Block.LAVA; // Rare Deep Lava
+                        
                         chunk.setBlock(x, y, z, b);
+                    } else if (y < 15 && Math.random() < 0.02) {
+                        // Magma veins in Deep Stone
+                        chunk.setBlock(x, y, z, Block.MAGMA);
                     }
+                }
+                
+                // Surface Lava Pools (Rare)
+                if (!cell.isWater && cell.biome == Biome.DESERT && Math.random() < 0.0001) {
+                    for(int ly=surfaceY-2; ly<=surfaceY; ly++) chunk.setBlock(x, ly, z, Block.LAVA);
                 }
             }
         }
@@ -256,10 +271,12 @@ public class World {
 
     private void spawnOres(Chunk chunk, int cx, int cz) {
         Random r = new Random((long) cx * 342211L + (long) cz * 439241L);
-        spawn(chunk, r, Block.COAL_ORE,   10, 200, 6, 40);
-        spawn(chunk, r, Block.IRON_ORE,   5, 120, 5, 20);
-        spawn(chunk, r, Block.GOLD_ORE,   1, 50, 4, 10);
-        spawn(chunk, r, Block.DIAMOND_ORE, 1, 20, 3, 5);
+        spawn(chunk, r, Block.COAL_ORE,     10, 200, 6, 40);  // Y 10-200, very common
+        spawn(chunk, r, Block.IRON_ORE,      5, 120, 5, 20);  // Y 5-120, common
+        spawn(chunk, r, Block.COPPER_ORE,    5, 100, 5, 15);  // Y 5-100, common
+        spawn(chunk, r, Block.GOLD_ORE,      1,  50, 4, 10);  // Y 1-50, uncommon
+        spawn(chunk, r, Block.TITANIUM_ORE, 30, 100, 4,  8);  // Y 30-100, mid-layer, uncommon
+        spawn(chunk, r, Block.DIAMOND_ORE,   1,  20, 3,  5);  // Y 1-20, deep and rare
     }
 
     private void spawn(Chunk c, Random r, Block o, int min, int max, int sz, int att) {
@@ -399,8 +416,8 @@ public class World {
         return (int)(WorldCell.SEA_LEVEL * Chunk.HEIGHT) + 2;
     }
 
-    public void render(ShaderProgram shader, minicraft.math.Vector3f playerPos) {
-        shader.setUniform("sunBrightness", weatherManager.getSunBrightness());
+    public void render(ShaderProgram shader, minicraft.math.Vector3f playerPos, float timeBrightness) {
+        shader.setUniform("sunBrightness", timeBrightness * weatherManager.getSunBrightness());
         shader.setUniform("weatherIntensity", weatherManager.getIntensity());
         shader.setUniform("weatherType", weatherManager.getCurrentType().ordinal());
 

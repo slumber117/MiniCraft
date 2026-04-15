@@ -32,7 +32,7 @@ public class RavineCarver {
     private static final float RAVINE_CHANCE         = 0.06f;
 
     /** Horizontal half-width at the widest point of the ravine. */
-    private static final float RAVINE_HALF_WIDTH      = 3.5f;
+    private static final float RAVINE_HALF_WIDTH      = 2.2f;
 
     /** Depth below surface at which the ravine bottom is placed. */
     private static final float RAVINE_MIN_DEPTH_FRAC  = 0.55f;

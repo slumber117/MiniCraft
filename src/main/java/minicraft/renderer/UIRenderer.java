@@ -18,48 +18,74 @@ import static org.lwjgl.opengl.GL11.*;
 
 public class UIRenderer {
 
+    // ── Layout constants — single source of truth, nothing overlaps ──────────
+    //
+    // HOTBAR: bottom 14px margin, 42px slots → occupies y = [H-56 .. H-14]
+    // XP BAR: 10px tall, 4px gap above hotbar → occupies y = [H-70 .. H-60]
+    // XP LABEL: 12px above XP bar → y ≈ H-82
+    // STAT PANEL (HP/Hunger): sits above XP label with 6px gap → base at H-124
+    // COORD PANEL: top-left, always 14px from edges
+    // TEMP HUD: top-right, always 14px from edges
+    // OFFHAND: sits inside stat panel, left of bars — never floats separately
+    //
+    private static final float HOTBAR_MARGIN_BOT = 14f;
+    private static final float HOTBAR_SLOT_SIZE = 42f;
+    private static final float HOTBAR_GAP = 6f;
+    private static final int HOTBAR_SLOTS = 9;
+    private static final float HOTBAR_H = HOTBAR_SLOT_SIZE;
+    // bottom edge of hotbar = H - HOTBAR_MARGIN_BOT
+    // top edge of hotbar = H - HOTBAR_MARGIN_BOT - HOTBAR_H
+
+    private static final float XP_BAR_H = 10f;
+    private static final float XP_TO_HOTBAR_GAP = 4f;
+    // top of XP bar = hotbar_top - XP_BAR_H - XP_TO_HOTBAR_GAP
+
+    private static final float STAT_BAR_W = 210f;
+    private static final float STAT_BAR_H = 12f;
+    private static final float STAT_BETWEEN_GAP = 10f;
+    // two bars + gap = STAT_BAR_H*2 + STAT_BETWEEN_GAP = 34px
+    private static final float STAT_PANEL_PAD = 8f;
+    private static final float STAT_PANEL_H = STAT_BAR_H * 2 + STAT_BETWEEN_GAP + STAT_PANEL_PAD * 2 + 6f;
+    // stat panel sits directly above XP label (12px) with 6px gap
+    private static final float STAT_TO_XP_GAP = 6f;
+
+    // ── Meshes & fonts ───────────────────────────────────────────────────────
     private Mesh quadMesh;
     private Mesh textQuadMesh;
     private FontTexture fontTexture;
     private Texture whiteTexture;
     private final TextureRegistry textures;
-    
-    // Premium Color Palette
-    // Tactical HUD Colors
-    private final Vector4f healthColor      = new Vector4f(1.00f, 0.10f, 0.10f, 1.0f); // Pure Red
-    private final Vector4f healthColor2     = new Vector4f(0.70f, 0.00f, 0.00f, 1.0f); // Dark Red
-    private final Vector4f hungerColor      = new Vector4f(1.00f, 0.50f, 0.00f, 1.0f); // Vital Orange
-    private final Vector4f hungerColor2     = new Vector4f(0.80f, 0.30f, 0.00f, 1.0f); // Burnt Orange
-    private final Vector4f glassBgColor     = new Vector4f(0.02f, 0.02f, 0.05f, 0.35f); // Faint Blue Tint
-    private final Vector4f glassBorderColor = new Vector4f(0.00f, 0.90f, 1.00f, 0.40f); // Cyan Tactical Glow
-    private final Vector4f highlightColor   = new Vector4f(0.00f, 0.90f, 1.00f, 0.20f); 
-    private final Vector4f textColor        = new Vector4f(1.00f, 1.00f, 1.00f, 1.0f);
-    private final Vector4f crosshairColor   = new Vector4f(1.00f, 1.00f, 1.00f, 0.8f);
-    private final Vector4f thirstColor      = new Vector4f(0.15f, 0.75f, 0.95f, 1.0f); // Sky (Legacy compatibility)
-    private final Vector4f tactOrange = new Vector4f(1.00f, 0.45f, 0.00f, 1.0f);
-    private final Vector4f tactBlue   = new Vector4f(0.20f, 0.80f, 1.00f, 1.0f);
-    private final Vector4f tactGreen  = new Vector4f(0.00f, 1.00f, 0.40f, 1.0f);
-    private final Vector4f tactDim    = new Vector4f(0.05f, 0.05f, 0.10f, 0.5f);
 
+    // ── Color palette ────────────────────────────────────────────────────────
+    private final Vector4f healthColor = new Vector4f(0.88f, 0.12f, 0.12f, 1.0f);
+    private final Vector4f healthColor2 = new Vector4f(0.55f, 0.04f, 0.04f, 1.0f);
+    private final Vector4f hungerColor = new Vector4f(0.95f, 0.52f, 0.00f, 1.0f);
+    private final Vector4f hungerColor2 = new Vector4f(0.65f, 0.30f, 0.00f, 1.0f);
+    private final Vector4f glassBgColor = new Vector4f(0.00f, 0.00f, 0.00f, 0.55f);
+    private final Vector4f glassBorderColor = new Vector4f(0.17f, 0.72f, 0.79f, 0.45f);
+    private final Vector4f highlightColor = new Vector4f(0.17f, 0.72f, 0.79f, 0.22f);
+    private final Vector4f textColor = new Vector4f(1.00f, 1.00f, 1.00f, 1.0f);
+    private final Vector4f crosshairColor = new Vector4f(1.00f, 1.00f, 1.00f, 0.85f);
+    private final Vector4f tactOrange = new Vector4f(0.95f, 0.48f, 0.00f, 1.0f);
+    private final Vector4f tactBlue = new Vector4f(0.12f, 0.63f, 1.00f, 1.0f);
+    private final Vector4f tactGreen = new Vector4f(0.00f, 0.88f, 0.36f, 1.0f);
+    private final Vector4f tactDim = new Vector4f(0.04f, 0.04f, 0.08f, 0.55f);
+    private final Vector4f barShine = new Vector4f(1.00f, 1.00f, 1.00f, 0.18f);
+    private final Vector4f slotHoverColor = new Vector4f(1.00f, 1.00f, 1.00f, 0.18f);
+
+    // ── Constructor ──────────────────────────────────────────────────────────
     public UIRenderer(TextureRegistry textures) {
         this.textures = textures;
-        float[] positions = new float[] {
-            0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0
-        };
-        float[] uvs = new float[] {
-            0, 1, 1, 1, 1, 0, 0, 0
-        };
-        int[] indices = new int[] {
-            0, 1, 2, 2, 3, 0
-        };
-        
-        whiteTexture = textures.get("snow"); 
+        float[] positions = { 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0 };
+        float[] uvs = { 0, 1, 1, 1, 1, 0, 0, 0 };
+        int[] indices = { 0, 1, 2, 2, 3, 0 };
+
+        whiteTexture = textures.get("snow");
         quadMesh = new Mesh(positions, uvs, indices, whiteTexture);
         textQuadMesh = new Mesh(positions, uvs, indices, null);
 
         try {
-            // High-resolution premium font
-            Font font = new Font(Font.MONOSPACED, Font.BOLD, 22);
+            Font font = new Font(Font.MONOSPACED, Font.BOLD, 28);
             fontTexture = new FontTexture(font, "ISO-8859-1");
             textQuadMesh.setTexture(fontTexture.getTexture());
         } catch (Exception e) {
@@ -67,9 +93,12 @@ public class UIRenderer {
         }
     }
 
+    // ══════════════════════════════════════════════════════════════════════════
+    // Main render entry — menus are mutually exclusive, HUD only when playing
+    // ══════════════════════════════════════════════════════════════════════════
     public void render(Player player, ShaderProgram shader, int width, int height, minicraft.Main main) {
         renderWeather(shader, width, height, main.getWorld().getWeather());
-        
+
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
         glEnable(GL_BLEND);
@@ -78,11 +107,11 @@ public class UIRenderer {
         Matrix4f ortho = new Matrix4f().ortho(0, width, height, 0, -1, 1);
         shader.setUniform("projectionMatrix", ortho);
         shader.setUniform("viewMatrix", new Matrix4f().identity());
-        shader.setUniform("useLighting", 0.0f); // UI is unlit
+        shader.setUniform("useLighting", 0.0f);
 
-        // --- INVENTORY V3 ---
+        // Exactly one branch executes — screens are mutually exclusive
         if (main.inventoryOpen) {
-            renderInventoryScreenV3(player, shader, width, height, main);
+            renderInventoryScreen(player, shader, width, height, main);
         } else if (main.chestOpen) {
             renderChestScreen(player, shader, width, height, main);
         } else if (main.craftingOpen) {
@@ -94,71 +123,33 @@ public class UIRenderer {
         } else if (player.isRiding()) {
             renderPilotHUD(player, shader, width, height);
         } else {
-            // 1. Draw Crosshair
+            // Pure gameplay HUD — no menus
             drawCrosshair(shader, width / 2f, height / 2f);
-
-            // 2. Draw HUD Elements (Bottom Left)
-            float margin = 30;
-            float barWidth = 240;
-            float barHeight = 16;
-            float currentY = height - margin - barHeight;
-
-            // Stats Framework (Hollow)
-            drawTacticalFrame(shader, margin - 10, currentY - 50, barWidth + 20, 100);
-
-            // Health
-            drawPremiumBar(shader, margin, currentY, barWidth, barHeight, player.getHealth() / player.getMaxHealth(), healthColor, healthColor2, "V");
-            currentY -= 32;
-
-            // Hunger
-            drawPremiumBar(shader, margin, currentY, barWidth, barHeight, player.hunger / player.maxHunger, hungerColor, hungerColor2, "F");
-
-            // --- Offhand Slot Indicator ---
-            if (player.inventory.getOffhandItem() != null) {
-                drawRectInternal(shader, margin, currentY - 50, 40, 40, glassBgColor);
-                drawText(shader, "L", margin + 14, currentY - 40, 0.8f); // Left hand icon
-            }
-
-            // --- Coordinates (Left) ---
-            drawTacticalFrame(shader, 20, 20, 220, 75);
-            drawText(shader, "[ POSITION DATA ]", 35, 35, 0.45f, tactBlue);
-            String coordsX = String.format("X: %05d", (int)player.position.x);
-            String coordsY = String.format("Y: %05d", (int)player.position.y);
-            String coordsZ = String.format("Z: %05d", (int)player.position.z);
-            drawText(shader, coordsX, 35, 52, 0.55f);
-            drawText(shader, coordsY, 130, 52, 0.55f);
-            drawText(shader, coordsZ, 35, 70, 0.55f);
-
-            // 3. Temperature HUD (Top Right)
-            drawTemperatureHUD(player, shader, width, margin);
-
-            // 4. Hotbar
-            renderHotbar(player, shader, width, height);
-            
-            if (player.damageFlashTimer > 0) {
-                drawDamageVignette(shader, width, height, player.damageFlashTimer);
-            }
+            renderPlayHUD(player, shader, width, height, main);
         }
 
-        // --- Global Cursor Rendering (For Menus) ---
-        if (main.inventoryOpen || main.chestOpen || main.craftingOpen || 
-            main.shipConsoleOpen || main.furnaceOpen || main.cookerOpen) {
-            
-            double[] mx = new double[1], my = new double[1];
-            org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
-            float mouseX = (float)mx[0];
-            float mouseY = (float)my[0];
+        // ── Global cursor overlay (menus only) ──────────────────────────────
+        // The cursor item is drawn ONCE here. Individual screen renderers must
+        // NOT draw it themselves to avoid double-rendering.
+        if (main.inventoryOpen || main.chestOpen || main.craftingOpen
+                || main.shipConsoleOpen || main.furnaceOpen || main.cookerOpen) {
 
-            // 1. Cursor ItemStack (Attached to Mouse) - Except in some screens if handled locally
-            // We'll handle it globally here for consistency
+            float[] mouse = getScaledMouse(main, width, height);
+            float mouseX = mouse[0], mouseY = mouse[1];
+
             minicraft.item.ItemStack cursor = player.inventory.getCursorStack();
             if (cursor != null && !cursor.isEmpty()) {
-                drawItemIcon(shader, cursor.getItem(), mouseX - 32, mouseY - 32, 64);
-                if (cursor.getCount() > 1) drawText(shader, String.valueOf(cursor.getCount()), mouseX - 25, mouseY + 20, 0.8f);
+                float iconSize = 48f;
+                // Centre icon on cursor tip
+                drawItemIcon(shader, cursor.getItem(), mouseX - iconSize / 2f, mouseY - iconSize / 2f, iconSize);
+                if (cursor.getCount() > 1)
+                    drawText(shader, String.valueOf(cursor.getCount()),
+                            mouseX + iconSize / 2f - 14, mouseY + iconSize / 2f - 8, 0.65f);
             }
 
-            // 2. Blocky Cursor (Tactical Blue Glow)
-            drawRectInternal(shader, mouseX, mouseY, 32, 32, tactBlue, "blocky_cursor");
+            // Pointer crosshair
+            drawRectInternal(shader, mouseX - 1, mouseY - 8, 2, 16, new Vector4f(1, 1, 1, 0.9f));
+            drawRectInternal(shader, mouseX - 8, mouseY - 1, 16, 2, new Vector4f(1, 1, 1, 0.9f));
         }
 
         glDisable(GL_BLEND);
@@ -166,285 +157,743 @@ public class UIRenderer {
         glEnable(GL_DEPTH_TEST);
     }
 
-    private void drawDamageVignette(ShaderProgram shader, int width, int height, float alpha) {
-        float intensity = alpha * 0.4f;
-        drawRectInternal(shader, 0, 0, width, height, new Vector4f(1.0f, 0, 0, intensity));
+    // ══════════════════════════════════════════════════════════════════════════
+    // Play HUD — all elements laid out from the layout constants above
+    // ══════════════════════════════════════════════════════════════════════════
+    private void renderPlayHUD(Player player, ShaderProgram shader, int width, int height, minicraft.Main main) {
+        // Pre-compute Y positions from bottom up so nothing overlaps
+        float hotbarTop = height - HOTBAR_MARGIN_BOT - HOTBAR_H;
+        float xpBarTop = hotbarTop - XP_BAR_H - XP_TO_HOTBAR_GAP;
+        float xpLabelTop = xpBarTop - 13f;
+        float statBottom = xpLabelTop - STAT_TO_XP_GAP;
+        float statTop = statBottom - STAT_PANEL_H;
+
+        float marginLeft = 22f;
+
+        // ── 1. Hotbar ────────────────────────────────────────────────────────
+        renderHotbar(player, shader, width, height, hotbarTop);
+
+        // ── 2. XP bar (centred, above hotbar) ────────────────────────────────
+        renderXPBar(player, shader, width, xpBarTop, xpLabelTop);
+
+        // ── 3. Stat panel (HP + Hunger, bottom-left, above XP area) ──────────
+        float panelX = marginLeft - STAT_PANEL_PAD;
+        float panelW = STAT_BAR_W + 40f + STAT_PANEL_PAD * 2; // icon col + bar + padding
+        drawTacticalFrame(shader, panelX, statTop, panelW, STAT_PANEL_H);
+
+        // Hunger bar (top row inside panel)
+        float barX = marginLeft + 32f; // leave room for icon
+        float hungBarY = statTop + STAT_PANEL_PAD + 4f;
+        drawPremiumBar(shader, barX, hungBarY, STAT_BAR_W, STAT_BAR_H,
+                player.hunger / player.maxHunger, hungerColor, hungerColor2, "F");
+
+        // Health bar (below hunger)
+        float hpBarY = hungBarY + STAT_BAR_H + STAT_BETWEEN_GAP;
+        drawPremiumBar(shader, barX, hpBarY, STAT_BAR_W, STAT_BAR_H,
+                player.getHealth() / player.getMaxHealth(), healthColor, healthColor2, "V");
+
+        // Offhand slot — anchored inside the stat panel, right edge
+        if (player.inventory.getOffhandItem() != null) {
+            float ohX = panelX + panelW + 6f;
+            float ohY = statTop + (STAT_PANEL_H - 36f) / 2f;
+            drawRectInternal(shader, ohX, ohY, 36, 36, glassBgColor);
+            drawItemIcon(shader, player.inventory.getOffhandItem(), ohX + 4, ohY + 4, 28);
+        }
+
+        // ── 4. Coordinates (top-left, fixed) ─────────────────────────────────
+        float coordW = 188f, coordH = 68f;
+        drawTacticalFrame(shader, 14, 14, coordW, coordH);
+        drawText(shader, "POSITION DATA", 26, 26, 0.38f, tactBlue);
+        drawText(shader,
+                String.format("X:%-6d  Y:%-6d", (int) player.position.x, (int) player.position.y),
+                26, 41, 0.45f);
+        drawText(shader, String.format("Z:%-6d", (int) player.position.z), 26, 56, 0.45f);
+        drawText(shader,
+                main.getWorld().getBiome((int) player.position.x, (int) player.position.z).displayName.toUpperCase(),
+                26, 70, 0.35f,
+                new Vector4f(0.6f, 0.6f, 0.6f, 1f));
+
+        // ── 5. Temperature (top-right, fixed) — stays clear of coord panel ───
+        drawTemperatureHUD(player, shader, width, 20f);
+
+        // ── 6. Damage vignette — only below 10% health, never when full ──────
+        float healthPct = player.getHealth() / player.getMaxHealth();
+        if (healthPct < 1.0f && player.damageFlashTimer > 0 && healthPct >= 0.10f) {
+            // Brief hit-flash: visible only if not at full health, fades quickly
+            drawDamageVignette(shader, width, height, player.damageFlashTimer * 0.5f);
+        } else if (healthPct < 0.10f) {
+            // Critical — persistent pulsing red border
+            float pulse = 0.20f + 0.12f * (float) Math.abs(Math.sin(System.currentTimeMillis() / 400.0));
+            drawDamageVignette(shader, width, height, pulse);
+        }
+        // healthPct >= 1.0f → no vignette at all
     }
 
-    private void renderChestScreen(Player player, ShaderProgram shader, int width, int height, minicraft.Main main) {
-        if (main.activeChest == null) return;
-        
-        // Darken world
-        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.75f));
-        
-        float panelW = 800;
-        float panelH = 550;
-        float sx = (width - panelW) / 2f;
-        float sy = (height - panelH) / 2f;
-        
-        drawTacticalFrame(shader, sx, sy, panelW, panelH);
-        drawText(shader, "LOOT CONTAINER", sx + 30, sy + 30, 1.2f, tactGreen);
+    // ── XP bar (helper) ──────────────────────────────────────────────────────
+    private void renderXPBar(Player player, ShaderProgram shader, int width,
+            float barTop, float labelTop) {
+        float barW = 200f;
+        float x = (width - barW) / 2f;
+        float prog = Math.max(0, Math.min(1, player.xp / player.xpToNextLevel));
 
-        // 1. Render Chest Contents (Top 3x9)
-        minicraft.item.ItemStack[] chestInv = main.activeChest.getMainInventory();
-        float slotSize = 64;
-        float gap = 15;
-        float gridStartX = sx + (panelW - (slotSize + gap) * 9) / 2f;
-        float chestStartY = sy + 80;
+        drawText(shader, "LV " + player.level, x, labelTop, 0.40f, tactBlue);
 
-        drawText(shader, "TREASURE", gridStartX, chestStartY - 25, 0.6f, highlightColor);
-        for (int i = 0; i < 27; i++) {
-            int row = i / 9;
-            int col = i % 9;
-            float x = gridStartX + col * (slotSize + gap);
-            float y = chestStartY + row * (slotSize + gap);
-            drawSlot(shader, x, y, slotSize, chestInv[i]);
-        }
-
-        // 2. Render Player Inventory (Bottom 3x9)
-        minicraft.item.ItemStack[] playerInv = player.inventory.getMainInventory();
-        float playerStartY = sy + 300;
-        drawText(shader, "YOUR BAG", gridStartX, playerStartY - 25, 0.6f, highlightColor);
-        for (int i = 0; i < 27; i++) {
-            int row = i / 9;
-            int col = i % 9;
-            float x = gridStartX + col * (slotSize + gap);
-            float y = playerStartY + row * (slotSize + gap);
-            drawSlot(shader, x, y, slotSize, playerInv[i]);
-        }
-
-        // 3. Shared Cursor ItemStack
-        minicraft.item.ItemStack cursor = player.inventory.getCursorStack();
-        if (cursor != null && !cursor.isEmpty()) {
-            double[] mx = new double[1], my = new double[1];
-            org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
-            
-            int[] winW = new int[1], winH = new int[1];
-            org.lwjgl.glfw.GLFW.glfwGetWindowSize(main.getWindow(), winW, winH);
-            float scaleX = (float) width / Math.max(1, winW[0]);
-            float scaleY = (float) height / Math.max(1, winH[0]);
-            
-            float curX = (float) mx[0] * scaleX - slotSize/2;
-            float curY = (float) my[0] * scaleY - slotSize/2;
-            
-            drawItemIcon(shader, cursor.getItem(), curX + 5, curY + 5, slotSize - 10);
-            if (cursor.getCount() > 1) {
-                drawText(shader, String.valueOf(cursor.getCount()), curX + 10, curY + slotSize - 15, 0.8f);
-            }
-        }
+        drawRectInternal(shader, x, barTop, barW, XP_BAR_H, new Vector4f(0, 0, 0, 0.65f));
+        float fill = barW * prog;
+        drawRectInternal(shader, x, barTop, fill, XP_BAR_H * 0.55f, tactBlue);
+        drawRectInternal(shader, x, barTop + XP_BAR_H * 0.55f, fill, XP_BAR_H * 0.45f,
+                new Vector4f(0.06f, 0.45f, 0.85f, 1.0f));
+        drawRectInternal(shader, x, barTop, fill, 2f, barShine);
+        drawRectInternal(shader, x, barTop, barW, 1f, glassBorderColor);
     }
 
-    private void renderInventoryScreenV3(Player player, ShaderProgram shader, int width, int height, minicraft.Main main) {
+    // ══════════════════════════════════════════════════════════════════════════
+    // Inventory screen — clean slot layout, hover feedback, NO duplicate cursor
+    // ══════════════════════════════════════════════════════════════════════════
+    private void renderInventoryScreen(Player player, ShaderProgram shader,
+            int width, int height, minicraft.Main main) {
         // Darken world
-        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.75f));
-        
-        float panelW = 800;
-        float panelH = 550;
+        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.78f));
+
+        // Panel dimensions — sized to fit 9×4 grid exactly
+        final float SLOT = 58f; // slot size
+        final float GAP = 8f; // gap between slots
+        final float COLS = 9f;
+        final float ROWS = 4f; // 3 main rows + 1 hotbar row
+
+        float gridW = COLS * SLOT + (COLS - 1) * GAP;
+        float panelW = gridW + 60f;
+        float panelH = ROWS * SLOT + (ROWS - 1) * GAP + 110f; // header + row labels + footer
         float sx = (width - panelW) / 2f;
         float sy = (height - panelH) / 2f;
-        
-        // --- 1. Main Background ---
-        drawTacticalFrame(shader, sx, sy, panelW, panelH);
-        drawText(shader, "PLAYER INVENTORY", sx + 30, sy + 30, 1.2f, tactOrange);
 
-        // --- 2. Main 3x9 Grid ---
+        drawTacticalFrame(shader, sx, sy, panelW, panelH);
+        drawText(shader, "INVENTORY", sx + 18, sy + 18, 0.85f, tactOrange);
+
+        // Scaled mouse position
+        float[] mouse = getScaledMouse(main, width, height);
+        float mouseX = mouse[0], mouseY = mouse[1];
+
+        // ── Main grid (3 rows × 9 cols) ──────────────────────────────────────
+        float gridStartX = sx + (panelW - gridW) / 2f;
+        float mainGridY = sy + 52f;
         minicraft.item.ItemStack[] mainInv = player.inventory.getMainInventory();
-        float slotSize = 64;
-        float gap = 15;
-        float invStartX = sx + (panelW - (slotSize + gap) * 9) / 2f;
-        float invStartY = sy + 100;
+
+        drawText(shader, "MAIN", gridStartX, mainGridY - 14, 0.42f, highlightColor);
 
         for (int i = 0; i < 27; i++) {
-            int row = i / 9;
-            int col = i % 9;
-            float x = invStartX + col * (slotSize + gap);
-            float y = invStartY + row * (slotSize + gap);
-            
-            drawSlot(shader, x, y, slotSize, mainInv[i]);
+            int col = i % 9, row = i / 9;
+            float sx2 = gridStartX + col * (SLOT + GAP);
+            float sy2 = mainGridY + row * (SLOT + GAP);
+            boolean hover = isHovered(mouseX, mouseY, sx2, sy2, SLOT, SLOT);
+            drawSlot(shader, sx2, sy2, SLOT, mainInv[i], hover);
         }
 
-        // --- 3. Hotbar 1x9 Grid (Utilized in Inventory) ---
+        // ── Separator line ────────────────────────────────────────────────────
+        float sepY = mainGridY + 3 * (SLOT + GAP) + 6f;
+        drawRectInternal(shader, gridStartX, sepY, gridW, 1f, glassBorderColor);
+
+        // ── Hotbar row (1 row × 9 cols, with selection indicator) ────────────
+        float hotbarRowY = sepY + 14f;
         minicraft.item.ItemStack[] hotbar = player.inventory.getHotbar();
-        float hbY = sy + panelH - 95;
-        drawText(shader, "HOTBAR", invStartX, hbY - 25, 0.7f, highlightColor);
-        
+        int selIdx = player.inventory.getSelectedIndex();
+
+        drawText(shader, "HOTBAR", gridStartX, hotbarRowY - 10, 0.42f, highlightColor);
+
         for (int i = 0; i < 9; i++) {
-            float x = invStartX + i * (slotSize + gap);
-            drawSlot(shader, x, hbY, slotSize, hotbar[i]);
-            if (i == player.inventory.getSelectedIndex()) {
-                drawRectInternal(shader, x - 2, hbY - 2, slotSize + 4, 3, new Vector4f(1, 1, 0, 1));
+            float sx2 = gridStartX + i * (SLOT + GAP);
+            boolean sel = (i == selIdx);
+            boolean hover = isHovered(mouseX, mouseY, sx2, hotbarRowY, SLOT, SLOT);
+            drawSlot(shader, sx2, hotbarRowY, SLOT, hotbar[i], hover);
+            if (sel) {
+                // Yellow top bar — matches the in-game hotbar indicator
+                drawRectInternal(shader, sx2, hotbarRowY, SLOT, 3f,
+                        new Vector4f(1.0f, 0.95f, 0.0f, 1.0f));
             }
         }
 
-        // --- 4. Cursor ItemStack (Attached to Mouse) ---
-        minicraft.item.ItemStack cursor = player.inventory.getCursorStack();
-        if (cursor != null && !cursor.isEmpty()) {
-            double[] mx = new double[1], my = new double[1];
-            org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
-            float curX = (float) mx[0] - slotSize/2;
-            float curY = (float) my[0] - slotSize/2;
-            drawItemIcon(shader, cursor.getItem(), curX + 5, curY + 5, slotSize - 10);
-            if (cursor.getCount() > 1) {
-                drawText(shader, String.valueOf(cursor.getCount()), curX + 10, curY + slotSize - 15, 0.8f);
-            }
-        }
+        // NOTE: cursor item is drawn by the global cursor block in render(),
+        // so we deliberately do NOT draw it here.
     }
 
-    private void renderShipConsoleScreen(Player player, ShaderProgram shader, int width, int height, minicraft.Main main) {
-        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0.05f, 0.1f, 0.85f)); // Deep cyber-blue tint
-        
-        float panelW = 900;
-        float panelH = 600;
+    // ══════════════════════════════════════════════════════════════════════════
+    // Chest screen — two grids, no cursor duplication
+    // ══════════════════════════════════════════════════════════════════════════
+    private void renderChestScreen(Player player, ShaderProgram shader,
+            int width, int height, minicraft.Main main) {
+        if (main.activeChest == null)
+            return;
+
+        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.78f));
+
+        final float SLOT = 56f;
+        final float GAP = 8f;
+        float gridW = 9 * SLOT + 8 * GAP;
+        float panelW = gridW + 60f;
+        float panelH = 580f;
         float sx = (width - panelW) / 2f;
         float sy = (height - panelH) / 2f;
-        
-        drawRectInternal(shader, sx, sy, panelW, panelH, glassBgColor);
-        drawRectInternal(shader, sx, sy, panelW, 2, new Vector4f(0, 1, 1, 0.5f)); // Cyan border
-        
-        drawText(shader, "UNSC FLEET LOGISTICS NETWORK", sx + 30, sy + 30, 1.4f, new Vector4f(0, 1, 1, 1));
-        drawText(shader, "DRYDOCK STATUS: STANDBY", sx + 30, sy + 65, 0.8f, highlightColor);
-        
-        // Dynamic Ship Registry
-        List<ShipDefinition> ships = ShipRegistry.getInstance().getAll();
-        
-        float btnWidth = 260;
-        float btnHeight = 400;
-        float gap = 30;
-        float startX = sx + (panelW - (Math.min(3, ships.size())*btnWidth + (Math.min(3, ships.size())-1)*gap)) / 2f;
-        float startY = sy + 120;
-        
-        double[] mx = new double[1], my = new double[1];
-        org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
-        float mouseX = (float)mx[0];
-        float mouseY = (float)my[0];
-        
-        for (int i = 0; i < ships.size(); i++) {
-            ShipDefinition def = ships.get(i);
-            float bx = startX + i * (btnWidth + gap);
-            boolean hover = mouseX >= bx && mouseX <= bx + btnWidth && mouseY >= startY && mouseY <= startY + btnHeight;
-            
-            Vector4f bg = hover ? new Vector4f(0, 0.4f, 0.4f, 0.8f) : new Vector4f(0, 0.1f, 0.2f, 0.6f);
-            drawRectInternal(shader, bx, startY, btnWidth, btnHeight, bg);
-            drawRectInternal(shader, bx, startY, btnWidth, 2, new Vector4f(0, 1, 1, hover ? 1f : 0.3f));
-            
-            drawText(shader, def.displayName.toUpperCase(), bx + 15, startY + 20, 0.8f, new Vector4f(1,1,1,1));
-            
-            // Thumbnail / Icon Area
-            drawRectInternal(shader, bx + 20, startY + 60, btnWidth - 40, btnWidth - 40, new Vector4f(0,0,0,0.5f));
-            drawText(shader, "SCHEMATIC PREVIEW", bx + 35, startY + 160, 0.6f, new Vector4f(0.4f, 0.4f, 0.5f, 1));
 
-            // Stats
-            drawText(shader, "CLASS: " + def.shipClass.displayName, bx + 15, startY + btnWidth + 30, 0.65f, new Vector4f(0.8f, 0.8f, 1f, 1f));
-            drawText(shader, "BLOCKS: " + def.getBlockCount(), bx + 15, startY + btnWidth + 55, 0.65f, new Vector4f(0.8f, 0.8f, 1f, 1f));
-            drawText(shader, def.getDimensionsString(), bx + 15, startY + btnWidth + 80, 0.65f, new Vector4f(0.8f, 0.8f, 1f, 1f));
-            
-            // Description (Truncated)
-            String desc = def.description;
-            if (desc.length() > 60) desc = desc.substring(0, 57) + "...";
-            drawText(shader, desc, bx + 15, startY + btnWidth + 110, 0.55f, new Vector4f(0.6f, 0.6f, 0.6f, 1f));
+        drawTacticalFrame(shader, sx, sy, panelW, panelH);
+        drawText(shader, "LOOT CONTAINER", sx + 18, sy + 18, 0.85f, tactGreen);
+
+        float[] mouse = getScaledMouse(main, width, height);
+        float mouseX = mouse[0], mouseY = mouse[1];
+        float gx = sx + (panelW - gridW) / 2f;
+
+        // Chest contents (3×9)
+        minicraft.item.ItemStack[] chestInv = main.activeChest.getMainInventory();
+        float chestY = sy + 52f;
+        drawText(shader, "CONTAINER", gx, chestY - 14, 0.42f, highlightColor);
+        for (int i = 0; i < 27; i++) {
+            int col = i % 9, row = i / 9;
+            float tx = gx + col * (SLOT + GAP);
+            float ty = chestY + row * (SLOT + GAP);
+            drawSlot(shader, tx, ty, SLOT, chestInv[i], isHovered(mouseX, mouseY, tx, ty, SLOT, SLOT));
         }
-        
-        // Mouse Cursor
-        drawRectInternal(shader, mouseX, mouseY, 12, 12, new Vector4f(0, 1, 1, 1));
+
+        // Separator
+        float sepY = chestY + 3 * (SLOT + GAP) + 8f;
+        drawRectInternal(shader, gx, sepY, gridW, 1f, glassBorderColor);
+
+        // Player inventory (3×9)
+        minicraft.item.ItemStack[] playerInv = player.inventory.getMainInventory();
+        float playerY = sepY + 16f;
+        drawText(shader, "YOUR BAG", gx, playerY - 14, 0.42f, highlightColor);
+        for (int i = 0; i < 27; i++) {
+            int col = i % 9, row = i / 9;
+            float tx = gx + col * (SLOT + GAP);
+            float ty = playerY + row * (SLOT + GAP);
+            drawSlot(shader, tx, ty, SLOT, playerInv[i], isHovered(mouseX, mouseY, tx, ty, SLOT, SLOT));
+        }
+
+        // Cursor drawn by global block in render()
     }
 
-    private void renderFacilityScreen(Player player, ShaderProgram shader, int width, int height, minicraft.Main main) {
-        if (main.activeFacility == null) return;
-        
-        // Darken background
-        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.75f));
-        
-        float panelW = 700;
-        float panelH = 500;
+    // ══════════════════════════════════════════════════════════════════════════
+    // Hotbar — in-game strip, uses layout constants
+    // ══════════════════════════════════════════════════════════════════════════
+    public void renderHotbar(Player player, ShaderProgram shader, int width, int height, float topY) {
+        float stripW = HOTBAR_SLOTS * (HOTBAR_SLOT_SIZE + HOTBAR_GAP) - HOTBAR_GAP;
+        float startX = (width - stripW) / 2f;
+
+        // Background strip
+        drawRectInternal(shader, startX - 4, topY - 4, stripW + 8, HOTBAR_SLOT_SIZE + 8, glassBgColor);
+        drawRectInternal(shader, startX - 4, topY - 4, stripW + 8, 1f, glassBorderColor);
+
+        minicraft.item.ItemStack[] hotbar = player.inventory.getHotbar();
+        int sel = player.inventory.getSelectedIndex();
+
+        for (int i = 0; i < HOTBAR_SLOTS; i++) {
+            float sx = startX + i * (HOTBAR_SLOT_SIZE + HOTBAR_GAP);
+
+            if (i == sel) {
+                drawRectInternal(shader, sx, topY, HOTBAR_SLOT_SIZE, HOTBAR_SLOT_SIZE,
+                        new Vector4f(1, 1, 1, 0.28f));
+                drawRectInternal(shader, sx, topY, HOTBAR_SLOT_SIZE, 3f,
+                        new Vector4f(1.0f, 0.95f, 0.0f, 1.0f));
+            } else {
+                drawRectInternal(shader, sx, topY, HOTBAR_SLOT_SIZE, HOTBAR_SLOT_SIZE,
+                        new Vector4f(0, 0, 0, 0.45f));
+            }
+
+            minicraft.item.ItemStack stack = hotbar[i];
+            if (stack != null && !stack.isEmpty()) {
+                drawItemIcon(shader, stack.getItem(), sx + 5, topY + 5, HOTBAR_SLOT_SIZE - 10);
+                if (stack.getCount() > 1)
+                    drawText(shader, String.valueOf(stack.getCount()),
+                            sx + 3, topY + HOTBAR_SLOT_SIZE - 11, 0.52f);
+            }
+        }
+
+        // Selected item name — centred above hotbar with 6px gap
+        minicraft.item.Item selected = player.inventory.getSelectedItem();
+        if (selected != null) {
+            String name = selected.getName();
+            float nameW = name.length() * 7.5f; // rough char width at scale 0.6
+            drawText(shader, name, (width - nameW) / 2f, topY - 16f, 0.6f, textColor);
+        }
+
+        // Mining progress bar — below crosshair, never near hotbar
+        if (player.miningProgress > 0) {
+            float pbW = 90f, pbH = 5f;
+            float px = (width - pbW) / 2f;
+            float py = height / 2f + 22f;
+            drawRectInternal(shader, px, py, pbW, pbH, new Vector4f(0, 0, 0, 0.55f));
+            drawRectInternal(shader, px, py, pbW * player.miningProgress, pbH,
+                    new Vector4f(0.38f, 0.95f, 0.38f, 0.95f));
+        }
+    }
+
+    // Backwards-compatible overload used by other callers
+    public void renderHotbar(Player player, ShaderProgram shader, int width, int height) {
+        float hotbarTop = height - HOTBAR_MARGIN_BOT - HOTBAR_H;
+        renderHotbar(player, shader, width, height, hotbarTop);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Slot rendering — hover highlight gives clear feedback during swapping
+    // ══════════════════════════════════════════════════════════════════════════
+    private void drawSlot(ShaderProgram shader, float x, float y, float size,
+            minicraft.item.ItemStack stack, boolean hovered) {
+        // Background
+        Vector4f bg = hovered
+                ? new Vector4f(0.18f, 0.18f, 0.22f, 0.90f)
+                : new Vector4f(0.04f, 0.04f, 0.06f, 0.78f);
+        drawRectInternal(shader, x, y, size, size, bg);
+
+        // Thin border — brighter on hover
+        Vector4f border = hovered
+                ? new Vector4f(0.17f, 0.72f, 0.79f, 0.90f)
+                : new Vector4f(0.17f, 0.72f, 0.79f, 0.22f);
+        drawRectInternal(shader, x, y, size, 1f, border); // top
+        drawRectInternal(shader, x, y + size - 1, size, 1f, border); // bottom
+        drawRectInternal(shader, x, y, 1f, size, border); // left
+        drawRectInternal(shader, x + size - 1, y, 1f, size, border); // right
+
+        // Item icon + count
+        if (stack != null && !stack.isEmpty()) {
+            float pad = size * 0.13f;
+            drawItemIcon(shader, stack.getItem(), x + pad, y + pad, size - pad * 2);
+            if (stack.getCount() > 1)
+                drawText(shader, String.valueOf(stack.getCount()),
+                        x + 3, y + size - 12, 0.58f);
+        }
+    }
+
+    // Overload for screens that don't track hover (facility, etc.)
+    private void drawSlot(ShaderProgram shader, float x, float y, float size,
+            minicraft.item.ItemStack stack) {
+        drawSlot(shader, x, y, size, stack, false);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Stat bar (HP / Hunger) — two-tone fill, shine, pulse at < 20%
+    // ══════════════════════════════════════════════════════════════════════════
+    private void drawPremiumBar(ShaderProgram shader,
+            float x, float y, float w, float h, float fill,
+            Vector4f c1, Vector4f c2, String icon) {
+        float f = Math.max(0f, Math.min(1f, fill));
+
+        // Pulse alpha at critical level
+        float pulse = 1.0f;
+        if (f < 0.20f)
+            pulse = 0.72f + (float) Math.abs(Math.sin(System.currentTimeMillis() / 220.0)) * 0.38f;
+
+        // Icon
+        drawText(shader, icon, x - 22, y + 1, 0.70f, new Vector4f(c1.x, c1.y, c1.z, pulse));
+
+        // Track
+        drawRectInternal(shader, x - 1, y - 1, w + 2, h + 2, new Vector4f(0, 0, 0, 0.70f));
+
+        // Two-tone fill
+        float fillW = w * f;
+        drawRectInternal(shader, x, y, fillW, h * 0.55f, c1);
+        drawRectInternal(shader, x, y + h * 0.55f, fillW, h * 0.45f, c2);
+
+        // Shine stripe
+        drawRectInternal(shader, x, y, fillW, 2f, barShine);
+
+        // Top border
+        drawRectInternal(shader, x - 1, y - 1, w + 2, 1f, glassBorderColor);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Temperature HUD — top-right, width fixed so it never overlaps coords
+    // ══════════════════════════════════════════════════════════════════════════
+    private void drawTemperatureHUD(Player player, ShaderProgram shader, int screenWidth, float margin) {
+        float panelW = 150f, panelH = 48f;
+        float x = screenWidth - margin - panelW;
+        float y = margin;
+
+        drawTacticalFrame(shader, x, y, panelW, panelH);
+
+        String tempText = String.format("%.1f\u00b0C", player.temperature);
+        drawText(shader, tempText, x + 10, y + 14, 0.85f, textColor);
+
+        Vector4f stateColor;
+        String state = player.tempState;
+        if (state.contains("Hypothermia"))
+            stateColor = new Vector4f(0.75f, 0.0f, 1.0f, 1.0f);
+        else if (state.equals("Cold"))
+            stateColor = tactBlue;
+        else if (state.equals("Too Warm"))
+            stateColor = healthColor;
+        else if (state.equals("Warm"))
+            stateColor = tactOrange;
+        else
+            stateColor = tactGreen;
+
+        drawText(shader, state.toUpperCase(), x + 10, y + 33, 0.38f, stateColor);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Crafting menu
+    // ══════════════════════════════════════════════════════════════════════════
+    private void renderCraftingMenu(Player player, ShaderProgram shader,
+            int width, int height, minicraft.Main main) {
+        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.85f));
+
+        float menuW = 620f, menuH = 520f;
+        float startX = (width - menuW) / 2f;
+        float startY = (height - menuH) / 2f;
+
+        drawRectInternal(shader, startX, startY, menuW, menuH, textColor, "crafting_menu_bg");
+        drawRectInternal(shader, startX, startY, menuW, 2f, glassBorderColor);
+
+        // Tabs
+        Recipe.Category[] cats = Recipe.Category.values();
+        float tabW = (menuW - 40f) / cats.length;
+        for (int i = 0; i < cats.length; i++) {
+            float tx = startX + 20 + i * tabW;
+            boolean active = (main.activeCategory == cats[i]);
+            drawRectInternal(shader, tx, startY + 10, tabW - 4, 34,
+                    active ? new Vector4f(1.2f, 1.2f, 1.2f, 1f) : new Vector4f(0.78f, 0.78f, 0.78f, 1f),
+                    "button_wood");
+            if (active)
+                drawRectInternal(shader, tx, startY + 42, tabW - 4, 2, tactOrange);
+            drawText(shader, cats[i].name(),
+                    tx + (tabW / 2f) - (cats[i].name().length() * 3.5f),
+                    startY + 21, 0.65f,
+                    active ? textColor : new Vector4f(0, 0, 0, 0.8f));
+        }
+
+        // Recipe list
+        List<Recipe> filtered = new ArrayList<>();
+        for (Recipe r : main.craftingManager.getRecipes())
+            if (r.getCategory() == main.activeCategory)
+                filtered.add(r);
+
+        float listX = startX + 35;
+        int maxItems = 9;
+
+        for (int i = 0; i < Math.min(filtered.size() - main.recipeScrollOffset, maxItems); i++) {
+            int actualIndex = i + main.recipeScrollOffset;
+            Recipe r = filtered.get(actualIndex);
+            float ry = startY + 70 + i * 40f;
+            boolean selected = (actualIndex == main.recipeIndex);
+            if (selected) {
+                drawRectInternal(shader, listX - 10, ry - 2, 350, 38, highlightColor);
+                drawRectInternal(shader, listX - 12, ry - 2, 4, 38, tactOrange);
+            }
+            drawText(shader, r.getName(), listX + 15, ry + 8, 0.92f,
+                    selected ? tactOrange : textColor);
+        }
+
+        // Scrollbar
+        if (filtered.size() > maxItems) {
+            float sbX = startX + 382, sbY = startY + 70;
+            float sbH = maxItems * 40f - 5;
+            drawRectInternal(shader, sbX, sbY, 4, sbH, tactDim);
+            float thumbH = (sbH / filtered.size()) * maxItems;
+            float thumbY = sbY + (sbH / filtered.size()) * main.recipeScrollOffset;
+            drawRectInternal(shader, sbX, thumbY, 4, thumbH, tactBlue);
+        }
+
+        // Detail pane
+        if (main.recipeIndex >= 0 && main.recipeIndex < filtered.size()) {
+            Recipe sel = filtered.get(main.recipeIndex);
+            float detailX = startX + 400, detailY = startY + 70;
+
+            drawRectInternal(shader, detailX, detailY, 180, menuH - 145,
+                    new Vector4f(0, 0, 0, 0.40f));
+            drawText(shader, "REQUIRED:", detailX + 10, detailY + 10, 0.65f, tactOrange);
+
+            boolean canCraft = true;
+            int k = 0;
+            for (Map.Entry<Item, Integer> entry : sel.getIngredients().entrySet()) {
+                int owned = player.inventory.getCount(entry.getKey());
+                boolean sufficient = owned >= entry.getValue();
+                if (!sufficient)
+                    canCraft = false;
+                Vector4f col = sufficient ? tactGreen : new Vector4f(1f, 0.4f, 0.4f, 1f);
+                drawText(shader, entry.getKey().getName(), detailX + 12, detailY + 40 + k * 44, 0.56f, col);
+                drawText(shader, owned + " / " + entry.getValue(), detailX + 12, detailY + 57 + k * 44, 0.65f, col);
+                k++;
+            }
+
+            float btnX = startX + menuW - 192, btnY = startY + menuH - 68;
+            drawRectInternal(shader, btnX, btnY, 172, 46,
+                    canCraft ? textColor : new Vector4f(0.5f, 0.5f, 0.5f, 0.8f), "button_wood");
+            drawText(shader, "FORGE ITEM", btnX + 36, btnY + 15, 0.80f,
+                    canCraft ? new Vector4f(0, 0, 0, 1) : new Vector4f(0.25f, 0.25f, 0.25f, 0.8f));
+        }
+
+        // Cursor drawn by global block in render()
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Facility screen (furnace / cooker)
+    // ══════════════════════════════════════════════════════════════════════════
+    private void renderFacilityScreen(Player player, ShaderProgram shader,
+            int width, int height, minicraft.Main main) {
+        if (main.activeFacility == null)
+            return;
+
+        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.78f));
+
+        float panelW = 680f, panelH = 480f;
         float sx = (width - panelW) / 2f;
-        float sy = height - panelH - 80; // Above hotbar
-        
+        float sy = (height - panelH) / 2f;
+
         String title = main.furnaceOpen ? "INDUSTRIAL SMELTER" : "HIGH-EFFICIENCY COOKER";
         Vector4f titleCol = main.furnaceOpen ? tactOrange : tactBlue;
 
-        drawRectInternal(shader, sx, sy, panelW, panelH, glassBgColor);
-        drawRectInternal(shader, sx, sy, panelW, 2, titleCol);
-        drawText(shader, title, sx + 30, sy + 30, 1.2f, titleCol);
+        drawTacticalFrame(shader, sx, sy, panelW, panelH);
+        drawText(shader, title, sx + 22, sy + 22, 1.0f, titleCol);
 
-        // --- Facility Grid (Center) ---
-        float cx = sx + panelW/2f;
-        float cy = sy + 180;
-        float slotSize = 80;
+        float cx = sx + panelW / 2f;
+        float cy = sy + 180f;
+        float slotSize = 72f;
 
-        // 1. Input Slot
-        drawSlot(shader, cx - 180, cy - 40, slotSize, main.activeFacility.getSlot(0));
-        drawText(shader, "INPUT", cx - 180, cy - 65, 0.6f, highlightColor);
+        // Input
+        drawSlot(shader, cx - 170, cy - 36, slotSize, main.activeFacility.getSlot(0));
+        drawText(shader, "INPUT", cx - 170, cy - 52, 0.52f, highlightColor);
 
-        // 2. Fuel Slot
-        drawSlot(shader, cx - 40, cy + 60, slotSize, main.activeFacility.getSlot(1));
-        drawText(shader, "FUEL", cx - 40, cy + 40, 0.6f, highlightColor);
-        
-        // Fuel Progress Bar (Flame)
+        // Fuel
+        drawSlot(shader, cx - 36, cy + 52, slotSize, main.activeFacility.getSlot(1));
+        drawText(shader, "FUEL", cx - 36, cy + 36, 0.52f, highlightColor);
+
+        // Fuel ratio bar
         float fuelRatio = main.activeFacility.getFuelRatio();
-        Vector4f flameCol = new Vector4f(1, 0.5f, 0, 0.8f);
-        drawRectInternal(shader, cx - 35, cy + 145, (slotSize + 70) * fuelRatio, 6, flameCol);
+        drawRectInternal(shader, cx - 36, cy + 132, slotSize * fuelRatio, 5,
+                new Vector4f(1, 0.5f, 0, 0.9f));
 
-        // 3. Output Slot
-        drawSlot(shader, cx + 100, cy - 40, slotSize, main.activeFacility.getSlot(2));
-        drawText(shader, "OUTPUT", cx + 100, cy - 65, 0.6f, highlightColor);
+        // Output
+        drawSlot(shader, cx + 98, cy - 36, slotSize, main.activeFacility.getSlot(2));
+        drawText(shader, "OUTPUT", cx + 98, cy - 52, 0.52f, highlightColor);
 
-        // --- Processing Arrow ---
+        // Progress arrow
         float prog = main.activeFacility.getProgress();
-        drawRectInternal(shader, cx - 75, cy - 5, 150, 10, new Vector4f(1,1,1,0.1f));
-        drawRectInternal(shader, cx - 75, cy - 5, 150 * prog, 10, titleCol);
-        if (prog > 0) drawText(shader, (int)(prog * 100) + "%", cx - 15, cy + 15, 0.6f, textColor);
+        drawRectInternal(shader, cx - 66, cy, 130, 8, new Vector4f(1, 1, 1, 0.10f));
+        drawRectInternal(shader, cx - 66, cy, 130 * prog, 8, titleCol);
+        if (prog > 0)
+            drawText(shader, (int) (prog * 100) + "%", cx - 14, cy + 18, 0.58f, textColor);
 
-        // --- Player Inventory ---
-        float invStartX = sx + (panelW - (64 + 15) * 9) / 2f;
-        float invStartY = sy + 320;
-        drawText(shader, "INVENTORY", invStartX, invStartY - 25, 0.6f, highlightColor);
+        // Player inventory (3×9 at bottom of panel)
+        final float ISLOT = 54f, IGAP = 6f;
+        float gridW = 9 * ISLOT + 8 * IGAP;
+        float invStartX = sx + (panelW - gridW) / 2f;
+        float invStartY = sy + 310f;
+
+        drawText(shader, "INVENTORY", invStartX, invStartY - 16, 0.52f, highlightColor);
         minicraft.item.ItemStack[] pInv = player.inventory.getMainInventory();
         for (int i = 0; i < 27; i++) {
-            int row = i / 9;
-            int col = i % 9;
-            drawSlot(shader, invStartX + col * 79, invStartY + row * 79, 64, pInv[i]);
+            int row = i / 9, col = i % 9;
+            drawSlot(shader, invStartX + col * (ISLOT + IGAP),
+                    invStartY + row * (ISLOT + IGAP), ISLOT, pInv[i]);
         }
 
-        // --- Cursor ---
+        // Cursor drawn by global block in render()
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Ship console
+    // ══════════════════════════════════════════════════════════════════════════
+    private void renderShipConsoleScreen(Player player, ShaderProgram shader,
+            int width, int height, minicraft.Main main) {
+        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0.04f, 0.09f, 0.88f));
+
+        float panelW = 900f, panelH = 600f;
+        float sx = (width - panelW) / 2f;
+        float sy = (height - panelH) / 2f;
+
+        drawRectInternal(shader, sx, sy, panelW, panelH, glassBgColor);
+        drawRectInternal(shader, sx, sy, panelW, 2, new Vector4f(0, 1, 1, 0.5f));
+        drawText(shader, "UNSC FLEET LOGISTICS NETWORK", sx + 28, sy + 28, 1.2f,
+                new Vector4f(0, 1, 1, 1));
+        drawText(shader, "DRYDOCK STATUS: STANDBY", sx + 28, sy + 58, 0.72f, highlightColor);
+
+        List<ShipDefinition> ships = ShipRegistry.getInstance().getAll();
+
+        float btnW = 250f, btnH = 380f, gap = 28f;
+        int count = Math.min(3, ships.size());
+        float startX = sx + (panelW - (count * btnW + (count - 1) * gap)) / 2f;
+        float startY = sy + 100f;
+
         double[] mx = new double[1], my = new double[1];
         org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
-        float mouseX = (float)mx[0];
-        float mouseY = (float)my[0];
+        float mouseX = (float) mx[0], mouseY = (float) my[0];
 
-        // 1. Cursor ItemStack (Attached to Mouse)
-        minicraft.item.ItemStack cursor = player.inventory.getCursorStack();
-        if (cursor != null && !cursor.isEmpty()) {
-            drawItemIcon(shader, cursor.getItem(), mouseX - 32, mouseY - 32, 64);
-            if (cursor.getCount() > 1) drawText(shader, String.valueOf(cursor.getCount()), mouseX - 25, mouseY + 20, 0.8f);
+        for (int i = 0; i < ships.size(); i++) {
+            ShipDefinition def = ships.get(i);
+            float bx = startX + i * (btnW + gap);
+            boolean hover = mouseX >= bx && mouseX <= bx + btnW
+                    && mouseY >= startY && mouseY <= startY + btnH;
+
+            drawRectInternal(shader, bx, startY, btnW, btnH,
+                    hover ? new Vector4f(0, 0.38f, 0.40f, 0.82f)
+                            : new Vector4f(0, 0.09f, 0.18f, 0.62f));
+            drawRectInternal(shader, bx, startY, btnW, 2,
+                    new Vector4f(0, 1, 1, hover ? 1f : 0.28f));
+
+            drawText(shader, def.displayName.toUpperCase(), bx + 14, startY + 18, 0.75f, textColor);
+
+            drawRectInternal(shader, bx + 18, startY + 52, btnW - 36, btnW - 36,
+                    new Vector4f(0, 0, 0, 0.5f));
+            drawText(shader, "SCHEMATIC PREVIEW", bx + 32, startY + 148, 0.52f,
+                    new Vector4f(0.4f, 0.4f, 0.5f, 1));
+
+            drawText(shader, "CLASS: " + def.shipClass.displayName, bx + 14, startY + btnW + 22, 0.60f,
+                    new Vector4f(0.8f, 0.8f, 1f, 1f));
+            drawText(shader, "BLOCKS: " + def.getBlockCount(), bx + 14, startY + btnW + 44, 0.60f,
+                    new Vector4f(0.8f, 0.8f, 1f, 1f));
+            drawText(shader, def.getDimensionsString(), bx + 14, startY + btnW + 66, 0.60f,
+                    new Vector4f(0.8f, 0.8f, 1f, 1f));
+
+            String desc = def.description.length() > 55
+                    ? def.description.substring(0, 52) + "..."
+                    : def.description;
+            drawText(shader, desc, bx + 14, startY + btnW + 92, 0.50f,
+                    new Vector4f(0.58f, 0.58f, 0.58f, 1f));
         }
 
+        drawRectInternal(shader, mouseX - 6, mouseY - 6, 12, 12, new Vector4f(0, 1, 1, 1));
     }
 
-    private void drawSlot(ShaderProgram shader, float x, float y, float size, minicraft.item.ItemStack stack) {
-        // Slot Shadow/Background
-        drawRectInternal(shader, x, y, size, size, new Vector4f(0, 0, 0, 0.6f));
-        
-        if (stack != null && !stack.isEmpty()) {
-            drawItemIcon(shader, stack.getItem(), x + 8, y + 8, size - 16);
-            if (stack.getCount() > 1) {
-                drawText(shader, String.valueOf(stack.getCount()), x + 5, y + size - 16, 0.7f);
-            }
+    // ══════════════════════════════════════════════════════════════════════════
+    // Pilot HUD
+    // ══════════════════════════════════════════════════════════════════════════
+    private void renderPilotHUD(Player player, ShaderProgram shader, int width, int height) {
+        minicraft.entity.ship.ShipEntity ship = player.getRidingShip();
+        if (ship == null)
+            return;
+
+        // Top header bar
+        drawRectInternal(shader, 0, 0, width, 58, tactDim);
+        drawRectInternal(shader, 0, 58, width, 2, glassBorderColor);
+        drawText(shader, "AEGIS-7 TACTICAL HUB", 38, 14, 1.1f, tactOrange);
+        drawText(shader, "VESSEL: " + ship.getDefinition().displayName.toUpperCase()
+                + "  //  LINK STATUS: NOMINAL", 38, 40, 0.46f, highlightColor);
+        drawText(shader, String.valueOf(System.currentTimeMillis() % 1000000),
+                width - 200, 20, 0.75f, textColor);
+
+        // Left telemetry
+        float lx = 38, ly = 110;
+        drawText(shader, "VITAL TELEMETRY", lx, ly, 0.55f, tactOrange);
+        ly += 28;
+        drawTacticalBar(shader, lx, ly, 215, 9, ship.getHealth() / ship.getMaxHealth(), tactGreen, "HULL INTEGRITY");
+        ly += 42;
+        drawTacticalBar(shader, lx, ly, 215, 9, ship.getShieldPct(), tactBlue, "SHIELD CAPACITY");
+        ly += 42;
+        drawTacticalBar(shader, lx, ly, 215, 9, ship.getEnergyPct(),
+                new Vector4f(0.9f, 0.9f, 0, 1), "POWER CORE");
+        ly += 42;
+        drawTacticalBar(shader, lx, ly, 215, 9, ship.getFuelPct(), tactOrange, "FUEL RESERVES");
+
+        // Centre radar
+        float radarSize = 320f;
+        float rx = (width - radarSize) / 2f, ry = (height - radarSize) / 2f;
+        drawRectInternal(shader, rx, ry, radarSize, radarSize, new Vector4f(1, 1, 1, 0.04f));
+        drawRectInternal(shader, rx + radarSize / 2f - 1, ry, 2, radarSize, glassBorderColor);
+        drawRectInternal(shader, rx, ry + radarSize / 2f - 1, radarSize, 2, glassBorderColor);
+        float anim = (float) Math.sin(System.currentTimeMillis() / 200.0) * 8f;
+        drawCrosshair(shader, width / 2f, height / 2f);
+        drawRectInternal(shader, width / 2f - 22 - anim / 2f, height / 2f - 22 - anim / 2f,
+                44 + anim, 44 + anim, new Vector4f(1, 0.5f, 0, 0.18f));
+        drawText(shader, "VECTOR: " + (int) ship.yaw + "\u00b0", rx, ry + radarSize + 18, 0.65f, tactOrange);
+        drawText(shader, "MAG: " + String.format("%.1f", ship.getVelocityKms()) + " KM/S",
+                rx + 145, ry + radarSize + 18, 0.65f, textColor);
+
+        // Right weapons matrix
+        float wx = width - 258, wy = 110;
+        drawText(shader, "WEAPONS MATRIX", wx, wy, 0.55f, tactOrange);
+        wy += 28;
+        String[] weapons = { "MAC CANNON", "ARCHER PODS", "PULSE LASER" };
+        minicraft.entity.ship.ShipEntity.WeaponSystem active = ship.getActiveWeapon();
+        for (int i = 0; i < weapons.length; i++) {
+            boolean sel = (active.ordinal() == i);
+            drawRectInternal(shader, wx, wy + i * 48, 218, 38,
+                    sel ? new Vector4f(1, 0.5f, 0, 0.2f) : tactDim);
+            drawRectInternal(shader, wx, wy + i * 48, 2, 38,
+                    sel ? tactOrange : highlightColor);
+            drawText(shader, weapons[i], wx + 14, wy + 11 + i * 48, 0.65f,
+                    sel ? textColor : highlightColor);
         }
+
+        // Bottom data fields
+        float bfY = height - 115, bfGap = 155;
+        float bfX = (width - bfGap * 3) / 2f;
+        drawTacticalField(shader, bfX, bfY, "X-COORD", String.valueOf((int) ship.position.x));
+        drawTacticalField(shader, bfX + bfGap, bfY, "Y-COORD", String.valueOf((int) ship.position.y));
+        drawTacticalField(shader, bfX + bfGap * 2, bfY, "Z-COORD", String.valueOf((int) ship.position.z));
+
+        // Ticker
+        drawRectInternal(shader, 0, height - 38, width, 38, tactDim);
+        long tickerTime = System.currentTimeMillis() / 50;
+        float tickerX = width - (tickerTime % (width + 1000));
+        drawText(shader,
+                "[24:12:08] SYSTEM NOMINAL // NEURAL LINK STABLE // SHIELDS AT 100% // READY FOR SLIPSPACE JUMP",
+                tickerX, height - 25, 0.55f, new Vector4f(0.48f, 0.48f, 0.48f, 1));
     }
 
-    private void drawArmorSlot(ShaderProgram shader, float x, float y, String label, Item item) {
-        drawRectInternal(shader, x, y, 64, 64, new Vector4f(0,0,0,0.6f));
-        if (item != null) {
-            drawItemIcon(shader, item, x + 8, y + 8, 48);
-        } else {
-            drawText(shader, label.substring(0, 1), x + 25, y + 20, 1.0f, highlightColor);
-        }
-        drawText(shader, label, x + 75, y + 25, 0.5f);
+    // ══════════════════════════════════════════════════════════════════════════
+    // Shared helpers
+    // ══════════════════════════════════════════════════════════════════════════
+
+    /** Returns mouse position scaled to the render resolution. */
+    private float[] getScaledMouse(minicraft.Main main, int renderW, int renderH) {
+        double[] mx = new double[1], my = new double[1];
+        org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
+        int[] winW = new int[1], winH = new int[1];
+        org.lwjgl.glfw.GLFW.glfwGetWindowSize(main.getWindow(), winW, winH);
+        float scaleX = winW[0] > 0 ? (float) renderW / winW[0] : 1f;
+        float scaleY = winH[0] > 0 ? (float) renderH / winH[0] : 1f;
+        return new float[] { (float) mx[0] * scaleX, (float) my[0] * scaleY };
+    }
+
+    /** Returns true if (mx, my) is inside the rectangle. */
+    private boolean isHovered(float mx, float my, float rx, float ry, float rw, float rh) {
+        return mx >= rx && mx <= rx + rw && my >= ry && my <= ry + rh;
+    }
+
+    private void drawTacticalFrame(ShaderProgram shader, float x, float y, float w, float h) {
+        drawRectInternal(shader, x, y, w, h, glassBgColor);
+        // Thin outline
+        drawRectInternal(shader, x, y, w, 1, glassBorderColor);
+        drawRectInternal(shader, x, y + h - 1, w, 1, glassBorderColor);
+        drawRectInternal(shader, x, y, 1, h, glassBorderColor);
+        drawRectInternal(shader, x + w - 1, y, 1, h, glassBorderColor);
+        // Corner accents (subtler: 8px length, 2px thick)
+        float cL = 8f, cT = 2f;
+        drawRectInternal(shader, x, y, cL, cT, tactBlue);
+        drawRectInternal(shader, x, y, cT, cL, tactBlue);
+        drawRectInternal(shader, x + w - cL, y, cL, cT, tactBlue);
+        drawRectInternal(shader, x + w - cT, y, cT, cL, tactBlue);
+        drawRectInternal(shader, x, y + h - cT, cL, cT, tactBlue);
+        drawRectInternal(shader, x, y + h - cL, cT, cL, tactBlue);
+        drawRectInternal(shader, x + w - cL, y + h - cT, cL, cT, tactBlue);
+        drawRectInternal(shader, x + w - cT, y + h - cL, cT, cL, tactBlue);
+    }
+
+    private void drawTacticalBar(ShaderProgram shader, float x, float y, float w, float h,
+            float fill, Vector4f color, String label) {
+        drawText(shader, label, x, y - 11, 0.40f, highlightColor);
+        drawRectInternal(shader, x, y, w, h, new Vector4f(0.04f, 0.04f, 0.04f, 0.82f));
+        drawRectInternal(shader, x, y, w * Math.max(0, Math.min(1, fill)), h, color);
+        drawRectInternal(shader, x, y, w, 1, glassBorderColor);
+    }
+
+    private void drawTacticalField(ShaderProgram shader, float x, float y, String label, String value) {
+        drawRectInternal(shader, x, y, 2, 38, tactOrange);
+        drawText(shader, label, x + 9, y, 0.40f, highlightColor);
+        drawText(shader, value, x + 9, y + 17, 0.82f, textColor);
+    }
+
+    private void drawCrosshair(ShaderProgram shader, float cx, float cy) {
+        float size = 13f, thick = 2f;
+        drawRectInternal(shader, cx - thick / 2f, cy - size / 2f, thick, size, crosshairColor);
+        drawRectInternal(shader, cx - size / 2f, cy - thick / 2f, size, thick, crosshairColor);
+    }
+
+    private void drawDamageVignette(ShaderProgram shader, int width, int height, float timer) {
+        drawRectInternal(shader, 0, 0, width, height,
+                new Vector4f(1.0f, 0, 0, timer * 0.38f));
     }
 
     private void drawItemIcon(ShaderProgram shader, Item item, float x, float y, float size) {
-        if (item == null) return;
-        
+        if (item == null)
+            return;
         if (item instanceof minicraft.item.ToolItem) {
             String tex = ((minicraft.item.ToolItem) item).getTextureName();
             if (tex != null) {
@@ -452,158 +901,57 @@ public class UIRenderer {
                 return;
             }
         }
-        
         if (item.isBlock()) {
             drawRectInternal(shader, x, y, size, size, textColor, item.getBlock().sideTexture);
         } else {
-            // Generic fallback
-            drawRectInternal(shader, x, y, size, size, new Vector4f(0.6f, 0.6f, 0.6f, 1.0f));
+            drawRectInternal(shader, x, y, size, size, new Vector4f(0.55f, 0.55f, 0.55f, 1f));
         }
     }
 
-    private void renderCraftingMenu(Player player, ShaderProgram shader, int width, int height, minicraft.Main main) {
-        // Darken background
-        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.85f));
-        
-        float menuW = 600;
-        float menuH = 500;
-        float startX = (width - menuW) / 2f;
-        float startY = (height - menuH) / 2f;
-        
-        // --- 1. Smithing Table Background ---
-        drawRectInternal(shader, startX, startY, menuW, menuH, textColor, "crafting_menu_bg");
-        drawRectInternal(shader, startX, startY, menuW, 2, glassBorderColor); 
-        
-        // 2. Render Tabs (Wooden Buttons)
-        Recipe.Category[] cats = Recipe.Category.values();
-        float tabW = (menuW - 40) / cats.length;
-        for (int i = 0; i < cats.length; i++) {
-            float tx = startX + 20 + i * tabW;
-            boolean active = (main.activeCategory == cats[i]);
-            
-            // Wood Button
-            drawRectInternal(shader, tx, startY + 10, tabW - 4, 35, active ? new Vector4f(1.2f, 1.2f, 1.2f, 1.0f) : new Vector4f(0.8f, 0.8f, 0.8f, 1.0f), "button_wood");
-            if (active) drawRectInternal(shader, tx, startY + 43, tabW - 4, 2, tactOrange);
-            
-            drawText(shader, cats[i].name(), tx + (tabW/2f) - (cats[i].name().length()*4), startY + 20, 0.7f, active ? textColor : new Vector4f(0,0,0,0.8f));
+    private void drawArmorSlot(ShaderProgram shader, float x, float y, String label, Item item) {
+        drawRectInternal(shader, x, y, 64, 64, new Vector4f(0, 0, 0, 0.6f));
+        if (item != null) {
+            drawItemIcon(shader, item, x + 8, y + 8, 48);
+        } else {
+            drawText(shader, label.substring(0, 1), x + 24, y + 20, 0.95f, highlightColor);
         }
-
-        // 3. Render Recipe List (In the main forge area)
-        List<Recipe> filtered = new java.util.ArrayList<>();
-        for (Recipe r : main.craftingManager.getRecipes()) {
-            if (r.getCategory() == main.activeCategory) filtered.add(r);
-        }
-
-        float listX = startX + 35;
-        int maxItems = 9;
-        for (int i = 0; i < Math.min(filtered.size() - main.recipeScrollOffset, maxItems); i++) {
-            int actualIndex = i + main.recipeScrollOffset;
-            Recipe r = filtered.get(actualIndex);
-            float ry = startY + 70 + i * 40;
-            boolean selected = (actualIndex == main.recipeIndex);
-            
-            if (selected) {
-                drawRectInternal(shader, listX - 10, ry - 2, 350, 38, highlightColor);
-                drawRectInternal(shader, listX - 12, ry - 2, 4, 38, tactOrange);
-            }
-            
-            drawText(shader, r.getName(), listX + 15, ry + 8, 1.0f, selected ? tactOrange : textColor);
-        }
-
-        // Scrollbar Track (Tactical)
-        if (filtered.size() > maxItems) {
-            float sbX = startX + 380;
-            float sbY = startY + 70;
-            float sbH = maxItems * 40 - 5;
-            drawRectInternal(shader, sbX, sbY, 4, sbH, tactDim);
-            float thumbH = (sbH / (float)filtered.size()) * maxItems;
-            float thumbY = sbY + (sbH / (float)filtered.size()) * main.recipeScrollOffset;
-            drawRectInternal(shader, sbX, thumbY, 4, thumbH, tactBlue);
-        }
-
-        // 4. Recipe Details Pane (Right Wood)
-        if (main.recipeIndex >= 0 && main.recipeIndex < filtered.size()) {
-            Recipe selectedRecipe = filtered.get(main.recipeIndex);
-            float detailX = startX + 395;
-            float detailY = startY + 70;
-            
-            // Requirement Panel
-            drawRectInternal(shader, detailX, detailY, 175, menuH - 140, new Vector4f(0,0,0,0.4f));
-            drawText(shader, "REQUIRED:", detailX + 10, detailY + 10, 0.7f, tactOrange);
-            
-            int k = 0;
-            boolean canCraft = true;
-            for (Map.Entry<Item, Integer> entry : selectedRecipe.getIngredients().entrySet()) {
-                int owned = player.inventory.getCount(entry.getKey());
-                boolean sufficient = owned >= entry.getValue();
-                if (!sufficient) canCraft = false;
-                
-                Vector4f color = sufficient ? tactGreen : new Vector4f(1.0f, 0.4f, 0.4f, 1.0f);
-                drawText(shader, entry.getKey().getName(), detailX + 15, detailY + 40 + k*45, 0.6f, color);
-                drawText(shader, owned + " / " + entry.getValue(), detailX + 15, detailY + 58 + k*45, 0.7f, color);
-                k++;
-            }
-            
-            float btnX = startX + menuW - 190;
-            float btnY = startY + menuH - 65;
-            // Craft Button (Wooden Plank)
-            drawRectInternal(shader, btnX, btnY, 170, 45, canCraft ? textColor : new Vector4f(0.5f,0.5f,0.5f,0.8f), "button_wood");
-            drawText(shader, "FORGE ITEM", btnX + 35, btnY + 15, 0.85f, canCraft ? new Vector4f(0,0,0,1) : new Vector4f(0.2f,0.2f,0.2f,0.8f));
-        }
-
-        // Global Cursor (Hidden system)
-        double[] mx = new double[1], my = new double[1];
-        org.lwjgl.glfw.GLFW.glfwGetCursorPos(main.getWindow(), mx, my);
-        float mouseX = (float)mx[0];
-        float mouseY = (float)my[0];
-        drawRectInternal(shader, mouseX, mouseY, 32, 32, textColor, "blocky_cursor");
+        drawText(shader, label, x + 72, y + 24, 0.48f);
     }
 
-    private void drawTacticalFrame(ShaderProgram shader, float x, float y, float w, float h) {
-        // Base Glass (Tinted)
-        drawRectInternal(shader, x, y, w, h, glassBgColor);
-        
-        // Thin Outline
-        drawRectInternal(shader, x, y, w, 1, glassBorderColor); // Top
-        drawRectInternal(shader, x, y + h - 1, w, 1, glassBorderColor); // Bottom
-        drawRectInternal(shader, x, y, 1, h, glassBorderColor); // Left
-        drawRectInternal(shader, x + w - 1, y, 1, h, glassBorderColor); // Right
-        
-        // Tactical Corners (Reinforced)
-        float cLen = 12;
-        float cThick = 3;
-        // Top Left
-        drawRectInternal(shader, x, y, cLen, cThick, tactBlue);
-        drawRectInternal(shader, x, y, cThick, cLen, tactBlue);
-        // Top Right
-        drawRectInternal(shader, x + w - cLen, y, cLen, cThick, tactBlue);
-        drawRectInternal(shader, x + w - cThick, y, cThick, cLen, tactBlue);
-        // Bottom Left
-        drawRectInternal(shader, x, y + h - cThick, cLen, cThick, tactBlue);
-        drawRectInternal(shader, x, y + h - cLen, cThick, cLen, tactBlue);
-        // Bottom Right
-        drawRectInternal(shader, x + w - cLen, y + h - cThick, cLen, cThick, tactBlue);
-        drawRectInternal(shader, x + w - cThick, y + h - cLen, cThick, cLen, tactBlue);
-    }
-
-    private void renderWeather(ShaderProgram shader, int width, int height, minicraft.world.WeatherManager weather) {
-        if (weather.getCurrentType() == minicraft.world.WeatherManager.WeatherType.CLEAR) return;
+    private void renderWeather(ShaderProgram shader, int width, int height,
+            minicraft.world.WeatherManager weather) {
+        if (weather.getCurrentType() == minicraft.world.WeatherManager.WeatherType.CLEAR)
+            return;
 
         float intensity = weather.getIntensity();
-        boolean isSnow = (weather.getCurrentType() == minicraft.world.WeatherManager.WeatherType.SNOW || 
-                         weather.getCurrentType() == minicraft.world.WeatherManager.WeatherType.BLIZZARD);
-        
+        boolean isSnow = weather.getCurrentType() == minicraft.world.WeatherManager.WeatherType.SNOW
+                || weather.getCurrentType() == minicraft.world.WeatherManager.WeatherType.BLIZZARD;
+
         Vector4f color;
         int count;
-        
         switch (weather.getCurrentType()) {
-            case THUNDERSTORM:    color = new Vector4f(0.4f, 0.4f, 0.7f, 0.6f); count = 200; break;
-            case TORRENTIAL_RAIN: color = new Vector4f(0.5f, 0.5f, 0.8f, 0.8f); count = 400; break;
-            case BLIZZARD:        color = new Vector4f(1.0f, 1.0f, 1.0f, 0.9f); count = 500; break;
+            case THUNDERSTORM:
+                color = new Vector4f(0.4f, 0.4f, 0.7f, 0.65f);
+                count = 200;
+                break;
+            case TORRENTIAL_RAIN:
+                color = new Vector4f(0.5f, 0.5f, 0.8f, 0.82f);
+                count = 380;
+                break;
+            case BLIZZARD:
+                color = new Vector4f(1.0f, 1.0f, 1.0f, 0.88f);
+                count = 500;
+                break;
             case HURRICANE:
-            case CYCLONE:         color = new Vector4f(0.3f, 0.3f, 0.5f, 0.7f); count = 600; break;
-            default:              color = isSnow ? new Vector4f(1,1,1,0.8f) : new Vector4f(0.5f, 0.6f, 1.0f, 0.4f);
-                                  count = 100; break;
+            case CYCLONE:
+                color = new Vector4f(0.3f, 0.3f, 0.5f, 0.72f);
+                count = 580;
+                break;
+            default:
+                color = isSnow ? new Vector4f(1, 1, 1, 0.78f)
+                        : new Vector4f(0.5f, 0.6f, 1.0f, 0.38f);
+                count = 100;
+                break;
         }
 
         long time = System.currentTimeMillis();
@@ -612,158 +960,28 @@ public class UIRenderer {
             float x = Math.abs(seed * width * 10) % width;
             float speed = (300f + Math.abs(seed * 400f)) * (1.0f + intensity);
             float y = (time * speed / 1000f) % height;
-            
             if (!isSnow) {
                 drawRectInternal(shader, x, y, 2, 10 + 10 * intensity, color);
             } else {
-                float size = 2 + 3 * intensity;
-                drawRectInternal(shader, x, y, size, size, color);
+                float sz = 2 + 3 * intensity;
+                drawRectInternal(shader, x, y, sz, sz, color);
             }
         }
     }
 
-    private void drawCrosshair(ShaderProgram shader, float cx, float cy) {
-        float size = 15;
-        float thickness = 2;
-        // Vertical
-        drawRectInternal(shader, cx - thickness/2f, cy - size/2f, thickness, size, crosshairColor);
-        // Horizontal
-        drawRectInternal(shader, cx - size/2f, cy - thickness/2f, size, thickness, crosshairColor);
-    }
+    // ── Low-level draw calls ─────────────────────────────────────────────────
 
-    private void drawPremiumBar(ShaderProgram shader, float x, float y, float w, float h, float fill, Vector4f c1, Vector4f c2, String icon) {
-        float f = Math.max(0, Math.min(1, fill));
-        
-        // Pulse Effect at low vitals
-        float pulse = 1.0f;
-        if (f < 0.2f) {
-            pulse = 0.8f + (float) Math.abs(Math.sin(System.currentTimeMillis() / 200.0)) * 0.4f;
-        }
-
-        // 1. Icon Backing Circle (Primitive)
-        drawRectInternal(shader, x - 35, y - 5, 24, 24, glassBgColor);
-        drawText(shader, icon, x - 28, y, 0.8f, new Vector4f(c1.x, c1.y, c1.z, pulse));
-
-        // 2. Background Glass
-        drawRectInternal(shader, x - 2, y - 2, w + 4, h + 4, glassBgColor);
-        drawRectInternal(shader, x - 2, y - 2, w + 4, 1, glassBorderColor); 
-        
-        // 3. Fill (Gradient Style using two halves)
-        drawRectInternal(shader, x, y, w * f, h * 0.5f, c1); // Top half
-        drawRectInternal(shader, x, y + h*0.5f, w * f, h * 0.5f, c2); // Bottom half
-        
-        // 4. Glass Highlight
-        drawRectInternal(shader, x, y, w * f, 2, highlightColor); // Top luster
-    }
-
-    private void drawTemperatureHUD(Player player, ShaderProgram shader, int screenWidth, float margin) {
-        String tempText = String.format("%.1f°C", player.temperature);
-        float textWidth = 80;
-        float x = screenWidth - margin - textWidth;
-        float y = margin;
-
-        // Background Glass
-        drawRectInternal(shader, x - 10, y - 5, textWidth + 20, 30, glassBgColor);
-        drawRectInternal(shader, x - 10, y - 5, textWidth + 20, 1, glassBorderColor);
-
-        Vector4f stateColor = textColor;
-        if (player.tempState.equals("Cold")) stateColor = thirstColor;
-        else if (player.tempState.equals("Too Warm")) stateColor = healthColor;
-
-        drawText(shader, tempText, x, y + 2, 1.0f);
-        drawText(shader, player.tempState, x, y + 22, 0.6f, stateColor);
-    }
-
-    private void renderPilotHUD(Player player, ShaderProgram shader, int width, int height) {
-        minicraft.entity.ship.ShipEntity ship = player.getRidingShip();
-        if (ship == null) return;
-
-        // --- 1. Top Header ---
-        drawRectInternal(shader, 0, 0, width, 60, tactDim);
-        drawRectInternal(shader, 0, 60, width, 2, glassBorderColor);
-        drawText(shader, "AEGIS-7 TACTICAL HUB", 40, 15, 1.2f, tactOrange);
-        drawText(shader, "VESSEL: " + ship.getDefinition().displayName.toUpperCase() + " // LINK STATUS: NOMINAL", 40, 42, 0.5f, highlightColor);
-        drawText(shader, "SYSTEM TIME: " + System.currentTimeMillis() % 1000000, width - 250, 20, 0.8f, textColor);
-
-        // --- 2. Left: Vital Telemetry ---
-        float lx = 40, ly = 120;
-        drawText(shader, "VITAL TELEMETRY", lx, ly, 0.6f, tactOrange);
-        ly += 30;
-        drawTacticalBar(shader, lx, ly, 220, 10, ship.getHealth() / ship.getMaxHealth(), tactGreen, "HULL INTEGRITY");
-        ly += 45;
-        drawTacticalBar(shader, lx, ly, 220, 10, ship.getShieldPct(), tactBlue, "SHIELD CAPACITY");
-        ly += 45;
-        drawTacticalBar(shader, lx, ly, 220, 10, ship.getEnergyPct(), new Vector4f(0.9f, 0.9f, 0, 1), "POWER CORE");
-        ly += 45;
-        drawTacticalBar(shader, lx, ly, 220, 10, ship.getFuelPct(), tactOrange, "FUEL RESERVES");
-
-        // --- 3. Center: Radar / Navigation ---
-        float radarSize = 350;
-        float rx = (width - radarSize) / 2f;
-        float ry = (height - radarSize) / 2f;
-        drawRectInternal(shader, rx, ry, radarSize, radarSize, new Vector4f(1, 1, 1, 0.05f)); // Grid box
-        drawRectInternal(shader, rx + radarSize/2f - 1, ry, 2, radarSize, glassBorderColor); // Vertical cross
-        drawRectInternal(shader, rx, ry + radarSize/2f - 1, radarSize, 2, glassBorderColor); // Horizontal cross
-        
-        // Target Reticle (Animated)
-        float anim = (float) Math.sin(System.currentTimeMillis() / 200.0) * 10f;
-        drawCrosshair(shader, width/2f, height/2f);
-        drawRectInternal(shader, width/2f - 25 - anim/2f, height/2f - 25 - anim/2f, 50+anim, 50+anim, new Vector4f(1, 0.5f, 0, 0.2f));
-
-        // Navigation Vector
-        drawText(shader, "VECTOR: " + (int)ship.yaw + "°", rx, ry + radarSize + 20, 0.7f, tactOrange);
-        drawText(shader, "MAG: " + String.format("%.1f", ship.getVelocityKms()) + " KM/S", rx + 150, ry + radarSize + 20, 0.7f, textColor);
-
-        // --- 4. Right: Weapons Matrix ---
-        float wx = width - 260, wy = 120;
-        drawText(shader, "WEAPONS MATRIX", wx, wy, 0.6f, tactOrange);
-        wy += 30;
-        String[] weapons = {"MAC CANNON", "ARCHER PODS", "PULSE LASER"};
-        minicraft.entity.ship.ShipEntity.WeaponSystem active = ship.getActiveWeapon();
-        for (int i = 0; i < weapons.length; i++) {
-            boolean sel = (active.ordinal() == i);
-            drawRectInternal(shader, wx, wy + i * 50, 220, 40, sel ? new Vector4f(1, 0.5f, 0, 0.2f) : tactDim);
-            drawRectInternal(shader, wx, wy + i * 50, 2, 40, sel ? tactOrange : highlightColor);
-            drawText(shader, weapons[i], wx + 15, wy + 12 + i * 50, 0.7f, sel ? textColor : highlightColor);
-        }
-
-        // --- 5. Data Fields (Bottom Row) ---
-        float bfY = height - 120;
-        float bfGap = 160;
-        float bfX = (width - bfGap * 3) / 2f;
-        drawTacticalField(shader, bfX, bfY, "X-COORD", String.valueOf((int)ship.position.x));
-        drawTacticalField(shader, bfX + bfGap, bfY, "Y-COORD", String.valueOf((int)ship.position.y));
-        drawTacticalField(shader, bfX + bfGap * 2, bfY, "Z-COORD", String.valueOf((int)ship.position.z));
-
-        // --- 6. System Log Ticker ---
-        drawRectInternal(shader, 0, height - 40, width, 40, tactDim);
-        long tickerTime = System.currentTimeMillis() / 50;
-        float tickerX = width - (tickerTime % (width + 1000));
-        drawText(shader, "[24:12:08] SYSTEM NOMINAL // NEURAL LINK STABLE // SHIELDS AT 100% // READY FOR SLIPSPACE JUMP", tickerX, height - 28, 0.6f, new Vector4f(0.5f, 0.5f, 0.5f, 1));
-    }
-
-    private void drawTacticalBar(ShaderProgram shader, float x, float y, float w, float h, float fill, Vector4f color, String label) {
-        drawText(shader, label, x, y - 12, 0.45f, highlightColor);
-        drawRectInternal(shader, x, y, w, h, new Vector4f(0.05f, 0.05f, 0.05f, 0.8f));
-        drawRectInternal(shader, x, y, w * fill, h, color);
-        drawRectInternal(shader, x, y, w, 1, glassBorderColor);
-    }
-
-    private void drawTacticalField(ShaderProgram shader, float x, float y, String label, String value) {
-        drawRectInternal(shader, x, y, 2, 40, tactOrange);
-        drawText(shader, label, x + 10, y, 0.45f, highlightColor);
-        drawText(shader, value, x + 10, y + 18, 0.9f, textColor);
-    }
-
-    private void drawRectInternal(ShaderProgram shader, float x, float y, float w, float h, Vector4f color, String textureName) {
+    private void drawRectInternal(ShaderProgram shader, float x, float y, float w, float h,
+            Vector4f color, String textureName) {
         Matrix4f model = new Matrix4f().identity().translate(x, y, 0).scale(w, h, 1);
         shader.setUniform("modelMatrix", model);
         shader.setUniform("colorTint", color);
         quadMesh.setUVs(new float[] { 0, 1, 1, 1, 1, 0, 0, 0 });
-        quadMesh.render(textures.get(textureName));
+        quadMesh.render(textureName != null ? textures.get(textureName) : whiteTexture);
     }
 
-    private void drawRectInternal(ShaderProgram shader, float x, float y, float w, float h, Vector4f color) {
+    private void drawRectInternal(ShaderProgram shader, float x, float y, float w, float h,
+            Vector4f color) {
         drawRectInternal(shader, x, y, w, h, color, null);
     }
 
@@ -771,109 +989,45 @@ public class UIRenderer {
         drawText(shader, text, x, y, scale, textColor);
     }
 
-    private void drawText(ShaderProgram shader, String text, float x, float y, float scale, Vector4f color) {
-        if (fontTexture == null) return;
-        
-        // 1. Draw Multi-Pass Outline (Dark High-Contrast)
-        float offset = 1.0f * scale;
-        Vector4f outlineColor = new Vector4f(0, 0, 0, color.w * 0.9f);
-        drawTextRaw(shader, text, x - offset, y,          scale, outlineColor);
-        drawTextRaw(shader, text, x + offset, y,          scale, outlineColor);
-        drawTextRaw(shader, text, x,          y - offset, scale, outlineColor);
-        drawTextRaw(shader, text, x,          y + offset, scale, outlineColor);
-        
-        // 2. Draw Main Text (Light Gray Shell)
-        Vector4f lightGray = new Vector4f(0.85f, 0.85f, 0.85f, color.w);
-        drawTextRaw(shader, text, x, y, scale, lightGray);
+    private void drawText(ShaderProgram shader, String text, float x, float y,
+            float scale, Vector4f color) {
+        if (fontTexture == null)
+            return;
+        // Classic Minecraft drop-shadow: one offset pass (bottom-right only)
+        float offset = 1.0f;
+        drawTextRaw(shader, text, x + offset, y + offset, scale,
+                new Vector4f(0, 0, 0, color.w * 0.85f));
+        drawTextRaw(shader, text, x, y, scale, color);
     }
 
-    private void drawTextRaw(ShaderProgram shader, String text, float x, float y, float scale, Vector4f color) {
-        if (fontTexture == null) return;
-        
+    private void drawTextRaw(ShaderProgram shader, String text, float x, float y,
+            float scale, Vector4f color) {
+        if (fontTexture == null)
+            return;
         float currentX = x;
         shader.setUniform("colorTint", color);
-        
         for (char c : text.toCharArray()) {
-            FontTexture.CharInfo charInfo = fontTexture.getCharInfo(c);
-            if (charInfo == null) continue;
-
-            float w = charInfo.width * scale;
+            FontTexture.CharInfo info = fontTexture.getCharInfo(c);
+            if (info == null)
+                continue;
+            float w = info.width * scale;
             float h = fontTexture.getHeight() * scale;
-            
-            float u1 = (float) charInfo.startX / fontTexture.getWidth();
-            float u2 = (float) (charInfo.startX + charInfo.width) / fontTexture.getWidth();
-            
+            float u1 = (float) info.startX / fontTexture.getWidth();
+            float u2 = (float) (info.startX + info.width) / fontTexture.getWidth();
             textQuadMesh.setUVs(new float[] { u1, 1, u2, 1, u2, 0, u1, 0 });
-            
-            Matrix4f model = new Matrix4f().identity().translate(currentX, y, 0).scale(w, h, 1);
-            shader.setUniform("modelMatrix", model);
+            shader.setUniform("modelMatrix",
+                    new Matrix4f().identity().translate(currentX, y, 0).scale(w, h, 1));
             textQuadMesh.render();
-            
             currentX += w;
         }
     }
 
-    public void renderHotbar(Player player, ShaderProgram shader, int width, int height) {
-        float slotSize = 45;
-        float padding = 10;
-        int totalSlots = 9;
-        float barWidth = (slotSize + padding) * totalSlots;
-        float startX = (width - barWidth) / 2f;
-        float marginBottom = 15;
-        float y = height - marginBottom - slotSize;
-
-        // Background Glass
-        drawRectInternal(shader, startX - 5, y - 5, barWidth + 5, slotSize + 10, glassBgColor);
-        drawRectInternal(shader, startX - 5, y - 5, barWidth + 5, 1, glassBorderColor);
-
-        minicraft.item.ItemStack[] hotbar = player.inventory.getHotbar();
-        int selectedIdx = player.inventory.getSelectedIndex();
-
-        for (int i = 0; i < totalSlots; i++) {
-            float slotX = startX + i * (slotSize + padding);
-            
-            // Highlight
-            if (i == selectedIdx) {
-                drawRectInternal(shader, slotX, y, slotSize, slotSize, new Vector4f(1, 1, 1, 0.3f));
-                drawRectInternal(shader, slotX, y, slotSize, 2, new Vector4f(1,1,0,1)); // Selection top bar
-            } else {
-                drawRectInternal(shader, slotX, y, slotSize, slotSize, new Vector4f(0, 0, 0, 0.4f));
-            }
-
-            minicraft.item.ItemStack stack = hotbar[i];
-            if (stack != null && !stack.isEmpty()) {
-                // Item Icon
-                drawItemIcon(shader, stack.getItem(), slotX + 5, y + 5, slotSize - 10);
-                
-                // Count
-                if (stack.getCount() > 1) {
-                    drawText(shader, String.valueOf(stack.getCount()), slotX + 2, y + slotSize - 12, 0.6f);
-                }
-            }
-        }
-        
-        // Show current selection name
-        minicraft.item.Item selected = player.inventory.getSelectedItem();
-        if (selected != null) {
-            String name = selected.getName();
-            drawText(shader, name, width / 2f - 30, y - 25, 0.7f);
-        }
-        
-        // --- 5. Mining Progress Bar ---
-        if (player.miningProgress > 0) {
-            float pbW = 100;
-            float pbH = 6;
-            float pX = (width - pbW) / 2f;
-            float pY = height / 2f + 20; // Just below crosshair
-            
-            drawRectInternal(shader, pX, pY, pbW, pbH, new Vector4f(0, 0, 0, 0.5f));
-            drawRectInternal(shader, pX, pY, pbW * player.miningProgress, pbH, new Vector4f(0.4f, 1.0f, 0.4f, 0.9f));
-        }
-    }
-
     public void cleanup() {
-        if (quadMesh != null) quadMesh.cleanup();
-        if (textQuadMesh != null) textQuadMesh.cleanup();
-        if (fontTexture != null) fontTexture.cleanup();
+        if (quadMesh != null)
+            quadMesh.cleanup();
+        if (textQuadMesh != null)
+            textQuadMesh.cleanup();
+        if (fontTexture != null)
+            fontTexture.cleanup();
     }
 }

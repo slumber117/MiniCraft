@@ -16,7 +16,17 @@ public class ModelRegistry {
             Mesh pickaxe = OBJLoader.loadModel("/models/pickaxe_wooden.obj", woodTexture);
             models.put("pickaxe_wooden", pickaxe);
 
-            // 2. Load the high-fidelity zombie
+            // 2. Load the high-fidelity stone pickaxe
+            Texture stoneTexture = textureRegistry.get("stone");
+            Mesh stonePick = OBJLoader.loadModel("/models/pickaxe_stone.obj", stoneTexture);
+            models.put("pickaxe_stone", stonePick);
+
+            // 3. Load the high-fidelity iron pickaxe
+            Texture ironTexture = textureRegistry.get("alloy_plate");
+            Mesh ironPick = OBJLoader.loadModel("/models/pickaxe_iron.obj", ironTexture);
+            models.put("pickaxe_iron", ironPick);
+
+            // 4. Load the high-fidelity zombie
             Texture zombieTexture = textureRegistry.get("zombie_hd");
             Mesh zombie = OBJLoader.loadModel("/models/zombie.obj", zombieTexture);
             models.put("zombie", zombie);

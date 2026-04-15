@@ -10,6 +10,8 @@ uniform sampler2D texture_sampler;
 uniform vec4 colorTint;
 uniform vec3 torchPos;
 uniform float torchStrength; // Handheld torch
+uniform vec3 glowColor;      // Armor radiation (Uranium/Plutonium)
+uniform float glowStrength;  
 uniform float sunBrightness;  // 0.05 to 1.0 (Day/Night)
 uniform float weatherIntensity; // 0.0 to 1.0+
 uniform int   weatherType;      // 0=Clear, 1=Rain, 2=Snow, etc.
@@ -32,7 +34,7 @@ void main()
     float dist = distance(vPosition, torchPos);
     float torchEffect = 0.0;
     if (torchStrength > 0.0) {
-        float falloff = 10.0; 
+        float falloff = 25.0; 
         torchEffect = clamp(1.0 - (dist / falloff), 0.0, 1.0) * torchStrength;
     }
 
@@ -41,6 +43,14 @@ void main()
     float staticLight = max(vLightLevel.x * sunBrightness, vLightLevel.y);
     
     float finalLight = max(staticLight, torchEffect);
+    
+    // Apply Tinted Armor Glow (Additive)
+    if (glowStrength > 0.0) {
+        float glowDist = distance(vPosition, torchPos);
+        float glow = clamp(1.0 - (glowDist / 12.0), 0.0, 1.0) * glowStrength; // Smaller radius than torch
+        texColor.rgb += glowColor * glow * 0.4;
+    }
+
     finalLight = clamp(finalLight, 0.005, 1.0); 
 
     vec3 finalColor = texColor.rgb * finalLight;
