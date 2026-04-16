@@ -108,13 +108,13 @@ public class CraftingManager {
 
         // 10. Iron Shovel
         Map<Item, Integer> ironShovelIng = new HashMap<>();
-        ironShovelIng.put(new Item("IRON_ORE", Block.IRON_ORE), 3);
+        ironShovelIng.put(new Item("IRON_INGOT", null), 3);
         recipes.add(new Recipe("Iron Shovel", Recipe.Category.TOOLS, ironShovelIng,
                 new ToolItem("Iron Shovel", ToolItem.ToolType.SHOVEL, 2, 8.0f, "item_shovel_iron"), 1));
 
         // 11. Titanium Shovel
         Map<Item, Integer> titShovelIng = new HashMap<>();
-        titShovelIng.put(new Item("TITANIUM_ORE", Block.TITANIUM_ORE), 3);
+        titShovelIng.put(new Item("TITANIUM_INGOT", null), 3);
         recipes.add(new Recipe("Titanium Shovel", Recipe.Category.TOOLS, titShovelIng,
                 new ToolItem("Titanium Shovel", ToolItem.ToolType.SHOVEL, 3, 12.0f, "item_shovel_titanium"), 1));
 
@@ -131,13 +131,13 @@ public class CraftingManager {
 
         // 14. Iron Sword
         Map<Item, Integer> ironSwordIng = new HashMap<>();
-        ironSwordIng.put(new Item("IRON_ORE", Block.IRON_ORE), 3);
+        ironSwordIng.put(new Item("IRON_INGOT", null), 3);
         recipes.add(new Recipe("Iron Sword", Recipe.Category.TOOLS, ironSwordIng,
                 new ToolItem("Iron Sword", ToolItem.ToolType.SWORD, 2, 8.0f, "item_sword_iron"), 1));
 
         // 15. Titanium Sword
         Map<Item, Integer> titSwordIng = new HashMap<>();
-        titSwordIng.put(new Item("TITANIUM_ORE", Block.TITANIUM_ORE), 3);
+        titSwordIng.put(new Item("TITANIUM_INGOT", null), 3);
         recipes.add(new Recipe("Titanium Sword", Recipe.Category.TOOLS, titSwordIng,
                 new ToolItem("Titanium Sword", ToolItem.ToolType.SWORD, 3, 12.0f, "item_sword_titanium"), 1));
 
@@ -149,10 +149,10 @@ public class CraftingManager {
 
         // --- NEW ARMOR RECIPES ---
         addArmorSet("Leather", "LEATHER",    0.05f, 5, 0.0f, 1.0f,  0.5f, null); 
-        addArmorSet("Iron",    "IRON_ORE",   0.12f, 3, 0.3f, 0.7f,  0.2f, null); 
+        addArmorSet("Iron",    "IRON_INGOT",  0.12f, 3, 0.3f, 0.7f,  0.2f, null); 
         addArmorSet("Bronze",  "BRONZE_BLOCK",0.14f, 2, 0.2f, 0.85f, 0.2f, null);
-        addArmorSet("Gold",    "GOLD_ORE",   0.16f, 4, 0.2f, 1.0f,  0.3f, null);
-        addArmorSet("Titanium","TITANIUM_ORE",0.20f, 3, 0.6f, 0.95f, 0.3f, null);
+        addArmorSet("Gold",    "GOLD_INGOT",  0.16f, 4, 0.2f, 1.0f,  0.3f, null);
+        addArmorSet("Titanium","TITANIUM_INGOT",0.20f, 3, 0.6f, 0.95f, 0.3f, null);
         addArmorSet("Diamond", "DIAMOND_ORE",0.25f, 2, 1.0f, 1.0f,  0.4f, null);
         
         // Gem Tiers
@@ -167,9 +167,9 @@ public class CraftingManager {
         addArmorSet("Plutonium","PLUTONIUM_ORE",0.28f, 4, 1.0f, 1.0f, 0.5f, new minicraft.math.Vector3f(1.0f, 0.5f, 0.1f));
 
         // --- NEW TOOL RECIPES ---
-        addToolSet("Iron",    "IRON_ORE",    2, 8.0f);
-        addToolSet("Gold",    "GOLD_ORE",    2, 10.0f);
-        addToolSet("Titanium","TITANIUM_ORE", 3, 12.0f);
+        addToolSet("Iron",    "IRON_INGOT",    2, 8.0f);
+        addToolSet("Gold",    "GOLD_INGOT",    2, 10.0f);
+        addToolSet("Titanium","TITANIUM_INGOT", 3, 12.0f);
         addToolSet("Diamond", "DIAMOND_ORE",  4, 16.0f);
         addToolSet("Ruby",    "RUBY_ORE",     4, 18.0f);
         addToolSet("Sapphire","SAPPHIRE_ORE",  5, 22.0f);

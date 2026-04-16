@@ -555,7 +555,7 @@ public class UIRenderer {
             drawText(shader, cats[i].name(),
                     tx + (tabW / 2f) - (cats[i].name().length() * 3.5f),
                     startY + 21, 0.65f,
-                    active ? textColor : new Vector4f(0, 0, 0, 0.8f));
+                    active ? textColor : new Vector4f(0.70f, 0.70f, 0.70f, 1.0f));
         }
 
         // Recipe list
