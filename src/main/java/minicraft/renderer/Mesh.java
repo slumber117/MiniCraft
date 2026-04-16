@@ -18,6 +18,7 @@ public class Mesh {
     private final List<Integer> vboIdList;
     private final int vertexCount;
     private Texture texture;
+    private TextureRegion region;
     private int uvVboId;
 
     public Mesh(float[] positions, float[] uvs, float[] lightInfo, int[] indices, Texture texture) {
@@ -89,6 +90,11 @@ public class Mesh {
 
     public Mesh(float[] positions, float[] textCoords, int[] indices, Texture texture) {
         this(positions, textCoords, null, indices, texture);
+    }
+
+    public Mesh(float[] positions, float[] textCoords, float[] lightInfo, int[] indices, TextureRegion region) {
+        this(positions, textCoords, lightInfo, indices, region != null ? region.getTexture() : null);
+        this.region = region;
     }
 
     public void setUVs(float[] uvs) {

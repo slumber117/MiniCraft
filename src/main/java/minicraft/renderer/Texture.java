@@ -12,10 +12,10 @@ import static org.lwjgl.stb.STBImage.*;
 public class Texture {
 
     private final int id;
+    private final int width;
+    private final int height;
 
     public Texture(String resourcePath) throws Exception {
-        int width;
-        int height;
         ByteBuffer imageBuffer;
 
         ByteBuffer rawBuffer = null;
@@ -38,8 +38,8 @@ public class Texture {
                     throw new Exception("Image file [" + resourcePath + "] not loaded: " + stbi_failure_reason());
                 }
 
-                width = w.get();
-                height = h.get();
+                this.width = w.get();
+                this.height = h.get();
             }
         } finally {
             if (rawBuffer != null) MemoryUtil.memFree(rawBuffer);
@@ -50,12 +50,14 @@ public class Texture {
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageBuffer);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this.width, this.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageBuffer);
         glGenerateMipmap(GL_TEXTURE_2D);
         stbi_image_free(imageBuffer);
     }
 
     public Texture(int width, int height, ByteBuffer buf) {
+        this.width = width;
+        this.height = height;
         this.id = glGenTextures();
         glBindTexture(GL_TEXTURE_2D, this.id);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -68,6 +70,9 @@ public class Texture {
     public int getId() {
         return id;
     }
+
+    public int getWidth() { return width; }
+    public int getHeight() { return height; }
 
     public void bind() {
         glBindTexture(GL_TEXTURE_2D, id);

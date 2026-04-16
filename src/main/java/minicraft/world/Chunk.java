@@ -2,6 +2,7 @@ package minicraft.world;
 
 import minicraft.renderer.Mesh;
 import minicraft.renderer.TextureRegistry;
+import minicraft.renderer.TextureRegion;
 import java.util.*;
 
 /**
@@ -100,14 +101,14 @@ public class Chunk {
                     if (b == null || b.isAir()) continue;
 
                     if (b.meshType == Block.MeshType.CROSS) {
-                        addCrossMesh(x, y, z, b, posByTex, uvsByTex, idxByTex, cntByTex);
+                        addCrossMesh(x, y, z, b, registry, posByTex, uvsByTex, idxByTex, cntByTex);
                     } else {
-                        checkFace(world, x, y, z, 0, b, Face.SIDE,   posByTex, uvsByTex, idxByTex, cntByTex);
-                        checkFace(world, x, y, z, 1, b, Face.SIDE,   posByTex, uvsByTex, idxByTex, cntByTex);
-                        checkFace(world, x, y, z, 2, b, Face.TOP,    posByTex, uvsByTex, idxByTex, cntByTex);
-                        checkFace(world, x, y, z, 3, b, Face.BOTTOM, posByTex, uvsByTex, idxByTex, cntByTex);
-                        checkFace(world, x, y, z, 4, b, Face.SIDE,   posByTex, uvsByTex, idxByTex, cntByTex);
-                        checkFace(world, x, y, z, 5, b, Face.SIDE,   posByTex, uvsByTex, idxByTex, cntByTex);
+                        checkFace(world, x, y, z, 0, b, Face.SIDE, registry, posByTex, uvsByTex, idxByTex, cntByTex);
+                        checkFace(world, x, y, z, 1, b, Face.SIDE, registry, posByTex, uvsByTex, idxByTex, cntByTex);
+                        checkFace(world, x, y, z, 2, b, Face.TOP,  registry, posByTex, uvsByTex, idxByTex, cntByTex);
+                        checkFace(world, x, y, z, 3, b, Face.BOTTOM, registry, posByTex, uvsByTex, idxByTex, cntByTex);
+                        checkFace(world, x, y, z, 4, b, Face.SIDE, registry, posByTex, uvsByTex, idxByTex, cntByTex);
+                        checkFace(world, x, y, z, 5, b, Face.SIDE, registry, posByTex, uvsByTex, idxByTex, cntByTex);
                     }
                 }
             }
@@ -208,6 +209,7 @@ public class Chunk {
     }
 
     private void checkFace(World world, int x, int y, int z, int sideIdx, Block b, Face f,
+                           TextureRegistry registry,
                            Map<String, ArrayList<Float>> posByTex,
                            Map<String, ArrayList<Float>> uvsByTex,
                            Map<String, ArrayList<Integer>> idxByTex,
@@ -244,19 +246,21 @@ public class Chunk {
             if (fac != null && fac.isActive) lit = true;
         }
 
-        String tex = b.getTextureForFace(f, lit);
-        if (tex == null) return;
-        float uvPadding = b.getPaddingForFace(f);
+        String texName = b.getTextureForFace(f, lit);
+        if (texName == null) return;
+        TextureRegion region = registry.get(texName);
+        if (region == null) return;
 
-        if (!posByTex.containsKey(tex)) {
-            posByTex.put(tex, new ArrayList<>());
-            uvsByTex.put(tex, new ArrayList<>());
-            idxByTex.put(tex, new ArrayList<>());
-            cntByTex.put(tex, 0);
+        float uvPadding = b.getPaddingForFace(f);
+        if (!posByTex.containsKey(texName)) {
+            posByTex.put(texName, new ArrayList<>());
+            uvsByTex.put(texName, new ArrayList<>());
+            idxByTex.put(texName, new ArrayList<>());
+            cntByTex.put(texName, 0);
         }
 
-        ArrayList<Float> pos = posByTex.get(tex);
-        int base = cntByTex.get(tex);
+        ArrayList<Float> pos = posByTex.get(texName);
+        int base = cntByTex.get(texName);
 
         float x0 = x, y0 = y, z0 = z, x1 = x + 1, y1 = y + 1, z1 = z + 1;
         
@@ -277,28 +281,32 @@ public class Chunk {
             case 5: v(pos, x1, y0, z0); v(pos, x0, y0, z0); v(pos, x0, y1, z0); v(pos, x1, y1, z0); break;
         }
 
-        addUVs(uvsByTex.get(tex), uvPadding);
-        addIdx(idxByTex.get(tex), base);
-        cntByTex.put(tex, base + 4);
+        addUVs(uvsByTex.get(texName), region, uvPadding);
+        addIdx(idxByTex.get(texName), base);
+        cntByTex.put(texName, base + 4);
     }
 
     private void addCrossMesh(int x, int y, int z, Block b,
+                              TextureRegistry registry,
                               Map<String, ArrayList<Float>> posByTex,
                               Map<String, ArrayList<Float>> uvsByTex,
                               Map<String, ArrayList<Integer>> idxByTex,
                               Map<String, Integer> cntByTex) {
-        String tex = b.sideTexture;
-        if (!posByTex.containsKey(tex)) {
-            posByTex.put(tex, new ArrayList<>());
-            uvsByTex.put(tex, new ArrayList<>());
-            idxByTex.put(tex, new ArrayList<>());
-            cntByTex.put(tex, 0);
+        String texName = b.sideTexture;
+        TextureRegion region = registry.get(texName);
+        if (region == null) return;
+
+        if (!posByTex.containsKey(texName)) {
+            posByTex.put(texName, new ArrayList<>());
+            uvsByTex.put(texName, new ArrayList<>());
+            idxByTex.put(texName, new ArrayList<>());
+            cntByTex.put(texName, 0);
         }
-        addCrossMesh(posByTex.get(tex), uvsByTex.get(tex), idxByTex.get(tex), x, y, z, b);
-        cntByTex.put(tex, cntByTex.get(tex) + 32); // Cross mesh has many verts
+        addCrossMesh(posByTex.get(texName), uvsByTex.get(texName), region, idxByTex.get(texName), x, y, z, b);
+        cntByTex.put(texName, cntByTex.get(texName) + 32); // Cross mesh has many verts
     }
 
-    private void addCrossMesh(List<Float> pos, List<Float> uv, List<Integer> ind, int x, int y, int z, Block b) {
+    private void addCrossMesh(List<Float> pos, List<Float> uv, TextureRegion region, List<Integer> ind, int x, int y, int z, Block b) {
         int startVertex = pos.size() / 3;
         v(pos, x+0.5f, y, z); v(pos, x+0.5f, y, z+1); v(pos, x+0.5f, y+1, z+1); v(pos, x+0.5f, y+1, z);
         v(pos, x, y, z+0.5f); v(pos, x+1, y, z+0.5f); v(pos, x+1, y+1, z+0.5f); v(pos, x, y+1, z+0.5f);
@@ -306,7 +314,10 @@ public class Chunk {
         v(pos, x, y, z+1); v(pos, x+1, y, z); v(pos, x+1, y+1, z); v(pos, x, y+1, z+1);
 
         for (int i = 0; i < 4; i++) {
-            uv.add(0f); uv.add(0f); uv.add(1f); uv.add(0f); uv.add(1f); uv.add(1f); uv.add(0f); uv.add(1f);
+            uv.add(region.mapU(0f)); uv.add(region.mapV(0f));
+            uv.add(region.mapU(1f)); uv.add(region.mapV(0f));
+            uv.add(region.mapU(1f)); uv.add(region.mapV(1f));
+            uv.add(region.mapU(0f)); uv.add(region.mapV(1f));
             int o = startVertex + i * 4;
             ind.add(o); ind.add(o+1); ind.add(o+2); ind.add(o+2); ind.add(o+3); ind.add(o);
             ind.add(o+2); ind.add(o+1); ind.add(o); ind.add(o); ind.add(o+3); ind.add(o+2);
@@ -315,9 +326,12 @@ public class Chunk {
 
     private void v(List<Float> p, float x, float y, float z) { p.add(x); p.add(y); p.add(z); }
 
-    private void addUVs(ArrayList<Float> uvs, float p) {
-        float o = p / 1024.0f;
-        uvs.add(0f+o); uvs.add(0f+o); uvs.add(1f-o); uvs.add(0f+o); uvs.add(1f-o); uvs.add(1f-o); uvs.add(0f+o); uvs.add(1f-o);
+    private void addUVs(ArrayList<Float> uvs, TextureRegion region, float p) {
+        float o = p / 1024.0f; // Minimal padding for individual files, less relevant for atlas but kept for depth
+        uvs.add(region.mapU(0f+o)); uvs.add(region.mapV(0f+o));
+        uvs.add(region.mapU(1f-o)); uvs.add(region.mapV(0f+o));
+        uvs.add(region.mapU(1f-o)); uvs.add(region.mapV(1f-o));
+        uvs.add(region.mapU(0f+o)); uvs.add(region.mapV(1f-o));
     }
 
     private void addIdx(ArrayList<Integer> idx, int base) {

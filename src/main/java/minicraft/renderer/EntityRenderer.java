@@ -64,7 +64,8 @@ public class EntityRenderer {
             20,21,23, 23,21,22  // Left
         };
 
-        cubeMesh = new Mesh(positions, uvs, indices, textures.get("stone"));
+        TextureRegion stoneRegion = textures.get("stone");
+        cubeMesh = new Mesh(positions, uvs, indices, stoneRegion != null ? stoneRegion.getTexture() : null);
 
         // Setup entity textures
         entityTextures.put("COW",    "char_cow");
@@ -130,7 +131,8 @@ public class EntityRenderer {
             shader.setUniform("modelMatrix", model);
             shader.setUniform("uTime", (float)(System.currentTimeMillis() % 100000) / 1000.0f);
 
-            cubeMesh.render(textures.get(texName));
+            TextureRegion region = textures.get(texName);
+            cubeMesh.render(region != null ? region.getTexture() : null);
 
             // Render Health Bar for damaged entities
             if (e.getHealth() < e.getMaxHealth() || e.isDead()) {

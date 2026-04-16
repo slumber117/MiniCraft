@@ -80,7 +80,8 @@ public class UIRenderer {
         float[] uvs = { 0, 1, 1, 1, 1, 0, 0, 0 };
         int[] indices = { 0, 1, 2, 2, 3, 0 };
 
-        whiteTexture = textures.get("snow");
+        TextureRegion whiteRegion = textures.get("snow");
+        whiteTexture = whiteRegion != null ? whiteRegion.getTexture() : null;
         quadMesh = new Mesh(positions, uvs, indices, whiteTexture);
         textQuadMesh = new Mesh(positions, uvs, indices, null);
 
@@ -256,31 +257,69 @@ public class UIRenderer {
         // Darken world
         drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.78f));
 
-        // Panel dimensions — sized to fit 9×4 grid exactly
-        final float SLOT = 58f; // slot size
-        final float GAP = 8f; // gap between slots
+        final float SLOT = 58f;
+        final float GAP = 8f;
         final float COLS = 9f;
-        final float ROWS = 4f; // 3 main rows + 1 hotbar row
-
+        
         float gridW = COLS * SLOT + (COLS - 1) * GAP;
-        float panelW = gridW + 60f;
-        float panelH = ROWS * SLOT + (ROWS - 1) * GAP + 110f; // header + row labels + footer
+        // Expansion for Paper Doll (approx 240px wide for doll + armor slots)
+        float dollAreaW = 240f; 
+        float panelW = gridW + dollAreaW + 80f; 
+        float panelH = 4 * SLOT + 3 * GAP + 140f; 
+        
         float sx = (width - panelW) / 2f;
         float sy = (height - panelH) / 2f;
 
         drawTacticalFrame(shader, sx, sy, panelW, panelH);
-        drawText(shader, "INVENTORY", sx + 18, sy + 18, 0.85f, tactOrange);
+        drawText(shader, "EQUIPMENT & LOGISTICS", sx + 22, sy + 22, 0.90f, tactOrange);
 
-        // Scaled mouse position
         float[] mouse = getScaledMouse(main, width, height);
         float mouseX = mouse[0], mouseY = mouse[1];
 
-        // ── Main grid (3 rows × 9 cols) ──────────────────────────────────────
-        float gridStartX = sx + (panelW - gridW) / 2f;
-        float mainGridY = sy + 52f;
+        // ── 1. Paper Doll Section (Left) ─────────────────────────────────────
+        float dollX = sx + 28f;
+        float dollY = sy + 64f;
+        float dollW = 160f;
+        float dollH = 220f;
+        
+        // Background for doll
+        drawRectInternal(shader, dollX, dollY, dollW, dollH, new Vector4f(0, 0, 0, 0.45f));
+        drawRectInternal(shader, dollX, dollY, dollW, 1, glassBorderColor);
+        drawRectInternal(shader, dollX, dollY+dollH, dollW, 1, glassBorderColor);
+        
+        // Render the 3D Doll
+        renderPaperDoll(player, shader, dollX + dollW/2, dollY + dollH - 30f, 90f);
+
+        // ── 2. Armor Slots (Next to Doll) ────────────────────────────────────
+        float armorX = dollX + dollW + 12f;
+        float armorY = dollY;
+        
+        drawArmorSlot(shader, armorX, armorY, "HELMET", player.inventory.getHelmet());
+        drawArmorSlot(shader, armorX, armorY + SLOT + GAP, "CHEST", player.inventory.getChestplate());
+        drawArmorSlot(shader, armorX, armorY + 2*(SLOT + GAP), "LEGS", player.inventory.getLeggings());
+        drawArmorSlot(shader, armorX, armorY + 3*(SLOT + GAP), "BOOTS", player.inventory.getBoots());
+
+        // ── 2.5 Vitals Readout ──────────────────────────────────────────────
+        float statsY = dollY + dollH + 18f;
+        drawText(shader, "VITAL SIGNS & TELEMETRY", dollX, statsY, 0.40f, tactOrange);
+        
+        float def = player.inventory.getTotalDefense() * 100f;
+        float spd = (player.inventory.getTotalSpeedMod() - 1.0f) * 100f;
+        float ins = player.inventory.getTotalInsulation() * 100f;
+        
+        drawText(shader, String.format("ARMOR PROTECTION: +%.0f%%", def), dollX + 4, statsY + 18, 0.38f, 
+                 def > 0 ? highlightColor : new Vector4f(0.5f,0.5f,0.5f,1f));
+        drawText(shader, String.format("MOBILITY RATING: %s%.0f%%", spd >= 0 ? "+" : "", spd), dollX + 4, statsY + 34, 0.38f,
+                 spd != 0 ? highlightColor : new Vector4f(0.5f,0.5f,0.5f,1f));
+        drawText(shader, String.format("THERMAL SHIELD: +%.0f%%", ins), dollX + 4, statsY + 50, 0.38f,
+                 ins > 0 ? highlightColor : new Vector4f(0.5f,0.5f,0.5f,1f));
+
+        // ── 3. Main Grid (Right) ─────────────────────────────────────────────
+        float gridStartX = sx + dollAreaW + 50f;
+        float mainGridY = sy + 64f;
         minicraft.item.ItemStack[] mainInv = player.inventory.getMainInventory();
 
-        drawText(shader, "MAIN", gridStartX, mainGridY - 14, 0.42f, highlightColor);
+        drawText(shader, "STORAGE", gridStartX, mainGridY - 16, 0.45f, highlightColor);
 
         for (int i = 0; i < 27; i++) {
             int col = i % 9, row = i / 9;
@@ -290,16 +329,15 @@ public class UIRenderer {
             drawSlot(shader, sx2, sy2, SLOT, mainInv[i], hover);
         }
 
-        // ── Separator line ────────────────────────────────────────────────────
-        float sepY = mainGridY + 3 * (SLOT + GAP) + 6f;
+        // ── 4. Hotbar row ────────────────────────────────────────────────────
+        float sepY = mainGridY + 3 * (SLOT + GAP) + 12f;
         drawRectInternal(shader, gridStartX, sepY, gridW, 1f, glassBorderColor);
 
-        // ── Hotbar row (1 row × 9 cols, with selection indicator) ────────────
-        float hotbarRowY = sepY + 14f;
+        float hotbarRowY = sepY + 20f;
         minicraft.item.ItemStack[] hotbar = player.inventory.getHotbar();
         int selIdx = player.inventory.getSelectedIndex();
 
-        drawText(shader, "HOTBAR", gridStartX, hotbarRowY - 10, 0.42f, highlightColor);
+        drawText(shader, "HOTBAR", gridStartX, hotbarRowY - 14, 0.45f, highlightColor);
 
         for (int i = 0; i < 9; i++) {
             float sx2 = gridStartX + i * (SLOT + GAP);
@@ -307,14 +345,38 @@ public class UIRenderer {
             boolean hover = isHovered(mouseX, mouseY, sx2, hotbarRowY, SLOT, SLOT);
             drawSlot(shader, sx2, hotbarRowY, SLOT, hotbar[i], hover);
             if (sel) {
-                // Yellow top bar — matches the in-game hotbar indicator
-                drawRectInternal(shader, sx2, hotbarRowY, SLOT, 3f,
-                        new Vector4f(1.0f, 0.95f, 0.0f, 1.0f));
+                drawRectInternal(shader, sx2, hotbarRowY, SLOT, 3f, new Vector4f(1.0f, 0.95f, 0.0f, 1.0f));
             }
         }
+    }
 
-        // NOTE: cursor item is drawn by the global cursor block in render(),
-        // so we deliberately do NOT draw it here.
+    private void renderPaperDoll(Player player, ShaderProgram shader, float cx, float cy, float scale) {
+        // Setup 3D transform for the UI doll
+        // We pulse and rotate slightly
+        float rotation = (System.currentTimeMillis() % 10000) / 10000f * 360f;
+        float pulse = (float)Math.sin(System.currentTimeMillis() / 400.0) * 0.02f;
+        
+        Matrix4f model = new Matrix4f().identity()
+                .translate(cx, cy, 50f) 
+                .scale(scale * (1f + pulse), -scale * (1f + pulse), scale)
+                .rotateY(rotation);
+        
+        shader.setUniform("modelMatrix", model);
+        shader.setUniform("useLighting", 1.0f);
+        shader.setUniform("sunBrightness", 1.0f);
+        
+        // Base Model
+        Mesh human = ModelRegistry.getModel("zombie"); 
+        if (human != null) {
+            // Check for specific armor skins (Simplified version: layer armor textures)
+            // Ideally we'd have a player skin, but we use the zombie mesh as base spartan
+            human.render(textures.get("grass").getTexture()); // Fallback texture
+            
+            // Render Armor Piece overlays (would require model-mapped textures)
+            // For now, we render the human base. In next step, we'll apply armor tints or textures.
+        }
+        
+        shader.setUniform("useLighting", 0.0f);
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -1048,8 +1110,22 @@ public class UIRenderer {
         Matrix4f model = new Matrix4f().identity().translate(x, y, 0).scale(w, h, 1);
         shader.setUniform("modelMatrix", model);
         shader.setUniform("colorTint", color);
-        quadMesh.setUVs(new float[] { 0, 1, 1, 1, 1, 0, 0, 0 });
-        quadMesh.render(textureName != null ? textures.get(textureName) : whiteTexture);
+
+        TextureRegion region = (textureName != null) ? textures.get(textureName) : null;
+        if (region != null) {
+            // Map atlas coordinates to the quad mesh
+            quadMesh.setUVs(new float[] {
+                    region.getU1(), region.getV2(),
+                    region.getU2(), region.getV2(),
+                    region.getU2(), region.getV1(),
+                    region.getU1(), region.getV1()
+            });
+            quadMesh.render(region.getTexture());
+        } else {
+            // Solid color quad fallback
+            quadMesh.setUVs(new float[] { 0, 1, 1, 1, 1, 0, 0, 0 });
+            quadMesh.render(whiteTexture);
+        }
     }
 
     private void drawRectInternal(ShaderProgram shader, float x, float y, float w, float h,

@@ -151,6 +151,51 @@ public class Inventory {
         cursorStack   = clicked;       // pick up what was in the slot (may be null)
     }
 
+    public void clickArmorSlot(minicraft.item.ArmorItem.ArmorSlot type) {
+        if (cursorStack != null && !cursorStack.isEmpty()) {
+            Item item = cursorStack.getItem();
+            if (item instanceof minicraft.item.ArmorItem) {
+                minicraft.item.ArmorItem armor = (minicraft.item.ArmorItem) item;
+                if (armor.getSlot() == type) {
+                    // Swap armor
+                    minicraft.item.ArmorItem old = null;
+                    switch(type) {
+                        case HELMET: old = helmet; helmet = armor; break;
+                        case CHESTPLATE: old = chestplate; chestplate = armor; break;
+                        case LEGGINGS: old = leggings; leggings = armor; break;
+                        case BOOTS: old = boots; boots = armor; break;
+                    }
+                    cursorStack.remove(1);
+                    if (cursorStack.isEmpty()) cursorStack = null;
+                    
+                    if (old != null) {
+                        // If we had something equipped, it goes to cursor (Standard MC behavior: if cursor empty)
+                        // Actually, for simplicity, if we were holding a stack of 1, we just swapped.
+                        // If we were holding a stack > 1, the old one should go to inv or be dropped?
+                        // Let's just assume armor is usually stack-size 1.
+                        if (cursorStack == null) {
+                            cursorStack = new ItemStack(old, 1);
+                        } else {
+                            add(old, 1); // Fallback: put back in inventory
+                        }
+                    }
+                }
+            }
+        } else {
+            // Pick up from armor slot
+            minicraft.item.ArmorItem old = null;
+            switch(type) {
+                case HELMET: old = helmet; helmet = null; break;
+                case CHESTPLATE: old = chestplate; chestplate = null; break;
+                case LEGGINGS: old = leggings; leggings = null; break;
+                case BOOTS: old = boots; boots = null; break;
+            }
+            if (old != null) {
+                cursorStack = new ItemStack(old, 1);
+            }
+        }
+    }
+
     public void quickMove(int index, boolean isHotbar) {
         ItemStack[] source = isHotbar ? hotbar : mainInventory;
         ItemStack[] target = isHotbar ? mainInventory : hotbar;
@@ -219,25 +264,51 @@ public class Inventory {
         return null;
     }
 
+    public float getSetMultiplier() {
+        return (getFullSetTier() != null) ? 1.15f : 1.0f;
+    }
+
     public float getTotalHealthBonus() {
-        String set = getFullSetTier();
-        if (set == null) return 0f;
-        return helmet.getHealthBonus(); // Stats are shared across pieces of same set
+        float sum = 0;
+        if (helmet     != null) sum += helmet.getHealthBonus();
+        if (chestplate != null) sum += chestplate.getHealthBonus();
+        if (leggings   != null) sum += leggings.getHealthBonus();
+        if (boots      != null) sum += boots.getHealthBonus();
+        // Each piece in addArmorSet currently carries the FULL set value,
+        // so we average them and then apply the set bonus.
+        return (sum / 4.0f) * getSetMultiplier();
     }
 
     public float getTotalSpeedMod() {
-        String set = getFullSetTier();
-        if (set == null) return 1.0f;
-        return helmet.getSpeedModifier();
+        float sum = 0;
+        // Speed is multiplicative-additive: 1.0 + sum(pieceMods - 1.0)
+        if (helmet     != null) sum += (helmet.getSpeedModifier() - 1.0f);
+        if (chestplate != null) sum += (chestplate.getSpeedModifier() - 1.0f);
+        if (leggings   != null) sum += (leggings.getSpeedModifier() - 1.0f);
+        if (boots      != null) sum += (boots.getSpeedModifier() - 1.0f);
+        
+        float total = 1.0f + (sum / 4.0f);
+        if (getFullSetTier() != null) {
+            // Set bonus for speed makes heavy armor feel slightly lighter
+            // or fast armor feel even faster.
+            if (total < 1.0f) total += (1.0f - total) * 0.15f; // reduced penalty
+            else              total *= 1.15f;                 // buffed bonus
+        }
+        return Math.max(0.1f, total);
     }
 
     public float getTotalInsulation() {
-        String set = getFullSetTier();
-        if (set == null) return 0f;
-        return helmet.getInsulation();
+        float sum = 0;
+        if (helmet     != null) sum += helmet.getInsulation();
+        if (chestplate != null) sum += chestplate.getInsulation();
+        if (leggings   != null) sum += leggings.getInsulation();
+        if (boots      != null) sum += boots.getInsulation();
+        return (sum / 4.0f) * getSetMultiplier();
     }
 
     public minicraft.math.Vector3f getDominantGlow() {
+        // Glow remains a full-set feature or just takes the highest contributing piece?
+        // Let's stick to full-set for the "Aura" effect.
         String set = getFullSetTier();
         if (set == null) return null;
         return helmet.getGlowColor();

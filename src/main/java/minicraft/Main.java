@@ -903,13 +903,18 @@ public class Main {
         final float ROWS = 4f;
 
         float gridW  = COLS * SLOT + (COLS - 1) * GAP;
-        float panelW = gridW + 60f;
-        float panelH = ROWS * SLOT + (ROWS - 1) * GAP + 110f;
+        float dollAreaW = 240f; 
+        float panelW = gridW + dollAreaW + 80f; 
+        float panelH = 4 * SLOT + 3 * GAP + 140f; 
         float sx     = (framebufferW - panelW) / 2f;
         float sy     = (framebufferH - panelH) / 2f;
 
-        float gridStartX = sx + (panelW - gridW) / 2f;
-        float mainGridY  = sy + 52f;
+        float dollX      = sx + 28f;
+        float armorX     = dollX + 160f + 12f;
+        float armorYBase = sy + 64f;
+
+        float gridStartX = sx + dollAreaW + 50f;
+        float mainGridY  = sy + 64f;
 
         // ── Main 3×9 grid ──────────────────────────────────────────────────
         for (int i = 0; i < 27; i++) {
@@ -919,6 +924,16 @@ public class Main {
             if (x >= slotX && x <= slotX + SLOT && y >= slotY && y <= slotY + SLOT) {
                 if (isShift) player.inventory.quickMove(i, false);
                 else         player.inventory.clickSlot(i, false);
+                return;
+            }
+        }
+
+        // ── Armor Slots ───────────────────────────────────────────────────
+        minicraft.item.ArmorItem.ArmorSlot[] types = minicraft.item.ArmorItem.ArmorSlot.values();
+        for (int i = 0; i < 4; i++) {
+            float slotY = armorYBase + i * (SLOT + GAP);
+            if (x >= armorX && x <= armorX + SLOT && y >= slotY && y <= slotY + SLOT) {
+                player.inventory.clickArmorSlot(types[i]);
                 return;
             }
         }

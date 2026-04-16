@@ -25,7 +25,7 @@ public class WeatherRenderer {
         };
         float[] uvs = new float[] { 0,1, 1,1, 1,0, 0,0 };
         int[] indices = new int[] { 0,1,2, 2,3,0 };
-        particleMesh = new Mesh(positions, uvs, null, indices, null);
+        particleMesh = new Mesh(positions, uvs, null, indices, (Texture)null);
 
         // Initialize particles in a 30x30x30 volume
         for (int i = 0; i < PARTICLE_COUNT; i++) {
@@ -75,7 +75,7 @@ public class WeatherRenderer {
                 .scale(1.0f, 1.0f, 1.0f);
             
             shader.setUniform("modelMatrix", model);
-            particleMesh.render(null); // Render as white/colored quad
+            particleMesh.render((Texture)null); // Render as white/colored quad
         }
         
         shader.setUniform("useLighting", 1.0f);

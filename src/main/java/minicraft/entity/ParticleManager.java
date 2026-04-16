@@ -1,6 +1,7 @@
 package minicraft.entity;
 
 import minicraft.renderer.Mesh;
+import minicraft.renderer.Texture;
 import minicraft.renderer.ShaderProgram;
 import minicraft.math.Matrix4f;
 import minicraft.math.Vector3f;
@@ -27,7 +28,7 @@ public class ParticleManager {
         float[] uv  = { 0, 1, 1, 1, 1, 0, 0, 0 };
         int[]   idx = { 0, 1, 2, 2, 3, 0 };
         float[] lit = { 1, 1, 1, 1, 1, 1, 1, 1 }; 
-        this.quad = new Mesh(pos, uv, lit, idx, null);
+        this.quad = new Mesh(pos, uv, lit, idx, (minicraft.renderer.Texture)null);
     }
 
     public void spawnSmoke(float x, float y, float z) {
@@ -105,7 +106,8 @@ public class ParticleManager {
 
     public void render(ShaderProgram shader, minicraft.renderer.TextureRegistry registry, Matrix4f view, Matrix4f proj) {
         shader.setUniform("useLighting", 0.0f);
-        minicraft.renderer.Texture particleTex = (registry != null) ? registry.get("alloy_plate") : null;
+        minicraft.renderer.TextureRegion region = (registry != null) ? registry.get("alloy_plate") : null;
+        Texture particleTex = (region != null) ? region.getTexture() : null;
         
         for (Particle p : particles) {
             float alpha = p.life / p.maxLife;
