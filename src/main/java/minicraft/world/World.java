@@ -15,9 +15,9 @@ import java.util.*;
  */
 public class World {
 
-    private static final int SEA_LEVEL       = 64;
-    private static final int MOUNTAIN_START  = 160;
-    private static final int SNOW_START      = 320;
+    private static final int SEA_LEVEL       = 102;
+    private static final int MOUNTAIN_START  = 256;
+    private static final int SNOW_START      = 512;
     private static final int BEDROCK_Y       = 1;
     private static final int DIRT_LAYERS     = 5;
 
@@ -161,8 +161,8 @@ public class World {
                     else if (y >= surfaceY - DIRT_LAYERS) b = getFillerBlock(cell.biome);
                     else {
                         // Automated Stone Tiers
-                        boolean isDeep = y < 15;
-                        boolean isMountainCore = (cell.biome == Biome.MOUNTAINS || cell.biome == Biome.SNOWY_PEAKS) && y > (surfaceY - 30);
+                        boolean isDeep = y < 80;
+                        boolean isMountainCore = (cell.biome == Biome.MOUNTAINS || cell.biome == Biome.SNOWY_PEAKS) && y > (surfaceY - 45);
                         
                         if (isDeep || isMountainCore) b = Block.STONE_DARK;
                         else b = Block.STONE;
@@ -180,10 +180,10 @@ public class World {
                     if (caveCell.isCarved) {
                         Block b = Block.AIR;
                         if (caveCell.type == CaveType.UNDERWATER) b = Block.WATER;
-                        else if (y < 15 && Math.random() < 0.05) b = Block.LAVA; // Rare Deep Lava
+                        else if (y < 80 && Math.random() < 0.05) b = Block.LAVA; // Rare Deep Lava
                         
                         chunk.setBlock(x, y, z, b);
-                    } else if (y < 15 && Math.random() < 0.02) {
+                    } else if (y < 80 && Math.random() < 0.03) {
                         // Magma veins in Deep Stone
                         chunk.setBlock(x, y, z, Block.MAGMA);
                     }
@@ -210,11 +210,11 @@ public class World {
         // Isolate Shipyard megastructures to a 64x64 chunk geographical grid (1 per massive continent mapping)
         // FORCE a shipyard at (0,0) to ensure the player always has a way to the ship deck
         boolean isInitialSpawn = (cx == 0 && cz == 0);
-        boolean isPeak = (centerCell.biome == Biome.MOUNTAINS || centerCell.biome == Biome.SNOWY_PEAKS || centerCell.biome == Biome.HIGHLANDS) && centerPeakY > 160;
+        boolean isPeak = (centerCell.biome == Biome.MOUNTAINS || centerCell.biome == Biome.SNOWY_PEAKS || centerCell.biome == Biome.HIGHLANDS) && centerPeakY > 250;
 
         if (isInitialSpawn || (cx % 64 == 0 && cz % 64 == 0 && isPeak)) {
-            // Build the shipyard safely above all possible mountain layers (Max peak = ~220)
-            int targetY = Math.max(240, centerPeakY + 20);
+            // Build the shipyard safely above all possible mountain layers (Max peak = ~450+ now)
+            int targetY = Math.max(480, centerPeakY + 30);
             structGen.generateFloatingFactory(chunk, targetY, centerPeakY);
         }
 
@@ -271,12 +271,29 @@ public class World {
 
     private void spawnOres(Chunk chunk, int cx, int cz) {
         Random r = new Random((long) cx * 342211L + (long) cz * 439241L);
-        spawn(chunk, r, Block.COAL_ORE,     10, 200, 6, 40);  // Y 10-200, very common
-        spawn(chunk, r, Block.IRON_ORE,      5, 120, 5, 20);  // Y 5-120, common
-        spawn(chunk, r, Block.COPPER_ORE,    5, 100, 5, 15);  // Y 5-100, common
-        spawn(chunk, r, Block.GOLD_ORE,      1,  50, 4, 10);  // Y 1-50, uncommon
-        spawn(chunk, r, Block.TITANIUM_ORE, 30, 100, 4,  8);  // Y 30-100, mid-layer, uncommon
-        spawn(chunk, r, Block.DIAMOND_ORE,   1,  20, 3,  5);  // Y 1-20, deep and rare
+        // Common Resources
+        spawn(chunk, r, Block.COAL_ORE,     30, 400, 7, 45);  // Y 30-400, vast range
+        spawn(chunk, r, Block.IRON_ORE,     10, 300, 6, 25);  // Y 10-300, common
+        spawn(chunk, r, Block.COPPER_ORE,   20, 250, 6, 20);  // Y 20-250, common
+        
+        // Industrial Tier (The Bridge)
+        spawn(chunk, r, Block.GOLD_ORE,      1, 150, 5, 12);  // Y 1-150, uncommon
+        spawn(chunk, r, Block.TITANIUM_ORE, 80, 250, 6, 22);  // Y 80-250, mid-layer bridge, very common
+        
+        // Shallow Gems
+        spawn(chunk, r, Block.AMETHYST_ORE, 150, 450, 4, 10); // Higher altitude gem
+        spawn(chunk, r, Block.AQUAMARINE_ORE, 80, 200, 4, 8); // Water-adjacent depths
+
+        // Deep Gems (Deep Stone Layer)
+        spawn(chunk, r, Block.TOPAZ_ORE,     30,  80, 4, 12); // Deep stone start
+        spawn(chunk, r, Block.DIAMOND_ORE,    1,  50, 5, 14); // Y 1-50, expanded rare
+        spawn(chunk, r, Block.EMERALD_ORE,    1,  40, 3,  6); // Very deep
+        spawn(chunk, r, Block.RUBY_ORE,       1,  60, 4,  8); // High-value deep gem
+        spawn(chunk, r, Block.SAPPHIRE_ORE,   1,  60, 4,  8); // High-value deep gem
+        
+        // Exotic/Atomic (Bedrock level)
+        spawn(chunk, r, Block.URANIUM_ORE,    1,  30, 3,  5); 
+        spawn(chunk, r, Block.PLUTONIUM_ORE,  1,  20, 3,  4);
     }
 
     private void spawn(Chunk c, Random r, Block o, int min, int max, int sz, int att) {
@@ -284,7 +301,8 @@ public class World {
             int ox = r.nextInt(16), oy = min + r.nextInt(Math.max(1, max - min)), oz = r.nextInt(16);
             for (int v = 0; v < sz; v++) {
                 int bx = ox + r.nextInt(3)-1, by = oy + r.nextInt(3)-1, bz = oz + r.nextInt(3)-1;
-                if (c.getBlock(bx, by, bz) == Block.STONE) c.setBlock(bx, by, bz, o);
+                Block existing = c.getBlock(bx, by, bz);
+                if (existing == Block.STONE || existing == Block.STONE_DARK) c.setBlock(bx, by, bz, o);
             }
         }
     }

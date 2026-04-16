@@ -37,19 +37,28 @@ public class ProcessingManager {
     }
 
     private void addFurnaceRecipe(String input, String output, float time) {
-        furnaceRecipes.put(input, new Recipe(output, Recipe.Category.BLOCKS, null, new Item(output), 1));
+        String tex = null;
+        if (output.equals("IRON_INGOT"))
+            tex = "item_ingot_iron_hd";
+        furnaceRecipes.put(input, new Recipe(output, Recipe.Category.BLOCKS, null, new Item(output, null, tex, 64), 1));
     }
 
     private void addCookerRecipe(String input, String output, float time) {
         cookerRecipes.put(input, new Recipe(output, Recipe.Category.SURVIVAL, null, new Item(output), 1));
     }
 
-    public Recipe getFurnaceResult(String inputName) { return furnaceRecipes.get(inputName); }
-    public Recipe getCookerResult(String inputName) { return cookerRecipes.get(inputName); }
-    
+    public Recipe getFurnaceResult(String inputName) {
+        return furnaceRecipes.get(inputName);
+    }
+
+    public Recipe getCookerResult(String inputName) {
+        return cookerRecipes.get(inputName);
+    }
+
     public float getFuelTime(String name, boolean isCooker) {
         Float val = fuelValues.get(name);
-        if (val == null) return 0;
+        if (val == null)
+            return 0;
         // User requested: "cooker uses coal too but lasts longer, 60 seconds"
         // Furnace is 30s. So cooker gets 2x efficiency for coal.
         return isCooker ? val * 2.0f : val;
@@ -57,6 +66,6 @@ public class ProcessingManager {
 
     public float getProcessTime(String inputName) {
         // Standard process time
-        return 5.0f; 
+        return 5.0f;
     }
 }

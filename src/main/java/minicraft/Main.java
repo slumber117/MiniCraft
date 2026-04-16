@@ -133,6 +133,7 @@ public class Main {
     private boolean prevC = false, prevE = false;
     private boolean prevF = false, prevG = false;
     private boolean prevEnter = false, prevUp = false, prevDown = false;
+    private boolean prevLeft = false, prevRight = false;
 
     // ── Particles ─────────────────────────────────────────────────────────
     public minicraft.entity.ParticleManager particleManager;
@@ -274,6 +275,25 @@ public class Main {
                 lastMouseY = ypos;
                 player.handleMouseInput((float) dx * MOUSE_SENSITIVITY,
                         (float) dy * MOUSE_SENSITIVITY);
+            }
+        });
+
+        // ── Scroll callback ───────────────────────────────────────────────
+        glfwSetScrollCallback(window, (win, xoff, yoff) -> {
+            if (craftingOpen) {
+                final int VISIBLE = 11;
+                List<Recipe> filtered = new ArrayList<>();
+                for (Recipe r : craftingManager.getRecipes())
+                    if (r.getCategory() == activeCategory) filtered.add(r);
+                if (filtered.isEmpty()) return;
+
+                // Scroll wheel moves the VIEW (offset), not the selection
+                if (yoff > 0) recipeScrollOffset--;  // wheel up = scroll list up
+                else if (yoff < 0) recipeScrollOffset++;  // wheel down = scroll list down
+
+                // Hard clamp offset
+                int maxOff = Math.max(0, filtered.size() - VISIBLE);
+                recipeScrollOffset = Math.max(0, Math.min(recipeScrollOffset, maxOff));
             }
         });
 
@@ -794,31 +814,31 @@ public class Main {
         float x = (float) mx[0] * ((float) framebufferW / Math.max(1, winW[0]));
         float y = (float) my[0] * ((float) framebufferH / Math.max(1, winH[0]));
         
-        float panelW = 700, panelH = 500;
-        float sx = (framebufferW - panelW) / 2f, sy = framebufferH - panelH - 80;
+        float panelW = 680f, panelH = 580f;
+        float sx = (framebufferW - panelW) / 2f, sy = (framebufferH - panelH) / 2f;
         float cx = sx + panelW/2f, cy = sy + 180;
-        float slotSize = 80;
+        float slotSize = 72f;
 
         // Hide system cursor while menu is open
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
         // ── 1. Facility Slots ──
         // Input
-        if (x >= cx - 180 && x <= cx - 100 && y >= cy - 40 && y <= cy + 40) {
+        if (x >= cx - 170 && x <= cx - 170 + slotSize && y >= cy - 36 && y <= cy - 36 + slotSize) {
             minicraft.item.ItemStack clicked = activeFacility.getSlot(0);
             activeFacility.setSlot(0, player.inventory.getCursorStack());
             player.inventory.setCursorStack(clicked);
             return;
         }
         // Fuel
-        if (x >= cx - 40 && x <= cx + 40 && y >= cy + 60 && y <= cy + 140) {
+        if (x >= cx - 36 && x <= cx - 36 + slotSize && y >= cy + 52 && y <= cy + 52 + slotSize) {
             minicraft.item.ItemStack clicked = activeFacility.getSlot(1);
             activeFacility.setSlot(1, player.inventory.getCursorStack());
             player.inventory.setCursorStack(clicked);
             return;
         }
         // Output
-        if (x >= cx + 100 && x <= cx + 180 && y >= cy - 40 && y <= cy + 40) {
+        if (x >= cx + 98 && x <= cx + 98 + slotSize && y >= cy - 36 && y <= cy - 36 + slotSize) {
             minicraft.item.ItemStack clicked = activeFacility.getSlot(2);
             if (clicked != null && !clicked.isEmpty() && (player.inventory.getCursorStack() == null || player.inventory.getCursorStack().isEmpty())) {
                 // Quick Move to inventory if cursor is empty
@@ -837,14 +857,28 @@ public class Main {
         }
 
         // ── 2. Player Inventory Grid ──
-        float invStartX = sx + (panelW - (64 + 15) * 9) / 2f;
-        float invStartY = sy + 320;
+        final float ISLOT = 54f, IGAP = 6f;
+        float invGridW = 9 * ISLOT + 8 * IGAP;
+        float invStartX = sx + (panelW - invGridW) / 2f;
+        float invStartY = sy + 300f;
+
+        // Main 3x9
         for (int i = 0; i < 27; i++) {
             int r = i / 9, c = i % 9;
-            float slotX = invStartX + c * 79;
-            float slotY = invStartY + r * 79;
-            if (x >= slotX && x <= slotX + 64 && y >= slotY && y <= slotY + 64) {
+            float slotX = invStartX + c * (ISLOT + IGAP);
+            float slotY = invStartY + r * (ISLOT + IGAP);
+            if (x >= slotX && x <= slotX + ISLOT && y >= slotY && y <= slotY + ISLOT) {
                 player.inventory.clickSlot(i, false);
+                return;
+            }
+        }
+
+        // Hotbar 1x9
+        float hotStartY = invStartY + 3 * (ISLOT + IGAP) + 18f;
+        for (int i = 0; i < 9; i++) {
+            float slotX = invStartX + i * (ISLOT + IGAP);
+            if (x >= slotX && x <= slotX + ISLOT && y >= hotStartY && y <= hotStartY + ISLOT) {
+                player.inventory.clickSlot(i, true);
                 return;
             }
         }
@@ -946,73 +980,91 @@ public class Main {
     // ─────────────────────────────────────────────────────────────────────
 
     private void handleCraftingInput() {
-        boolean mouseLeftDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        // ── Constants MUST match UIRenderer.renderCraftingMenu exactly ────────
+        final int   COLS       = 7;
+        final float MENU_W     = 700f, MENU_H = 540f;
+        final float ICON_SIZE  = 56f, ICON_GAP = 8f;
+        final float GRID_OFF_X = 14f, GRID_OFF_Y = 60f;
+        final float DETAIL_W   = 182f;
+        final float SX         = (framebufferW - MENU_W) / 2f;
+        final float SY         = (framebufferH - MENU_H) / 2f;
+        final float GX         = SX + GRID_OFF_X;
+        final float GY         = SY + GRID_OFF_Y;
+        final float GRID_AREA_W = COLS * ICON_SIZE + (COLS - 1) * ICON_GAP;
 
         List<Recipe> filtered = new ArrayList<>();
         for (Recipe r : craftingManager.getRecipes())
-            if (r.getCategory() == activeCategory)
-                filtered.add(r);
+            if (r.getCategory() == activeCategory) filtered.add(r);
 
+        boolean mouseLeftDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
         if (mouseLeftDown && !prevMouseLeftDown) {
             double[] mx = new double[1], my = new double[1];
             glfwGetCursorPos(window, mx, my);
-            float x = (float) mx[0];
-            float y = (float) my[0];
+            int[] winW = new int[1], winH = new int[1];
+            glfwGetWindowSize(window, winW, winH);
+            float x = (float) mx[0] * ((float) framebufferW / Math.max(1, winW[0]));
+            float y = (float) my[0] * ((float) framebufferH / Math.max(1, winH[0]));
 
-            float menuW = 600, menuH = 500;
-            float startX = (WIN_W - menuW) / 2f;
-            float startY = (WIN_H - menuH) / 2f;
-
+            // Tab clicks
             Recipe.Category[] cats = Recipe.Category.values();
-            float tabW = menuW / cats.length;
-            if (y >= startY && y <= startY + 40)
-                for (int i = 0; i < cats.length; i++)
-                    if (x >= startX + i * tabW && x <= startX + (i + 1) * tabW) {
+            float tabW = GRID_AREA_W / cats.length;
+            float tabY = SY + 34f;
+            if (y >= tabY && y <= tabY + 24f) {
+                for (int i = 0; i < cats.length; i++) {
+                    float tx = SX + GRID_OFF_X + i * (tabW + 2f);
+                    if (x >= tx && x <= tx + tabW - 2f) {
                         activeCategory = cats[i];
                         recipeIndex = 0;
+                        recipeScrollOffset = 0;
                         break;
                     }
+                }
+            }
 
+            // Icon grid clicks
             for (int i = 0; i < filtered.size(); i++) {
-                float ry = startY + 60 + i * 40;
-                if (x >= startX + 20 && x <= startX + 380 && y >= ry && y <= ry + 35) {
+                int col = i % COLS, row = i / COLS;
+                float ix = GX + col * (ICON_SIZE + ICON_GAP);
+                float iy = GY + row * (ICON_SIZE + ICON_GAP);
+                if (iy + ICON_SIZE > SY + MENU_H - 30f) break;
+                if (x >= ix && x <= ix + ICON_SIZE && y >= iy && y <= iy + ICON_SIZE) {
                     recipeIndex = i;
                     break;
                 }
             }
 
+            // Forge button click
             if (recipeIndex >= 0 && recipeIndex < filtered.size()) {
-                float btnX = startX + menuW - 180;
-                float btnY = startY + menuH - 70;
-                if (x >= btnX && x <= btnX + 160 && y >= btnY && y <= btnY + 50)
+                float bbx = SX + GRID_OFF_X + GRID_AREA_W + 18f + 8f;
+                float bby = SY + MENU_H - 52f;
+                float bbw = DETAIL_W - 16f;
+                if (x >= bbx && x <= bbx + bbw && y >= bby && y <= bby + 38f)
                     craftingManager.craft(filtered.get(recipeIndex), player.inventory);
             }
         }
 
-        boolean isUp = glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS;
-        boolean isDown = glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS;
+        // Arrow keys navigate the grid (left/right/up/down)
+        boolean isUp    = glfwGetKey(window, GLFW_KEY_UP)    == GLFW_PRESS;
+        boolean isDown  = glfwGetKey(window, GLFW_KEY_DOWN)  == GLFW_PRESS;
+        boolean isLeft  = glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS;
+        boolean isRight = glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS;
         boolean isEnter = glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS;
-        
-        if (isUp && !prevUp) {
-            recipeIndex = (recipeIndex - 1 + filtered.size()) % Math.max(1, filtered.size());
-            // Adjust scroll offset
-            if (recipeIndex < recipeScrollOffset) recipeScrollOffset = recipeIndex;
-            if (recipeIndex == filtered.size() - 1) recipeScrollOffset = Math.max(0, filtered.size() - 10);
-        }
-        if (isDown && !prevDown) {
-            recipeIndex = (recipeIndex + 1) % Math.max(1, filtered.size());
-            // Adjust scroll offset
-            if (recipeIndex >= recipeScrollOffset + 10) recipeScrollOffset = recipeIndex - 9;
-            if (recipeIndex == 0) recipeScrollOffset = 0;
+
+        if (!filtered.isEmpty()) {
+            if (isUp    && !prevUp)    recipeIndex = Math.max(0, recipeIndex - COLS);
+            if (isDown  && !prevDown)  recipeIndex = Math.min(filtered.size() - 1, recipeIndex + COLS);
+            if (isLeft  && !prevLeft)  recipeIndex = Math.max(0, recipeIndex - 1);
+            if (isRight && !prevRight) recipeIndex = Math.min(filtered.size() - 1, recipeIndex + 1);
         }
         if (isEnter && !prevEnter && recipeIndex < filtered.size())
             craftingManager.craft(filtered.get(recipeIndex), player.inventory);
 
-        prevUp = isUp;
-        prevDown = isDown;
+        prevUp = isUp; prevDown = isDown;
+        prevLeft = isLeft; prevRight = isRight;
         prevEnter = isEnter;
         prevMouseLeftDown = mouseLeftDown;
     }
+
 
     // ─────────────────────────────────────────────────────────────────────
     // Combat + placement

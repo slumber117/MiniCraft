@@ -204,10 +204,11 @@ public class UIRenderer {
         float coordW = 188f, coordH = 68f;
         drawTacticalFrame(shader, 14, 14, coordW, coordH);
         drawText(shader, "POSITION DATA", 26, 26, 0.38f, tactBlue);
+        Vector4f gray = new Vector4f(0.65f, 0.65f, 0.65f, 1f);
         drawText(shader,
                 String.format("X:%-6d  Y:%-6d", (int) player.position.x, (int) player.position.y),
-                26, 41, 0.45f);
-        drawText(shader, String.format("Z:%-6d", (int) player.position.z), 26, 56, 0.45f);
+                26, 41, 0.45f, gray);
+        drawText(shader, String.format("Z:%-6d", (int) player.position.z), 26, 56, 0.45f, gray);
         drawText(shader,
                 main.getWorld().getBiome((int) player.position.x, (int) player.position.z).displayName.toUpperCase(),
                 26, 70, 0.35f,
@@ -528,98 +529,157 @@ public class UIRenderer {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // Crafting menu
+    // Crafting menu — icon-grid layout
     // ══════════════════════════════════════════════════════════════════════════
     private void renderCraftingMenu(Player player, ShaderProgram shader,
             int width, int height, minicraft.Main main) {
-        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.85f));
+        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.88f));
 
-        float menuW = 620f, menuH = 520f;
-        float startX = (width - menuW) / 2f;
-        float startY = (height - menuH) / 2f;
+        // ── Layout constants (MUST match handleCraftingInput in Main.java) ────
+        final float MENU_W    = 700f, MENU_H = 540f;
+        final float ICON_SIZE = 56f,  ICON_GAP = 8f;
+        final int   COLS      = 7;
+        final float GRID_OFF_X = 14f, GRID_OFF_Y = 60f;
+        final float DETAIL_W  = 182f;
+        float sx = (width  - MENU_W) / 2f;
+        float sy = (height - MENU_H) / 2f;
 
-        drawRectInternal(shader, startX, startY, menuW, menuH, textColor, "crafting_menu_bg");
-        drawRectInternal(shader, startX, startY, menuW, 2f, glassBorderColor);
+        // Panel
+        drawTacticalFrame(shader, sx, sy, MENU_W, MENU_H);
+        drawText(shader, "CRAFTING WORKSHOP", sx + 18, sy + 16, 0.75f, tactOrange);
 
-        // Tabs
+        // ── Category tabs ─────────────────────────────────────────────────────
         Recipe.Category[] cats = Recipe.Category.values();
-        float tabW = (menuW - 40f) / cats.length;
+        float gridAreaW = COLS * ICON_SIZE + (COLS - 1) * ICON_GAP;
+        float tabW = gridAreaW / cats.length;
         for (int i = 0; i < cats.length; i++) {
-            float tx = startX + 20 + i * tabW;
+            float tx = sx + GRID_OFF_X + i * (tabW + 2f);
+            float ty = sy + 34f;
             boolean active = (main.activeCategory == cats[i]);
-            drawRectInternal(shader, tx, startY + 10, tabW - 4, 34,
-                    active ? new Vector4f(1.2f, 1.2f, 1.2f, 1f) : new Vector4f(0.78f, 0.78f, 0.78f, 1f),
-                    "button_wood");
+            drawRectInternal(shader, tx, ty, tabW - 2, 22f,
+                    active ? new Vector4f(0.12f, 0.63f, 1.00f, 0.90f)
+                           : new Vector4f(0.08f, 0.08f, 0.14f, 0.85f));
             if (active)
-                drawRectInternal(shader, tx, startY + 42, tabW - 4, 2, tactOrange);
-            drawText(shader, cats[i].name(),
-                    tx + (tabW / 2f) - (cats[i].name().length() * 3.5f),
-                    startY + 21, 0.65f,
-                    active ? textColor : new Vector4f(0.70f, 0.70f, 0.70f, 1.0f));
+                drawRectInternal(shader, tx, ty + 22f, tabW - 2, 2f, tactOrange);
+            String lbl = cats[i].name();
+            drawText(shader, lbl, tx + tabW / 2f - lbl.length() * 3.1f, ty + 6f, 0.58f,
+                    active ? textColor : new Vector4f(0.60f, 0.62f, 0.65f, 1f));
         }
 
-        // Recipe list
+        // ── Recipe icon grid ──────────────────────────────────────────────────
         List<Recipe> filtered = new ArrayList<>();
         for (Recipe r : main.craftingManager.getRecipes())
             if (r.getCategory() == main.activeCategory)
                 filtered.add(r);
 
-        float listX = startX + 35;
-        int maxItems = 9;
+        float gx = sx + GRID_OFF_X;
+        float gy = sy + GRID_OFF_Y;
 
-        for (int i = 0; i < Math.min(filtered.size() - main.recipeScrollOffset, maxItems); i++) {
-            int actualIndex = i + main.recipeScrollOffset;
-            Recipe r = filtered.get(actualIndex);
-            float ry = startY + 70 + i * 40f;
-            boolean selected = (actualIndex == main.recipeIndex);
-            if (selected) {
-                drawRectInternal(shader, listX - 10, ry - 2, 350, 38, highlightColor);
-                drawRectInternal(shader, listX - 12, ry - 2, 4, 38, tactOrange);
-            }
-            drawText(shader, r.getName(), listX + 15, ry + 8, 0.92f,
-                    selected ? tactOrange : textColor);
+        for (int i = 0; i < filtered.size(); i++) {
+            int col = i % COLS;
+            int row = i / COLS;
+            float ix = gx + col * (ICON_SIZE + ICON_GAP);
+            float iy = gy + row * (ICON_SIZE + ICON_GAP);
+            // Clip to panel
+            if (iy + ICON_SIZE > sy + MENU_H - 30f) break;
+
+            boolean selected = (i == main.recipeIndex);
+
+            // Affordability check
+            boolean canAfford = true;
+            for (Map.Entry<Item, Integer> e : filtered.get(i).getIngredients().entrySet())
+                if (player.inventory.getCount(e.getKey()) < e.getValue()) { canAfford = false; break; }
+
+            // Slot bg
+            drawRectInternal(shader, ix, iy, ICON_SIZE, ICON_SIZE,
+                    selected ? new Vector4f(0.10f, 0.32f, 0.60f, 0.95f)
+                             : new Vector4f(0.05f, 0.05f, 0.10f, 0.88f));
+
+            // Icon
+            float pad = 7f;
+            drawItemIcon(shader, filtered.get(i).getResult(),
+                    ix + pad, iy + pad, ICON_SIZE - pad * 2);
+
+            // Red dim overlay if can't afford
+            if (!canAfford)
+                drawRectInternal(shader, ix, iy, ICON_SIZE, ICON_SIZE,
+                        new Vector4f(0.65f, 0.0f, 0.0f, 0.45f));
+
+            // Border
+            float bw = selected ? 2f : 1f;
+            Vector4f bc = selected ? tactBlue
+                        : (canAfford ? new Vector4f(0.10f, 0.65f, 0.80f, 0.45f)
+                                     : new Vector4f(0.55f, 0.10f, 0.10f, 0.50f));
+            drawRectInternal(shader, ix,               iy,               ICON_SIZE, bw, bc);
+            drawRectInternal(shader, ix,               iy+ICON_SIZE-bw,  ICON_SIZE, bw, bc);
+            drawRectInternal(shader, ix,               iy,               bw, ICON_SIZE, bc);
+            drawRectInternal(shader, ix+ICON_SIZE-bw,  iy,               bw, ICON_SIZE, bc);
+
+            // Tiny affordability dot (top-right corner)
+            drawRectInternal(shader, ix + ICON_SIZE - 8f, iy, 8f, 8f,
+                    canAfford ? tactGreen : new Vector4f(0.90f, 0.18f, 0.18f, 1f));
         }
 
-        // Scrollbar
-        if (filtered.size() > maxItems) {
-            float sbX = startX + 382, sbY = startY + 70;
-            float sbH = maxItems * 40f - 5;
-            drawRectInternal(shader, sbX, sbY, 4, sbH, tactDim);
-            float thumbH = (sbH / filtered.size()) * maxItems;
-            float thumbY = sbY + (sbH / filtered.size()) * main.recipeScrollOffset;
-            drawRectInternal(shader, sbX, thumbY, 4, thumbH, tactBlue);
-        }
+        // ── Detail panel (right side) ─────────────────────────────────────────
+        float dx = sx + GRID_OFF_X + gridAreaW + 18f;
+        float dy = sy + GRID_OFF_Y;
+        float dh = MENU_H - GRID_OFF_Y - 14f;
+        drawRectInternal(shader, dx, dy, DETAIL_W, dh, new Vector4f(0.03f, 0.03f, 0.08f, 0.92f));
+        drawRectInternal(shader, dx,      dy, DETAIL_W, 1f, glassBorderColor);
+        drawRectInternal(shader, dx,      dy, 1f, dh, glassBorderColor);
+        drawRectInternal(shader, dx+DETAIL_W-1, dy, 1f, dh, glassBorderColor);
 
-        // Detail pane
         if (main.recipeIndex >= 0 && main.recipeIndex < filtered.size()) {
             Recipe sel = filtered.get(main.recipeIndex);
-            float detailX = startX + 400, detailY = startY + 70;
 
-            drawRectInternal(shader, detailX, detailY, 180, menuH - 145,
-                    new Vector4f(0, 0, 0, 0.40f));
-            drawText(shader, "REQUIRED:", detailX + 10, detailY + 10, 0.65f, tactOrange);
+            // Large preview icon
+            float prev = 64f;
+            float px = dx + (DETAIL_W - prev) / 2f;
+            float py = dy + 10f;
+            drawRectInternal(shader, px, py, prev, prev, new Vector4f(0.08f, 0.08f, 0.14f, 1f));
+            drawItemIcon(shader, sel.getResult(), px + 7, py + 7, prev - 14);
 
+            // Name
+            String name = sel.getName();
+            float ns = name.length() > 14 ? 0.52f : 0.60f;
+            drawText(shader, name, dx + DETAIL_W / 2f - name.length() * ns * 5.2f, py + prev + 8f, ns, textColor);
+
+            // Divider
+            drawRectInternal(shader, dx + 8, py + prev + 26f, DETAIL_W - 16, 1f, glassBorderColor);
+            drawText(shader, "REQUIRES:", dx + 10, py + prev + 32f, 0.50f, tactOrange);
+
+            // Ingredients
             boolean canCraft = true;
             int k = 0;
-            for (Map.Entry<Item, Integer> entry : sel.getIngredients().entrySet()) {
-                int owned = player.inventory.getCount(entry.getKey());
-                boolean sufficient = owned >= entry.getValue();
-                if (!sufficient)
-                    canCraft = false;
-                Vector4f col = sufficient ? tactGreen : new Vector4f(1f, 0.4f, 0.4f, 1f);
-                drawText(shader, entry.getKey().getName(), detailX + 12, detailY + 40 + k * 44, 0.56f, col);
-                drawText(shader, owned + " / " + entry.getValue(), detailX + 12, detailY + 57 + k * 44, 0.65f, col);
+            for (Map.Entry<Item, Integer> e : sel.getIngredients().entrySet()) {
+                int owned = player.inventory.getCount(e.getKey());
+                boolean ok = owned >= e.getValue();
+                if (!ok) canCraft = false;
+                Vector4f col = ok ? tactGreen : new Vector4f(1f, 0.35f, 0.35f, 1f);
+                float iy2 = py + prev + 46f + k * 36f;
+                drawItemIcon(shader, e.getKey(), dx + 10, iy2, 20f);
+                drawText(shader, e.getKey().getName(), dx + 34, iy2 + 1, 0.48f, col);
+                drawText(shader, owned + " / " + e.getValue(), dx + 34, iy2 + 14, 0.56f, col);
                 k++;
             }
 
-            float btnX = startX + menuW - 192, btnY = startY + menuH - 68;
-            drawRectInternal(shader, btnX, btnY, 172, 46,
-                    canCraft ? textColor : new Vector4f(0.5f, 0.5f, 0.5f, 0.8f), "button_wood");
-            drawText(shader, "FORGE ITEM", btnX + 36, btnY + 15, 0.80f,
-                    canCraft ? new Vector4f(0, 0, 0, 1) : new Vector4f(0.25f, 0.25f, 0.25f, 0.8f));
+            // FORGE button
+            float bby = sy + MENU_H - 52f;
+            float bbx = dx + 8f, bbw = DETAIL_W - 16f;
+            drawRectInternal(shader, bbx, bby, bbw, 38f,
+                    canCraft ? new Vector4f(0.10f, 0.58f, 0.98f, 1f)
+                             : new Vector4f(0.18f, 0.18f, 0.24f, 0.90f));
+            String lbl = canCraft ? "FORGE" : "LOCKED";
+            drawText(shader, lbl, bbx + bbw / 2f - lbl.length() * 3.9f, bby + 12f, 0.70f,
+                    canCraft ? textColor : new Vector4f(0.45f, 0.45f, 0.50f, 1f));
+        } else {
+            drawText(shader, "SELECT AN ITEM",  dx + 16, dy + dh / 2f - 10, 0.55f,
+                    new Vector4f(0.40f, 0.42f, 0.48f, 1f));
         }
 
-        // Cursor drawn by global block in render()
+        // Hint bar
+        drawText(shader, "CLICK = SELECT    ENTER/FORGE = CRAFT    ARROWS = NAVIGATE",
+                sx + 8, sy + MENU_H - 14f, 0.36f, new Vector4f(0.38f, 0.40f, 0.45f, 1f));
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -632,7 +692,7 @@ public class UIRenderer {
 
         drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.78f));
 
-        float panelW = 680f, panelH = 480f;
+        float panelW = 680f, panelH = 580f;
         float sx = (width - panelW) / 2f;
         float sy = (height - panelH) / 2f;
 
@@ -670,11 +730,11 @@ public class UIRenderer {
         if (prog > 0)
             drawText(shader, (int) (prog * 100) + "%", cx - 14, cy + 18, 0.58f, textColor);
 
-        // Player inventory (3×9 at bottom of panel)
+        // Player inventory (3×9 in middle of panel)
         final float ISLOT = 54f, IGAP = 6f;
         float gridW = 9 * ISLOT + 8 * IGAP;
         float invStartX = sx + (panelW - gridW) / 2f;
-        float invStartY = sy + 310f;
+        float invStartY = sy + 300f;
 
         drawText(shader, "INVENTORY", invStartX, invStartY - 16, 0.52f, highlightColor);
         minicraft.item.ItemStack[] pInv = player.inventory.getMainInventory();
@@ -682,6 +742,14 @@ public class UIRenderer {
             int row = i / 9, col = i % 9;
             drawSlot(shader, invStartX + col * (ISLOT + IGAP),
                     invStartY + row * (ISLOT + IGAP), ISLOT, pInv[i]);
+        }
+
+        // Hotbar row (1x9 at bottom of panel)
+        float hotStartY = invStartY + 3 * (ISLOT + IGAP) + 18f;
+        drawText(shader, "HOTBAR", invStartX, hotStartY - 14, 0.52f, highlightColor);
+        minicraft.item.ItemStack[] hInv = player.inventory.getHotbar();
+        for (int i = 0; i < 9; i++) {
+            drawSlot(shader, invStartX + i * (ISLOT + IGAP), hotStartY, ISLOT, hInv[i]);
         }
 
         // Cursor drawn by global block in render()
@@ -900,6 +968,10 @@ public class UIRenderer {
                 drawRectInternal(shader, x, y, size, size, textColor, tex);
                 return;
             }
+        }
+        if (item.getTextureName() != null) {
+            drawRectInternal(shader, x, y, size, size, textColor, item.getTextureName());
+            return;
         }
         if (item.isBlock()) {
             drawRectInternal(shader, x, y, size, size, textColor, item.getBlock().sideTexture);

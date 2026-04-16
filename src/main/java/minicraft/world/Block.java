@@ -7,7 +7,7 @@ public enum Block {
 
     // ── Environment ───────────────────────────────────────────────────────
     AIR(false, 0, 0f, 0f, ""),
-    BEDROCK(true, 9999, -1f, 0f, "stone"),
+    BEDROCK(true, 9999, -1f, 0f, "obsidian"),
     GRASS(true, 0, 0.6f, 0.1f, "grass_top", "dirt", "grass"),
     DIRT(true, 0, 0.5f, 0.1f, "dirt"),
     STONE(true, 0, 1.5f, 0.5f, "stone"),

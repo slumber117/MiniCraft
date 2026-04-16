@@ -11,10 +11,10 @@ import java.util.*;
 public class Chunk {
 
     public static final int WIDTH        = 16;
-    public static final int HEIGHT       = 400;
+    public static final int HEIGHT       = 640;
     public static final int DEPTH        = 16;
     public static final int SECTION_SIZE = 80;
-    public static final int NUM_SECTIONS = HEIGHT / SECTION_SIZE; // 5
+    public static final int NUM_SECTIONS = HEIGHT / SECTION_SIZE; // 8
 
     public final int chunkX;
     public final int chunkZ;

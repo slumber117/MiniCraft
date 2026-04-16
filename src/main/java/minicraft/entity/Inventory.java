@@ -132,6 +132,20 @@ public class Inventory {
         if (clicked != null && clicked.isEmpty()) clicked = null;
         if (cursorStack != null && cursorStack.isEmpty()) cursorStack = null;
 
+        // Smart merging logic: if items match, combine them
+        if (cursorStack != null && clicked != null && cursorStack.getItem().equals(clicked.getItem())) {
+            int max = cursorStack.getItem().getMaxStackSize();
+            int canAdd = max - clicked.getCount();
+            int toAdd = Math.min(canAdd, cursorStack.getCount());
+            
+            clicked.add(toAdd);
+            cursorStack.remove(toAdd);
+            
+            if (cursorStack.getCount() <= 0) cursorStack = null;
+            target[index] = clicked;
+            return;
+        }
+
         // Standard Minecraft pick-up / place / swap
         target[index] = cursorStack;   // put what we're holding into the slot (may be null)
         cursorStack   = clicked;       // pick up what was in the slot (may be null)
