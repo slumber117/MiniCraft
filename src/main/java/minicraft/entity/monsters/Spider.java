@@ -70,6 +70,6 @@ public class Spider extends Entity {
             velocity.x = (dx / len) * 10f;
             velocity.z = (dz / len) * 10f;
         }
-        player.damage(damageValue);
+        player.damage(damageValue, this);
     }
 }

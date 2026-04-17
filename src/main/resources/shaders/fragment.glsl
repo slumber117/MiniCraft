@@ -39,8 +39,12 @@ void main()
     }
 
     // Combine Sunlight (vLightLevel.x) with SunBrightness, 
-    // and add static Block Light (vLightLevel.y)
-    float staticLight = max(vLightLevel.x * sunBrightness, vLightLevel.y);
+    // Apply Y-based decay (Light moves from Surface to Depths)
+    float yFactor = clamp((vPosition.y - 12.0) / 100.0, 0.005, 1.0); // 1.0 at Y=112+, decays to 0.005 at bedrock
+    float surfaceLight = vLightLevel.x * sunBrightness * yFactor;
+    
+    // Add static Block Light (vLightLevel.y) - unaffected by depth
+    float staticLight = max(surfaceLight, vLightLevel.y);
     
     float finalLight = max(staticLight, torchEffect);
     

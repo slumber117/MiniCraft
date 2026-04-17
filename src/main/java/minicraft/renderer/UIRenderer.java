@@ -2,11 +2,13 @@ package minicraft.renderer;
 
 import minicraft.entity.Player;
 import minicraft.math.Matrix4f;
+import minicraft.math.Vector3f;
 import minicraft.math.Vector4f;
 import minicraft.world.Block;
 import minicraft.item.Recipe;
 import minicraft.item.Item;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -74,8 +76,30 @@ public class UIRenderer {
     private final Vector4f slotHoverColor = new Vector4f(1.00f, 1.00f, 1.00f, 0.18f);
 
     // ── Constructor ──────────────────────────────────────────────────────────
+    private final Map<String, Vector3f> armorColors = new HashMap<>();
+
     public UIRenderer(TextureRegistry textures) {
         this.textures = textures;
+        
+        // --- Armor Material Mapping (Expanded for all gameplay tiers) ---
+        armorColors.put("IRON", new Vector3f(0.85f, 0.85f, 0.90f));
+        armorColors.put("GOLD", new Vector3f(1.00f, 0.85f, 0.10f));
+        armorColors.put("DIAMOND", new Vector3f(0.50f, 0.95f, 1.00f));
+        armorColors.put("EMERALD", new Vector3f(0.15f, 0.90f, 0.25f));
+        armorColors.put("RUBY", new Vector3f(0.95f, 0.10f, 0.15f));
+        armorColors.put("SAPPHIRE", new Vector3f(0.15f, 0.35f, 0.95f));
+        armorColors.put("AMETHYST", new Vector3f(0.70f, 0.25f, 0.95f));
+        armorColors.put("QUARTZ", new Vector3f(1.00f, 1.00f, 1.00f));
+        armorColors.put("TOPAZ", new Vector3f(1.00f, 0.75f, 0.15f));
+        armorColors.put("AQUAMARINE", new Vector3f(0.65f, 0.85f, 0.90f));
+        armorColors.put("TITANIUM", new Vector3f(0.55f, 0.55f, 0.65f));
+        armorColors.put("TANTALUM", new Vector3f(0.40f, 0.40f, 0.50f));
+        armorColors.put("URANIUM", new Vector3f(0.20f, 1.00f, 0.35f)); 
+        armorColors.put("PLUTONIUM", new Vector3f(0.10f, 0.85f, 1.00f)); 
+        armorColors.put("ADAMANTINE", new Vector3f(1.00f, 0.25f, 0.10f));
+        armorColors.put("MITHRIL", new Vector3f(0.70f, 1.00f, 0.95f));
+        armorColors.put("PLATINUM", new Vector3f(0.90f, 0.90f, 1.00f));
+
         float[] positions = { 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0 };
         float[] uvs = { 0, 1, 1, 1, 1, 0, 0, 0 };
         int[] indices = { 0, 1, 2, 2, 3, 0 };
@@ -218,7 +242,17 @@ public class UIRenderer {
         // ── 5. Temperature (top-right, fixed) — stays clear of coord panel ───
         drawTemperatureHUD(player, shader, width, 20f);
 
-        // ── 6. Damage vignette — only below 10% health, never when full ──────
+        // ── 6. Focused Block (Look-at HUD, mid-right) ───────────────────────
+        if (main.focusedBlock != null && main.focusedBlock != Block.AIR) {
+            drawFocusedBlockHUD(shader, width, 72f, main.focusedBlock);
+        }
+
+        // ── 7. Status Message (top-center overlay) ───────────────────────────
+        if (main.activeStatusMessage != null && !main.activeStatusMessage.isEmpty()) {
+            drawStatusMessage(shader, width, height, main.activeStatusMessage, main.statusMessageTimer);
+        }
+
+        // ── 7. Damage vignette — only below 10% health, never when full ──────
         float healthPct = player.getHealth() / player.getMaxHealth();
         if (healthPct < 1.0f && player.damageFlashTimer > 0 && healthPct >= 0.10f) {
             // Brief hit-flash: visible only if not at full health, fades quickly
@@ -321,13 +355,48 @@ public class UIRenderer {
 
         drawText(shader, "STORAGE", gridStartX, mainGridY - 16, 0.45f, highlightColor);
 
-        for (int i = 0; i < 27; i++) {
+        // --- Scrolling Logic ---
+        float gridViewH = 3 * (SLOT + GAP); // visible height of 3 rows
+        float scrollTrackX = gridStartX + gridW + 12f;
+        float scrollTrackH = gridViewH;
+        
+        // Draw Scroll Track (Tactical Dark)
+        drawRectInternal(shader, scrollTrackX, mainGridY, 10f, scrollTrackH, new Vector4f(0, 0, 0, 0.45f));
+        drawRectInternal(shader, scrollTrackX, mainGridY, 10f, 1f, glassBorderColor);
+        drawRectInternal(shader, scrollTrackX, mainGridY + scrollTrackH, 10f, 1f, glassBorderColor);
+
+        // Draw Scroll Handle
+        float totalRows = 9f; // 81 slots / 9 per row
+        float visibleRows = 3f;
+        float handleH = (visibleRows / totalRows) * scrollTrackH;
+        float maxScroll = (totalRows - visibleRows) * (SLOT + GAP); // ~396px
+        float handleOffset = (main.inventoryScroll / maxScroll) * (scrollTrackH - handleH);
+        
+        drawRectInternal(shader, scrollTrackX + 2, mainGridY + handleOffset + 2, 6f, handleH - 4, tactOrange);
+
+        // --- Clipped Grid Rendering ---
+        // Save current scissor state or just use global
+        glEnable(GL_SCISSOR_TEST);
+        // Note: OpenGL scissor coordinates are from BOTTOM-LEFT
+        // We must convert our TOP-LEFT screen coords
+        int sx_sc = (int)gridStartX;
+        int sy_sc = (int)(height - (mainGridY + gridViewH));
+        int sw_sc = (int)(gridW + 4);
+        int sh_sc = (int)gridViewH;
+        glScissor(sx_sc, sy_sc, sw_sc, sh_sc);
+
+        for (int i = 0; i < 81; i++) {
             int col = i % 9, row = i / 9;
             float sx2 = gridStartX + col * (SLOT + GAP);
-            float sy2 = mainGridY + row * (SLOT + GAP);
-            boolean hover = isHovered(mouseX, mouseY, sx2, sy2, SLOT, SLOT);
-            drawSlot(shader, sx2, sy2, SLOT, mainInv[i], hover);
+            float sy2 = mainGridY + row * (SLOT + GAP) - main.inventoryScroll;
+            
+            // Optimization: Only render if potentially visible (within or near scissored area)
+            if (sy2 + SLOT > mainGridY - 100 && sy2 < mainGridY + gridViewH + 100) {
+                boolean hover = isHovered(mouseX, mouseY, sx2, sy2, SLOT, SLOT);
+                drawSlot(shader, sx2, sy2, SLOT, mainInv[i], hover);
+            }
         }
+        glDisable(GL_SCISSOR_TEST);
 
         // ── 4. Hotbar row ────────────────────────────────────────────────────
         float sepY = mainGridY + 3 * (SLOT + GAP) + 12f;
@@ -352,30 +421,54 @@ public class UIRenderer {
 
     private void renderPaperDoll(Player player, ShaderProgram shader, float cx, float cy, float scale) {
         // Setup 3D transform for the UI doll
-        // We pulse and rotate slightly
         float rotation = (System.currentTimeMillis() % 10000) / 10000f * 360f;
         float pulse = (float)Math.sin(System.currentTimeMillis() / 400.0) * 0.02f;
         
-        Matrix4f model = new Matrix4f().identity()
+        Matrix4f baseModelMatrix = new Matrix4f().identity()
                 .translate(cx, cy, 50f) 
                 .scale(scale * (1f + pulse), -scale * (1f + pulse), scale)
                 .rotateY(rotation);
         
-        shader.setUniform("modelMatrix", model);
+        shader.setUniform("modelMatrix", baseModelMatrix);
         shader.setUniform("useLighting", 1.0f);
         shader.setUniform("sunBrightness", 1.0f);
+        shader.setUniform("colorTint", new Vector4f(1f, 1f, 1f, 1f));
         
-        // Base Model
         Mesh human = ModelRegistry.getModel("zombie"); 
         if (human != null) {
-            // Check for specific armor skins (Simplified version: layer armor textures)
-            // Ideally we'd have a player skin, but we use the zombie mesh as base spartan
-            human.render(textures.get("grass").getTexture()); // Fallback texture
+            // 1. Render Base Skin
+            human.render(textures.get("zombie_hd").getTexture()); 
+
+            // 2. Render Armor Layers (Sequential Overlays)
+            // We use the same mesh but scale up slightly for each piece to act as a 3D shell.
+            // In a production engine we'd use separate armor meshes, but here we use a tinted 'Aura Shell'.
             
-            // Render Armor Piece overlays (would require model-mapped textures)
-            // For now, we render the human base. In next step, we'll apply armor tints or textures.
+            minicraft.item.ArmorItem[] pieces = {
+                player.inventory.getHelmet(), 
+                player.inventory.getChestplate(), 
+                player.inventory.getLeggings(), 
+                player.inventory.getBoots()
+            };
+
+            for (minicraft.item.ArmorItem piece : pieces) {
+                if (piece != null) {
+                    Vector3f color = armorColors.get(piece.getTierName().toUpperCase());
+                    if (color == null) color = new Vector3f(1, 1, 1); // Fallback
+
+                    // Set tint for this armor piece
+                    shader.setUniform("colorTint", new Vector4f(color.x, color.y, color.z, 0.75f));
+                    
+                    // Render slightly larger shell (1.04x)
+                    Matrix4f shellMatrix = new Matrix4f(baseModelMatrix).scale(1.04f, 1.04f, 1.04f);
+                    shader.setUniform("modelMatrix", shellMatrix);
+                    
+                    human.render(textures.get("alloy_plate").getTexture()); // Metallic texture
+                }
+            }
         }
         
+        // Reset uniforms
+        shader.setUniform("colorTint", new Vector4f(1f, 1f, 1f, 1f));
         shader.setUniform("useLighting", 0.0f);
     }
 
@@ -572,7 +665,8 @@ public class UIRenderer {
         drawTacticalFrame(shader, x, y, panelW, panelH);
 
         String tempText = String.format("%.1f\u00b0C", player.temperature);
-        drawText(shader, tempText, x + 10, y + 14, 0.85f, textColor);
+        // Unified color: matches coordinates (gray 0.65f)
+        drawText(shader, tempText, x + 10, y + 14, 0.85f, new Vector4f(0.65f, 0.65f, 0.65f, 1f));
 
         Vector4f stateColor;
         String state = player.tempState;
@@ -588,6 +682,28 @@ public class UIRenderer {
             stateColor = tactGreen;
 
         drawText(shader, state.toUpperCase(), x + 10, y + 33, 0.38f, stateColor);
+    }
+
+    private void drawStatusMessage(ShaderProgram shader, int width, int height, String msg, float timer) {
+        float scale = 0.55f;
+        float textW = msg.length() * 14f * scale; // Approximated
+        float x = (width - textW) / 2f;
+        float y = 28f;
+
+        // Fade out in the last 0.5s
+        float alpha = Math.min(1.0f, timer * 2.0f);
+        Vector4f color = new Vector4f(1f, 1f, 1f, alpha);
+        
+        drawText(shader, msg.toUpperCase(), x, y, scale, color);
+    }
+
+    private void drawFocusedBlockHUD(ShaderProgram shader, int screenWidth, float y, Block block) {
+        float panelW = 188f, panelH = 46f;
+        float x = screenWidth - 20f - panelW;
+        
+        drawTacticalFrame(shader, x, y, panelW, panelH);
+        drawText(shader, "TARGET IDENTIFIED", x + 10, y + 10, 0.35f, tactOrange);
+        drawText(shader, block.getFriendlyName().toUpperCase(), x + 10, y + 25, 0.45f, new Vector4f(0.65f, 0.65f, 0.65f, 1f));
     }
 
     // ══════════════════════════════════════════════════════════════════════════

@@ -27,6 +27,12 @@ public class CraftingManager {
         torchIng.put(new Item("WOOD", Block.WOOD), 1);
         recipes.add(new Recipe("Primitive Torch", Recipe.Category.SURVIVAL, torchIng,
                 new Item("TORCH", Block.TORCH), 2));
+        
+        Map<Item, Integer> tinTorchIng = new HashMap<>();
+        tinTorchIng.put(new Item("TIN_ORE", Block.TIN_ORE), 1);
+        tinTorchIng.put(new Item("WOOD", Block.WOOD), 1);
+        recipes.add(new Recipe("Tin Torch", Recipe.Category.SURVIVAL, tinTorchIng,
+                new Item("TIN_TORCH", Block.TIN_TORCH), 4));
 
         // --- 2. STONE TIER ---
         addToolSet("Stone", "STONE", 1, 4.0f);
@@ -41,11 +47,11 @@ public class CraftingManager {
         addToolSet("Iron", "IRON_INGOT", 2, 8.0f);
 
         // --- 4. GOLD TIER (Refinement Required) ---
-        addArmorSet("Gold", "GOLD_INGOT", 0.16f, 4, 0.2f, 1.0f, 0.3f, null);
+        addArmorSet("Gold", "GOLD_INGOT", 0.16f, 4, 0.2f, 0.85f, 0.3f, null); // Heavy weight penalty
         addToolSet("Gold", "GOLD_INGOT", 2, 10.0f);
 
         // --- 5. TITANIUM TIER (High Industry) ---
-        addArmorSet("Titanium", "TITANIUM_INGOT", 0.20f, 3, 0.6f, 0.95f, 0.3f, null);
+        addArmorSet("Titanium", "TITANIUM_INGOT", 0.20f, 3, 0.6f, 0.95f, 0.3f, null); // Slight penalty
         addToolSet("Titanium", "TITANIUM_INGOT", 3, 12.0f);
 
         // --- 6. GEM & SPECIAL TIERS ---
@@ -56,6 +62,11 @@ public class CraftingManager {
 
         addArmorSet("Ruby", "RUBY_ORE", 0.22f, 3, 1.5f, 1.0f, 0.4f, null);
         addToolSet("Ruby", "RUBY_ORE", 5, 18.0f);
+
+        addArmorSet("Quartz", "QUARTZ_ORE", 0.15f, 2, -0.1f, 1.10f, 0.5f, null); // +10% speed boost
+        addToolSet("Quartz", "QUARTZ_ORE", 2, 12.0f);
+
+        addArmorSet("Tanzanite", "TANZANITE_ORE", 0.24f, 4, 0.8f, 1.0f, 0.3f, null); // Thorns Set
 
         addArmorSet("Sapphire", "SAPPHIRE_ORE", 0.22f, 3, 2.0f, 1.0f, 0.4f, null);
         addToolSet("Sapphire", "SAPPHIRE_ORE", 5, 22.0f);
@@ -76,10 +87,10 @@ public class CraftingManager {
 
         // Atomic Tiers
         addArmorSet("Uranium", "URANIUM_ORE", 0.25f, 4, 0.8f, 1.0f, 0.5f,
-                new minicraft.math.Vector3f(0.2f, 1.0f, 0.2f));
+                new minicraft.math.Vector3f(0.2f, 1.0f, 0.2f)); // Green Glow
         addToolSet("Uranium", "URANIUM_ORE", 5, 20.0f);
         addArmorSet("Plutonium", "PLUTONIUM_ORE", 0.28f, 4, 1.0f, 1.0f, 0.5f,
-                new minicraft.math.Vector3f(1.0f, 0.5f, 0.1f));
+                new minicraft.math.Vector3f(1.0f, 0.45f, 0.05f)); // Orange Glow
 
         // --- 7. ADVANCED TECHNOLOGY ---
         Map<Item, Integer> consoleIng = new HashMap<>();
@@ -94,11 +105,11 @@ public class CraftingManager {
 
         // Mapping internal IDs to the .png filenames in /textures/
         if (mat.equals("IRON_INGOT"))
-            tex = "item_ingot_iron";
+            tex = "item_ingot_iron_standalone";
         else if (mat.equals("GOLD_INGOT"))
-            tex = "item_ingot_gold";
+            tex = "item_ingot_gold_standalone";
         else if (mat.equals("TITANIUM_INGOT"))
-            tex = "item_ingot_titanium";
+            tex = "item_ingot_titanium_standalone";
 
         // Gems
         else if (mat.equals("RUBY_ORE"))
@@ -161,24 +172,25 @@ public class CraftingManager {
         Item mat = createMaterialItem(matName);
         String low = tierName.toLowerCase();
 
+        // Weighted Distribution: Helmet 20%, Chest 40%, Legs 25%, Boots 15%
         recipes.add(new Recipe(tierName + " Helmet", Recipe.Category.ARMOR, Map.of(mat, cost),
-                new ArmorItem(tierName + " Helmet", ArmorItem.ArmorSlot.HELMET, prot, "armor_helm_" + low, tierName,
-                        healthBonus, speedMod, insulation, glow),
+                new ArmorItem(tierName + " Helmet", ArmorItem.ArmorSlot.HELMET, prot * 0.20f, "armor_helm_" + low, tierName,
+                        healthBonus * 0.20f, 1.0f + (speedMod - 1.0f) * 0.20f, insulation * 0.20f, glow),
                 1));
 
         recipes.add(new Recipe(tierName + " Chestplate", Recipe.Category.ARMOR, Map.of(mat, cost + 2),
-                new ArmorItem(tierName + " Chestplate", ArmorItem.ArmorSlot.CHESTPLATE, prot + 0.05f,
-                        "armor_chest_" + low, tierName, healthBonus, speedMod, insulation, glow),
+                new ArmorItem(tierName + " Chestplate", ArmorItem.ArmorSlot.CHESTPLATE, prot * 0.40f,
+                        "armor_chest_" + low, tierName, healthBonus * 0.40f, 1.0f + (speedMod - 1.0f) * 0.40f, insulation * 0.40f, glow),
                 1));
 
         recipes.add(new Recipe(tierName + " Leggings", Recipe.Category.ARMOR, Map.of(mat, cost + 1),
-                new ArmorItem(tierName + " Leggings", ArmorItem.ArmorSlot.LEGGINGS, prot + 0.02f, "armor_legs_" + low,
-                        tierName, healthBonus, speedMod, insulation, glow),
+                new ArmorItem(tierName + " Leggings", ArmorItem.ArmorSlot.LEGGINGS, prot * 0.25f, "armor_legs_" + low,
+                        tierName, healthBonus * 0.25f, 1.0f + (speedMod - 1.0f) * 0.25f, insulation * 0.25f, glow),
                 1));
 
         recipes.add(new Recipe(tierName + " Boots", Recipe.Category.ARMOR, Map.of(mat, cost),
-                new ArmorItem(tierName + " Boots", ArmorItem.ArmorSlot.BOOTS, prot, "armor_boots_" + low, tierName,
-                        healthBonus, speedMod, insulation, glow),
+                new ArmorItem(tierName + " Boots", ArmorItem.ArmorSlot.BOOTS, prot * 0.15f, "armor_boots_" + low, tierName,
+                        healthBonus * 0.15f, 1.0f + (speedMod - 1.0f) * 0.15f, insulation * 0.15f, glow),
                 1));
     }
 

@@ -61,7 +61,7 @@ public class Zombie extends Entity {
 
     private void tryAttack(Player player, float dt) {
         if (attackTimer <= 0) {
-            player.damage(damageValue);
+            player.damage(damageValue, this);
             attackTimer = attackCooldown;
             velocity.y = 1.5f; 
         }

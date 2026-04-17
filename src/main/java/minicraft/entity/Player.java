@@ -56,6 +56,8 @@ public class Player extends Entity {
         inventory.add(sword, 1);
     }
 
+    private float plutoniumPulseTimer = 0f;
+
     @Override
     public void tick(EntityManager manager, World world, ParticleManager particleManager, float dt) {
         super.tick(manager, world, particleManager, dt);
@@ -69,9 +71,24 @@ public class Player extends Entity {
         hunger = Math.max(0, hunger - 0.05f * dt);
         thirst = Math.max(0, thirst - 0.1f * dt);
         
-        // 2. Physics & Collision (Moved from update)
+        // 2. Physics & Collision (Movement Speed Multiplier)
         applyGravity(dt);
         resolveMovement(dt, world);
+
+        // --- Plutonium Radiation Pulse ---
+        if (inventory.hasFullSet("Plutonium")) {
+            plutoniumPulseTimer += dt;
+            if (plutoniumPulseTimer >= 2.0f) {
+                plutoniumPulseTimer = 0f;
+                // Emit pulse: damage nearby hostiles
+                for (Entity e : manager.getNearby(position.x, position.y, position.z, 6.0f)) {
+                    if (e != this && e.type.isHostile()) {
+                        e.damage(e.getMaxHealth() * 0.25f, this); // 25% pulse
+                        particleManager.spawnSmoke(e.position.x, e.position.y + 1f, e.position.z);
+                    }
+                }
+            }
+        }
 
         // 3. Environment (Temp & Hazards)
         updateEnvironment(dt);
@@ -161,8 +178,10 @@ public class Player extends Entity {
             velocity.y = 0;
         }
         
-        velocity.x *= 0.8f;
-        velocity.z *= 0.8f;
+        // Apply Friction and Armor Speed Modifiers
+        float speedMod = inventory.getTotalSpeedMod();
+        velocity.x *= 0.8f * speedMod;
+        velocity.z *= 0.8f * speedMod;
     }
 
     public void meleeAttack(EntityManager manager, ParticleManager pm) {
@@ -184,7 +203,7 @@ public class Player extends Entity {
             float dot = dx * fx + dz * fz;
             if (dot > cos45) { 
                 boolean wasDead = e.isDead();
-                e.damage(20f); 
+                e.damage(20f, this); 
                 if (!wasDead && e.isDead()) {
                     addXp(e.getType().isHostile() ? 10f : 2f, pm);
                 }
@@ -194,15 +213,28 @@ public class Player extends Entity {
     }
 
     @Override
-    public void damage(float amount) {
+    public void damage(float amount, Entity attacker) {
         if (invincibilityTimer > 0) return; 
         
         float defense = inventory.getTotalDefense();
         float reduction = 1.0f - defense;
-        super.damage(amount * reduction);
+        float actualDamage = amount * reduction;
+        super.damage(actualDamage, attacker);
         
         damageFlashTimer = 1.0f;
         invincibilityTimer = INVINCIBILITY_TIME;
+
+        // --- Armor Abilities (Thorns & Reflection) ---
+        if (attacker != null) {
+            // Tanzanite (Sharp/Thorns)
+            if (inventory.hasPiece("Tanzanite")) {
+                attacker.damage(5.0f, this); // Flat thorn damage
+            }
+            // Diamond (Reflect)
+            if (inventory.hasPiece("Diamond")) {
+                attacker.damage(actualDamage * 0.20f, this); // Reflect 20%
+            }
+        }
         
         System.out.println("Player took damage! Health: " + health);
     }
@@ -303,11 +335,11 @@ public class Player extends Entity {
         Block b2 = world.getBlock((int)Math.floor(position.x), (int)Math.floor(position.y + 1.2f), (int)Math.floor(position.z));
         
         if (b1 == Block.LAVA || b2 == Block.LAVA) {
-            damage(80f * dt); // Instant high-damage vaporization
+            damage(80f * dt, null); // Instant high-damage vaporization
             // Kick player back to safety
             velocity.y = 5.0f; 
         } else if (b1 == Block.MAGMA || b2 == Block.MAGMA) {
-            damage(15f * dt); // Heat burn
+            damage(15f * dt, null); // Heat burn
         }
     }
 

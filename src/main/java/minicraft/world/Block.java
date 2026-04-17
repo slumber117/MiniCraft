@@ -52,7 +52,7 @@ public enum Block {
     TANZANITE_ORE(true, 2, 5.0f, 15.0f, "tanzanite_ore"),
     SILVER_ORE(true, 2, 5.0f, 8.0f, "silver_ore"),
     NICKEL_ORE(true, 2, 5.0f, 7.0f, "nickel_ore"),
-    PLATINUM_ORE(false, 1, 3, 10.0f, "platinum_ore"),
+    PLATINUM_ORE(true, 2, 8.0f, 12.0f, "platinum_ore"),
 
     DIAMOND_ORE(true, 3, 30.0f, 20.0f, "diamond_ore"),
     EMERALD_ORE(true, 3, 25.0f, 18.0f, "emerald_ore"),
@@ -60,19 +60,19 @@ public enum Block {
     TOPAZ_ORE(true, 3, 20.0f, 15.0f, "topaz_ore"),
     AQUAMARINE_ORE(true, 3, 20.0f, 15.0f, "aquamarine_ore"),
     PERIDOT_ORE(true, 3, 20.0f, 15.0f, "peridot_ore"),
-    LAPIS_ORE(false, 1, 3, 5.0f, "lapis_ore"),
-    SAPPHIRE_ORE(false, 1, 3, 15.0f, "sapphire_ore"),
-    AMETHYST_ORE(false, 1, 3, 12.0f, "amethyst_ore"),
-    JADE_ORE(false, 1, 3, 10.0f, "jade_ore"),
-    OPAL_ORE(false, 1, 3, 15.0f, "opal_ore"),
-    QUARTZ_ORE(false, 1, 3, 3.0f, "quartz_ore"),
-    PYRITE_ORE(false, 1, 3, 4.0f, "pyrite_ore"),
-    MITHRIL_ORE(false, 1, 3, 25.0f, "mithril_ore"),
-    ADAMANTINE_ORE(false, 1, 3, 40.0f, "adamantine_ore"),
-    ORICHALCUM_ORE(false, 1, 3, 35.0f, "orichalcum_ore"),
-    PLUTONIUM_ORE(false, 1, 3, 50.0f, "plutonium_ore"),
-    URANIUM_ORE(false, 1, 3, 45.0f, "uranium_ore"),
-    NEPTUNIUM_ORE(false, 1, 3, 45.0f, "neptunium_ore"),
+    LAPIS_ORE(true, 1, 3.0f, 5.0f, "lapis_ore"),
+    SAPPHIRE_ORE(true, 3, 15.0f, 15.0f, "sapphire_ore"),
+    AMETHYST_ORE(true, 2, 12.0f, 12.0f, "amethyst_ore"),
+    JADE_ORE(true, 2, 10.0f, 10.0f, "jade_ore"),
+    OPAL_ORE(true, 2, 15.0f, 15.0f, "opal_ore"),
+    QUARTZ_ORE(true, 1, 4.0f, 3.0f, "quartz_ore"),
+    PYRITE_ORE(true, 1, 4.0f, 4.0f, "pyrite_ore"),
+    MITHRIL_ORE(true, 4, 30.0f, 25.0f, "mithril_ore"),
+    ADAMANTINE_ORE(true, 5, 50.0f, 40.0f, "adamantine_ore"),
+    ORICHALCUM_ORE(true, 4, 35.0f, 35.0f, "orichalcum_ore"),
+    PLUTONIUM_ORE(true, 4, 50.0f, 50.0f, "plutonium_ore"),
+    URANIUM_ORE(true, 4, 45.0f, 45.0f, "uranium_ore"),
+    NEPTUNIUM_ORE(true, 4, 45.0f, 45.0f, "neptunium_ore"),
 
     TUNGSTEN_ORE(true, 2, 10.0f, 12.0f, "tungsten_ore"),
     TITANIUM_ORE(true, 2, 10.0f, 12.0f, "titanium_ore"),
@@ -92,6 +92,7 @@ public enum Block {
     FLOWER_BLUE(false, 0, 0f, 0f, "flower_blue", MeshType.CROSS),
     MUSHROOM(false, 0, 0f, 0f, "mushroom", MeshType.CROSS),
     TORCH(false, 0, 0f, 1.0f, "torch", MeshType.CROSS),
+    TIN_TORCH(false, 0, 0f, 1.1f, "tin_torch", MeshType.CROSS),
     CACTUS(true, 0, 0.5f, 0.5f, "cactus"),
     SEA_WEED(false, 0, 0f, 0f, "sea_weed", MeshType.CROSS),
     CORAL(true, 0, 0.3f, 1.0f, "coral"),
@@ -201,5 +202,25 @@ public enum Block {
                 || this == PEAR_LEAVES || this == JUNGLE_LEAVES)
             return false;
         return true;
+    }
+
+    public String getFriendlyName() {
+        if (this == AIR) return "";
+        String n = name();
+        // Special case overrides
+        if (this == FURNACE) return "Industrial Smelter";
+        if (this == ALLOY_FORGE) return "Fusion Forge";
+        if (this == SHIP_CONSOLE) return "Neural Link Console";
+        
+        // General underscore conversion to title case
+        String[] parts = n.replace("_", " ").split(" ");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (part.isEmpty()) continue;
+            if (sb.length() > 0) sb.append(" ");
+            sb.append(part.substring(0, 1).toUpperCase());
+            if (part.length() > 1) sb.append(part.substring(1).toLowerCase());
+        }
+        return sb.toString();
     }
 }

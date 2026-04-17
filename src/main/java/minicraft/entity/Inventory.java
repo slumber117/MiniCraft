@@ -12,7 +12,7 @@ import java.util.List;
 public class Inventory {
 
     public static final int HOTBAR_SIZE = 9;
-    public static final int INV_SIZE = 27;
+    public static final int INV_SIZE = 81;
 
     private final ItemStack[] hotbar = new ItemStack[HOTBAR_SIZE];
     private final ItemStack[] mainInventory = new ItemStack[INV_SIZE];
@@ -274,25 +274,21 @@ public class Inventory {
         if (chestplate != null) sum += chestplate.getHealthBonus();
         if (leggings   != null) sum += leggings.getHealthBonus();
         if (boots      != null) sum += boots.getHealthBonus();
-        // Each piece in addArmorSet currently carries the FULL set value,
-        // so we average them and then apply the set bonus.
-        return (sum / 4.0f) * getSetMultiplier();
+        return sum * getSetMultiplier();
     }
 
     public float getTotalSpeedMod() {
         float sum = 0;
-        // Speed is multiplicative-additive: 1.0 + sum(pieceMods - 1.0)
+        // Speed is additive: 1.0 + sum(offset)
         if (helmet     != null) sum += (helmet.getSpeedModifier() - 1.0f);
         if (chestplate != null) sum += (chestplate.getSpeedModifier() - 1.0f);
         if (leggings   != null) sum += (leggings.getSpeedModifier() - 1.0f);
         if (boots      != null) sum += (boots.getSpeedModifier() - 1.0f);
         
-        float total = 1.0f + (sum / 4.0f);
+        float total = 1.0f + sum;
         if (getFullSetTier() != null) {
-            // Set bonus for speed makes heavy armor feel slightly lighter
-            // or fast armor feel even faster.
-            if (total < 1.0f) total += (1.0f - total) * 0.15f; // reduced penalty
-            else              total *= 1.15f;                 // buffed bonus
+            if (total < 1.0f) total += (1.0f - total) * 0.15f; 
+            else              total *= 1.15f;                 
         }
         return Math.max(0.1f, total);
     }
@@ -303,7 +299,7 @@ public class Inventory {
         if (chestplate != null) sum += chestplate.getInsulation();
         if (leggings   != null) sum += leggings.getInsulation();
         if (boots      != null) sum += boots.getInsulation();
-        return (sum / 4.0f) * getSetMultiplier();
+        return sum * getSetMultiplier();
     }
 
     public minicraft.math.Vector3f getDominantGlow() {
@@ -318,7 +314,34 @@ public class Inventory {
     public minicraft.item.ArmorItem getLeggings() { return leggings; }
     public minicraft.item.ArmorItem getBoots() { return boots; }
     public Item getOffhandItem() { return offhandItem; }
-    public void setOffhandItem(Item item) { this.offhandItem = item; }
+    public void setOffhandItem(Item item) {
+        this.offhandItem = item;
+    }
+
+    public boolean hasFullSet(String tier) {
+        if (helmet == null || chestplate == null || leggings == null || boots == null) return false;
+        return helmet.getTierName().equalsIgnoreCase(tier) &&
+               chestplate.getTierName().equalsIgnoreCase(tier) &&
+               leggings.getTierName().equalsIgnoreCase(tier) &&
+               boots.getTierName().equalsIgnoreCase(tier);
+    }
+
+    public boolean hasPiece(String tier) {
+        if (helmet != null && helmet.getTierName().equalsIgnoreCase(tier)) return true;
+        if (chestplate != null && chestplate.getTierName().equalsIgnoreCase(tier)) return true;
+        if (leggings != null && leggings.getTierName().equalsIgnoreCase(tier)) return true;
+        if (boots != null && boots.getTierName().equalsIgnoreCase(tier)) return true;
+        return false;
+    }
+
+    public minicraft.math.Vector3f getTotalGlow() {
+        minicraft.math.Vector3f total = new minicraft.math.Vector3f(0, 0, 0);
+        if (helmet != null && helmet.getGlowColor() != null) total.add(helmet.getGlowColor());
+        if (chestplate != null && chestplate.getGlowColor() != null) total.add(chestplate.getGlowColor());
+        if (leggings != null && leggings.getGlowColor() != null) total.add(leggings.getGlowColor());
+        if (boots != null && boots.getGlowColor() != null) total.add(boots.getGlowColor());
+        return total;
+    }
 
     public boolean hasTorchEquipped() {
         Item selected = getSelectedItem();

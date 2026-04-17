@@ -84,7 +84,7 @@ public abstract class Predator extends Entity {
     protected void doAttack(float dt) {
         state = EntityState.ATTACKING;
         if (attackCooldown <= 0f) {
-            target.damage(attackDamage);
+            target.damage(attackDamage, this);
             attackCooldown = 1.5f; // 1.5 sec between strikes
         }
     }

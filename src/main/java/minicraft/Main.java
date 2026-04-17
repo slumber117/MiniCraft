@@ -117,6 +117,8 @@ public class Main {
     public boolean shipConsoleOpen = false;
     public minicraft.entity.Inventory activeChest = null;
     public minicraft.entity.ProcessingFacility activeFacility = null;
+    public String activeStatusMessage = "";
+    public float statusMessageTimer = 0f;
 
     // ── Shipyard ──────────────────────────────────────────────────────────
     public int drydockX = 0, drydockY = 0, drydockZ = 0;
@@ -125,9 +127,11 @@ public class Main {
     public Recipe.Category activeCategory = Recipe.Category.TOOLS;
     public int recipeIndex = 0;
     public int recipeScrollOffset = 0;
+    public int inventoryScroll = 0;
     public int inventoryIndex = 0;
     public int chestIndex = 0;
     public final CraftingManager craftingManager = new CraftingManager();
+    public Block focusedBlock = Block.AIR;
     public final minicraft.item.ProcessingManager processingManager = new minicraft.item.ProcessingManager();
 
     private boolean prevC = false, prevE = false;
@@ -278,22 +282,29 @@ public class Main {
             }
         });
 
-        // ── Scroll callback ───────────────────────────────────────────────
+        // ── Unified Scroll Callback ───────────────────────────────────────
         glfwSetScrollCallback(window, (win, xoff, yoff) -> {
-            if (craftingOpen) {
+            if (inventoryOpen) {
+                // Scroll the inventory grid (30px per notch)
+                inventoryScroll -= (int)(yoff * 30);
+                // Clamp: 9 rows total, 3 rows visible. Each row is ~66px. 
+                // Max scroll is (9-3) * 66 = 396
+                inventoryScroll = Math.max(0, Math.min(inventoryScroll, 396));
+            } else if (craftingOpen) {
                 final int VISIBLE = 11;
                 List<Recipe> filtered = new ArrayList<>();
                 for (Recipe r : craftingManager.getRecipes())
                     if (r.getCategory() == activeCategory) filtered.add(r);
                 if (filtered.isEmpty()) return;
 
-                // Scroll wheel moves the VIEW (offset), not the selection
-                if (yoff > 0) recipeScrollOffset--;  // wheel up = scroll list up
-                else if (yoff < 0) recipeScrollOffset++;  // wheel down = scroll list down
+                if (yoff > 0) recipeScrollOffset--;
+                else if (yoff < 0) recipeScrollOffset++;
 
-                // Hard clamp offset
                 int maxOff = Math.max(0, filtered.size() - VISIBLE);
-                recipeScrollOffset = Math.max(0, Math.min(recipeScrollOffset, maxOff));
+                recipeScrollOffset = (int)Math.max(0, Math.min(recipeScrollOffset, maxOff));
+            } else {
+                // Default: Change hotbar selection
+                player.inventory.changeSelection((int) -yoff);
             }
         });
 
@@ -322,7 +333,6 @@ public class Main {
         glfwShowWindow(window);
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-        glfwSetScrollCallback(window, (win, xoff, yoff) -> player.inventory.changeSelection((int) -yoff));
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -383,6 +393,11 @@ public class Main {
 
         // ── Register fixed-tick systems ───────────────────────────────────
         gameLoop.addTickable(dt -> {
+            if (statusMessageTimer > 0) statusMessageTimer -= dt;
+            else activeStatusMessage = "";
+
+            updateFocusedBlock();
+            
             entityManager.update(dt, world, particleManager);
             world.tick(dt, processingManager);
             particleManager.update(dt);
@@ -499,13 +514,13 @@ public class Main {
             float torchPower = player.inventory.hasTorchEquipped() ? 1.0f : 0.0f;
             shaderProgram.setUniform("torchStrength", torchPower);
 
-            // Armor Glow logic (Uranium/Plutonium)
-            minicraft.math.Vector3f armorGlow = player.inventory.getDominantGlow();
-            if (armorGlow != null) {
-                shaderProgram.setUniform("glowColor", armorGlow);
+            // Combined Armor Glow (Uranium, Plutonium, etc.)
+            minicraft.math.Vector3f totalGlow = player.inventory.getTotalGlow();
+            if (totalGlow.x + totalGlow.y + totalGlow.z > 0.01f) {
+                shaderProgram.setUniform("glowColor", totalGlow);
                 shaderProgram.setUniform("glowStrength", 1.0f);
             } else {
-                shaderProgram.setUniform("glowColor", new minicraft.math.Vector3f(0,0,0));
+                shaderProgram.setUniform("glowColor", new minicraft.math.Vector3f(0, 0, 0));
                 shaderProgram.setUniform("glowStrength", 0.0f);
             }
 
@@ -539,7 +554,7 @@ public class Main {
                         2.0f, minicraft.entity.EntityType.ITEM);
                 if (item instanceof minicraft.entity.ItemEntity) {
                     player.inventory.add(((minicraft.entity.ItemEntity) item).block, 1);
-                    item.damage(100f);
+                    item.damage(100f, null);
                 }
             }
 
@@ -754,6 +769,12 @@ public class Main {
     }
 
     // ─────────────────────────────────────────────────────────────────────
+    public void setStatusMessage(String msg) {
+        if (msg == null || msg.isEmpty()) return;
+        this.activeStatusMessage = msg;
+        this.statusMessageTimer = 3.2f; // ~3 seconds visibility
+    }
+
     // UI click handlers
     // ─────────────────────────────────────────────────────────────────────
 
@@ -828,6 +849,7 @@ public class Main {
             minicraft.item.ItemStack clicked = activeFacility.getSlot(0);
             activeFacility.setSlot(0, player.inventory.getCursorStack());
             player.inventory.setCursorStack(clicked);
+            if (activeFacility.getSlot(0) != null) setStatusMessage(activeFacility.getSlot(0).getItem().getDisplayName());
             return;
         }
         // Fuel
@@ -835,6 +857,7 @@ public class Main {
             minicraft.item.ItemStack clicked = activeFacility.getSlot(1);
             activeFacility.setSlot(1, player.inventory.getCursorStack());
             player.inventory.setCursorStack(clicked);
+            if (activeFacility.getSlot(1) != null) setStatusMessage(activeFacility.getSlot(1).getItem().getDisplayName());
             return;
         }
         // Output
@@ -853,6 +876,7 @@ public class Main {
             // Standard swap
             activeFacility.setSlot(2, player.inventory.getCursorStack());
             player.inventory.setCursorStack(clicked);
+            if (clicked != null) setStatusMessage(clicked.getItem().getDisplayName());
             return;
         }
 
@@ -869,6 +893,8 @@ public class Main {
             float slotY = invStartY + r * (ISLOT + IGAP);
             if (x >= slotX && x <= slotX + ISLOT && y >= slotY && y <= slotY + ISLOT) {
                 player.inventory.clickSlot(i, false);
+                minicraft.item.ItemStack s = player.inventory.getMainInventory()[i];
+                if (s != null && !s.isEmpty()) setStatusMessage(s.getItem().getDisplayName());
                 return;
             }
         }
@@ -916,15 +942,22 @@ public class Main {
         float gridStartX = sx + dollAreaW + 50f;
         float mainGridY  = sy + 64f;
 
-        // ── Main 3×9 grid ──────────────────────────────────────────────────
-        for (int i = 0; i < 27; i++) {
+        // ── Main 81-slot grid (Scrollable) ──────────────────────────────────
+        float gridVisibleYMin = mainGridY;
+        float gridVisibleYMax = mainGridY + 3 * (SLOT + GAP); // Only top 3 rows visible area
+
+        for (int i = 0; i < 81; i++) {
             int col = i % 9, row = i / 9;
             float slotX = gridStartX + col * (SLOT + GAP);
-            float slotY = mainGridY  + row * (SLOT + GAP);
-            if (x >= slotX && x <= slotX + SLOT && y >= slotY && y <= slotY + SLOT) {
-                if (isShift) player.inventory.quickMove(i, false);
-                else         player.inventory.clickSlot(i, false);
-                return;
+            float slotY = mainGridY + row * (SLOT + GAP) - inventoryScroll;
+
+            // Only allow interaction if the slot is within the visible scissored window
+            if (slotY + SLOT > gridVisibleYMin && slotY < gridVisibleYMax) {
+                if (x >= slotX && x <= slotX + SLOT && y >= slotY && y <= slotY + SLOT) {
+                    if (isShift) player.inventory.quickMove(i, false);
+                    else         player.inventory.clickSlot(i, false);
+                    return;
+                }
             }
         }
 
@@ -1095,6 +1128,29 @@ public class Main {
         );
     }
 
+    private void updateFocusedBlock() {
+        if (craftingOpen || inventoryOpen || chestOpen || furnaceOpen || cookerOpen) {
+            focusedBlock = Block.AIR;
+            return;
+        }
+
+        Vector3f pos = camera.getPosition();
+        org.joml.Vector3f dir = getLookDirection();
+        float reach = 10.0f;
+
+        for (float dist = 0.5f; dist <= reach; dist += 0.2f) {
+            int gx = (int) Math.floor(pos.x + dir.x * dist);
+            int gy = (int) Math.floor(pos.y + dir.y * dist);
+            int gz = (int) Math.floor(pos.z + dir.z * dist);
+            Block b = world.getBlock(gx, gy, gz);
+            if (b.solid) {
+                focusedBlock = b;
+                return;
+            }
+        }
+        focusedBlock = Block.AIR;
+    }
+
     private void handlePlayerAttack(float dt) {
         if (!prevMouseLeftDown)
             player.meleeAttack(entityManager, particleManager);
@@ -1135,10 +1191,12 @@ public class Main {
                 }
             }
 
-            if (toolLevel < b.requiredHarvestLevel)
+            if (toolLevel < b.requiredHarvestLevel) {
                 miningProgress = 0f;
-            else
-                miningProgress += (dt * efficiency) / b.hardness;
+            } else {
+                float armorMiningMod = player.inventory.hasFullSet("Plutonium") ? 1.5f : 1.0f;
+                miningProgress += (dt * efficiency * armorMiningMod) / b.hardness;
+            }
 
             player.miningProgress = miningProgress;
 

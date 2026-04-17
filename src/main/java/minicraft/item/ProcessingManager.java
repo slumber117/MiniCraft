@@ -1,11 +1,10 @@
 package minicraft.item;
 
-import minicraft.world.Block;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Registry for smelting and cooking recipes.
+ * Manages processing recipes for the Furnace and Cooker.
  */
 public class ProcessingManager {
 
@@ -18,54 +17,111 @@ public class ProcessingManager {
     }
 
     private void initialize() {
-        // --- Fuel Values (Time in seconds) ---
-        fuelValues.put("COAL_ORE", 30.0f); // Furnace base
-        fuelValues.put("WOOD", 10.0f);
-        fuelValues.put("WOOD_PLANKS", 15.0f);
+        // --- 1. Fuel Registry ---
+        fuelValues.put("COAL", 30.0f);        
+        fuelValues.put("COAL_ORE", 30.0f);    
+        fuelValues.put("COAL_BLOCK", 300.0f); 
+        fuelValues.put("CHARCOAL", 25.0f);
+        fuelValues.put("LOG", 15.0f);
+        fuelValues.put("STICK", 5.0f);
+        fuelValues.put("WOOD", 15.0f);
+        fuelValues.put("PLANK", 10.0f);
+        
+        // Wood Variants (Handling block name suffixes)
+        fuelValues.put("OAK_WOOD", 15.0f);
+        fuelValues.put("REDWOOD_WOOD", 20.0f);
+        fuelValues.put("JUNGLE_WOOD", 18.0f);
+        fuelValues.put("MANGO_WOOD", 15.0f);
+        fuelValues.put("APPLE_WOOD", 15.0f);
+        fuelValues.put("PEAR_WOOD", 15.0f);
 
-        // --- Furnace Recipes (Ores -> Ingots) ---
+        // --- 2. Furnace Registry (Ores -> Ingots/Gems) ---
         addFurnaceRecipe("IRON_ORE", "IRON_INGOT", 5.0f);
-        addFurnaceRecipe("GOLD_ORE", "GOLD_INGOT", 7.0f);
+        addFurnaceRecipe("IRON_BLOCK", "IRON_INGOT", 5.0f); // Alias
         addFurnaceRecipe("COPPER_ORE", "COPPER_INGOT", 4.0f);
         addFurnaceRecipe("TIN_ORE", "TIN_INGOT", 4.0f);
+        addFurnaceRecipe("GOLD_ORE", "GOLD_INGOT", 6.0f);
         addFurnaceRecipe("SILVER_ORE", "SILVER_INGOT", 6.0f);
-        addFurnaceRecipe("TITANIUM_ORE", "TITANIUM_INGOT", 12.0f);
+        addFurnaceRecipe("NICKEL_ORE", "NICKEL_INGOT", 6.0f);
+        addFurnaceRecipe("PLATINUM_ORE", "PLATINUM_INGOT", 12.0f);
+        addFurnaceRecipe("TITANIUM_ORE", "TITANIUM_INGOT", 10.0f);
+        addFurnaceRecipe("TUNGSTEN_ORE", "TUNGSTEN_INGOT", 12.0f);
+        
+        // Gems & Crystals
+        addFurnaceRecipe("DIAMOND_ORE", "DIAMOND", 12.0f);
+        addFurnaceRecipe("EMERALD_ORE", "EMERALD", 10.0f);
+        addFurnaceRecipe("RUBY_ORE", "RUBY", 10.0f);
+        addFurnaceRecipe("SAPPHIRE_ORE", "SAPPHIRE", 10.0f);
+        addFurnaceRecipe("TOPAZ_ORE", "TOPAZ", 8.0f);
+        addFurnaceRecipe("AQUAMARINE_ORE", "AQUAMARINE", 8.0f);
+        addFurnaceRecipe("AMETHYST_ORE", "AMETHYST", 8.0f);
+        addFurnaceRecipe("QUARTZ_ORE", "QUARTZ", 5.0f);
+        addFurnaceRecipe("LAPIS_ORE", "LAPIS", 4.0f);
+        addFurnaceRecipe("TANZANITE_ORE", "TANZANITE", 10.0f);
+        
+        // Advanced/Atomic/Legendary
+        addFurnaceRecipe("URANIUM_ORE", "URANIUM_INGOT", 15.0f);
+        addFurnaceRecipe("PLUTONIUM_ORE", "PLUTONIUM_INGOT", 20.0f);
+        addFurnaceRecipe("ADAMANTINE_ORE", "ADAMANTINE_INGOT", 30.0f);
+        addFurnaceRecipe("MITHRIL_ORE", "MITHRIL_INGOT", 25.0f);
+        addFurnaceRecipe("NEPTUNIUM_ORE", "NEPTUNIUM_INGOT", 25.0f);
 
-        // --- Cooker Recipes (Raw -> Cooked) ---
-        addCookerRecipe("RAW_MEAT", "COOKED_MEAT", 6.0f);
-        addCookerRecipe("RAW_FISH", "COOKED_FISH", 4.0f);
+        // --- 3. Cooker Registry (Raw -> Cooked) ---
+        addCookerRecipe("RAW_MEAT", "COOKED_MEAT", 4.0f);
+        addCookerRecipe("RAW_FISH", "COOKED_FISH", 3.0f);
+        addCookerRecipe("RAW_CHICKEN", "COOKED_CHICKEN", 4.0f);
+    }
+
+    private String normalize(String name) {
+        if (name == null) return null;
+        return name.toUpperCase().trim().replace(" ", "_");
     }
 
     private void addFurnaceRecipe(String input, String output, float time) {
         String tex = null;
-        if (output.equals("IRON_INGOT"))
-            tex = "item_ingot_iron_hd";
-        furnaceRecipes.put(input, new Recipe(output, Recipe.Category.BLOCKS, null, new Item(output, null, tex, 64), 1));
+        String normalizedInput = normalize(input);
+
+        // High-fidelity texture mapping
+        if (output.contains("IRON")) tex = "item_ingot_iron_standalone";
+        else if (output.contains("GOLD")) tex = "item_ingot_gold_standalone";
+        else if (output.contains("TITANIUM")) tex = "item_ingot_titanium_standalone";
+        else if (output.contains("URANIUM")) tex = "item_pick_uranium"; // Existing pick icon used as placeholder
+        else if (output.contains("DIAMOND")) tex = "item_gem_diamond_standalone_v2";
+        else if (output.contains("RUBY")) tex = "item_gem_ruby_standalone_v2";
+        else if (output.contains("SAPPHIRE")) tex = "item_ingot_sapphire_standalone";
+        else if (output.contains("EMERALD")) tex = "item_gem_emerald_standalone_v2";
+        else if (output.contains("TOPAZ")) tex = "item_gem_topaz";
+        else if (output.contains("AMETHYST")) tex = "item_gem_amethyst";
+        else if (output.contains("AQUAMARINE")) tex = "item_gem_aquamarine";
+
+        furnaceRecipes.put(normalizedInput, new Recipe(output, Recipe.Category.BLOCKS, null, new Item(output, null, tex, 64), 1));
     }
 
     private void addCookerRecipe(String input, String output, float time) {
-        cookerRecipes.put(input, new Recipe(output, Recipe.Category.SURVIVAL, null, new Item(output), 1));
+        cookerRecipes.put(normalize(input), new Recipe(output, Recipe.Category.SURVIVAL, null, new Item(output, null, "item_food_cooked", 64), 1));
     }
 
     public Recipe getFurnaceResult(String inputName) {
-        return furnaceRecipes.get(inputName);
+        return furnaceRecipes.get(normalize(inputName));
     }
 
     public Recipe getCookerResult(String inputName) {
-        return cookerRecipes.get(inputName);
+        return cookerRecipes.get(normalize(inputName));
     }
 
     public float getFuelTime(String name, boolean isCooker) {
-        Float val = fuelValues.get(name);
-        if (val == null)
-            return 0;
-        // User requested: "cooker uses coal too but lasts longer, 60 seconds"
-        // Furnace is 30s. So cooker gets 2x efficiency for coal.
+        String normalizedName = normalize(name);
+        if (normalizedName == null) return 0;
+        
+        Float val = fuelValues.get(normalizedName);
+        if (val == null) return 0;
+        
+        // Efficiency: Cooker gets 2x duration from fuel sources
         return isCooker ? val * 2.0f : val;
     }
 
     public float getProcessTime(String inputName) {
-        // Standard process time
+        // Standard process time logic can be expanded here
         return 5.0f;
     }
 }

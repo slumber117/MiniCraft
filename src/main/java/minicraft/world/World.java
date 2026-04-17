@@ -228,6 +228,9 @@ public class World {
             }
         }
 
+        // --- Multi-Tier Ore Spawning ---
+        spawnOres(chunk, cx, cz);
+
         // Structure and Vegetation logic
         WorldCell centerCell = generator.generate(cx * 16 + 8, cz * 16 + 8);
         int centerPeakY = 0;
@@ -293,63 +296,102 @@ public class World {
                         spawnTreeType(chunk, x, sY, z, log, leaf);
                     else if (Math.random() < 0.15f) {
                         double f = Math.random();
-                        if (f < 0.70)
+                        if (f < 0.60)
                             chunk.setBlock(x, sY, z, Block.TALL_GRASS);
-                        else if (f < 0.85)
+                        else if (f < 0.75)
                             chunk.setBlock(x, sY, z, Block.FLOWER_RED);
-                        else if (f < 0.95)
+                        else if (f < 0.85)
                             chunk.setBlock(x, sY, z, Block.FLOWER_BLUE);
-                        else
+                        else if (f < 0.95)
                             chunk.setBlock(x, sY, z, Block.MUSHROOM);
                     }
                 } else if (sY <= seaLevelY) {
-                    if (Math.random() < 0.05f)
-                        chunk.setBlock(x, sY, z, cell.temperature < 0.3f ? Block.SEA_WEED : Block.CORAL);
+                    // Undersea Decoration
+                    if (chunk.getBlock(x, sY - 1, z) == Block.DIRT || chunk.getBlock(x, sY - 1, z) == Block.STONE) {
+                        if (Math.random() < 0.05) {
+                            chunk.setBlock(x, sY, z, Block.SEA_WEED);
+                        } else if (Math.random() < 0.01) {
+                            chunk.setBlock(x, sY, z, Block.CORAL);
+                        }
+                    }
                 }
             }
         }
-        spawnOres(chunk, cx, cz);
         return chunk;
     }
 
     private void spawnOres(Chunk chunk, int cx, int cz) {
-        Random r = new Random((long) cx * 342211L + (long) cz * 439241L);
-        spawn(chunk, r, Block.COAL_ORE, 30, 450, 7, 45);
-        spawn(chunk, r, Block.IRON_ORE, 10, 320, 6, 28);
-        spawn(chunk, r, Block.COPPER_ORE, 20, 300, 6, 22);
-        spawn(chunk, r, Block.TIN_ORE, 20, 280, 5, 20);
-        spawn(chunk, r, Block.GOLD_ORE, 1, 150, 5, 12);
-        spawn(chunk, r, Block.SILVER_ORE, 40, 200, 5, 10);
-        spawn(chunk, r, Block.NICKEL_ORE, 10, 100, 4, 8);
-        spawn(chunk, r, Block.TITANIUM_ORE, 80, 250, 6, 24);
-        spawn(chunk, r, Block.TUNGSTEN_ORE, 10, 80, 4, 6);
-        spawn(chunk, r, Block.TANZANITE_ORE, 100, 400, 4, 8);
-        spawn(chunk, r, Block.AMETHYST_ORE, 150, 500, 4, 12);
-        spawn(chunk, r, Block.AQUAMARINE_ORE, 60, 220, 5, 10);
-        spawn(chunk, r, Block.TOPAZ_ORE, 30, 120, 4, 12);
-        spawn(chunk, r, Block.DIAMOND_ORE, 5, 60, 5, 15);
-        spawn(chunk, r, Block.EMERALD_ORE, 1, 45, 3, 7);
-        spawn(chunk, r, Block.SAPPHIRE_ORE, 1, 55, 4, 9);
-        spawn(chunk, r, Block.JADE_ORE, 20, 150, 4, 6);
-        spawn(chunk, r, Block.OPAL_ORE, 10, 100, 4, 5);
-        spawn(chunk, r, Block.URANIUM_ORE, 1, 35, 3, 6);
-        spawn(chunk, r, Block.PLUTONIUM_ORE, 1, 25, 3, 5);
-        spawn(chunk, r, Block.NEPTUNIUM_ORE, 1, 20, 2, 3);
+        // Tier 1: Common Surface Ores (Y: 80 - 250)
+        spawnOreGrip(chunk, Block.COAL_ORE, ClusterSize.LARGE, 25, 80, 250);
+        spawnOreGrip(chunk, Block.IRON_ORE, ClusterSize.MEDIUM, 18, 60, 200);
+        spawnOreGrip(chunk, Block.COPPER_ORE, ClusterSize.MEDIUM, 15, 60, 180);
+        spawnOreGrip(chunk, Block.TIN_ORE, ClusterSize.MEDIUM, 12, 60, 160);
+
+        // Tier 2: Mid-level Industrial/Precious (Y: 40 - 120)
+        spawnOreGrip(chunk, Block.GOLD_ORE, ClusterSize.SMALL, 8, 30, 120);
+        spawnOreGrip(chunk, Block.SILVER_ORE, ClusterSize.SMALL, 10, 30, 110);
+        spawnOreGrip(chunk, Block.NICKEL_ORE, ClusterSize.SMALL, 7, 20, 100);
+        spawnOreGrip(chunk, Block.TANZANITE_ORE, ClusterSize.SMALL, 4, 20, 90);
+        spawnOreGrip(chunk, Block.QUARTZ_ORE, ClusterSize.MEDIUM, 15, 30, 250);
+
+        // Tier 3: Deep Gems and Hard Metals (Y: 0 - 60)
+        spawnOreGrip(chunk, Block.DIAMOND_ORE, ClusterSize.TINY, 3, 5, 45);
+        spawnOreGrip(chunk, Block.EMERALD_ORE, ClusterSize.TINY, 2, 80, 512); // Mountains only usually, but deep too
+        spawnOreGrip(chunk, Block.RUBY_ORE, ClusterSize.TINY, 2, 5, 50);
+        spawnOreGrip(chunk, Block.SAPPHIRE_ORE, ClusterSize.TINY, 2, 5, 50);
+        spawnOreGrip(chunk, Block.TITANIUM_ORE, ClusterSize.SMALL, 4, 5, 60);
+
+        // Tier 4: Rare & Radioactive (Y: 0 - 25)
+        spawnOreGrip(chunk, Block.URANIUM_ORE, ClusterSize.SMALL, 3, 2, 25);
+        spawnOreGrip(chunk, Block.PLUTONIUM_ORE, ClusterSize.SMALL, 2, 2, 20);
+        spawnOreGrip(chunk, Block.ADAMANTINE_ORE, ClusterSize.TINY, 1, 2, 15);
+        spawnOreGrip(chunk, Block.MITHRIL_ORE, ClusterSize.TINY, 2, 2, 30);
     }
 
-    private void spawn(Chunk c, Random r, Block o, int min, int max, int sz, int att) {
-        for (int i = 0; i < att; i++) {
-            int ox = r.nextInt(16), oy = min + r.nextInt(Math.max(1, max - min)), oz = r.nextInt(16);
-            for (int v = 0; v < sz; v++) {
-                int bx = ox + r.nextInt(3) - 1, by = oy + r.nextInt(3) - 1, bz = oz + r.nextInt(3) - 1;
-                Block existing = c.getBlock(bx, by, bz);
-                if (existing == Block.STONE || existing == Block.STONE_DARK)
-                    c.setBlock(bx, by, bz, o);
+    private enum ClusterSize { TINY(2), SMALL(4), MEDIUM(8), LARGE(12); int count; ClusterSize(int c) { count = c; } }
+
+    private void spawnOreGrip(Chunk chunk, Block ore, ClusterSize size, int density, int minY, int maxY) {
+        for (int i = 0; i < density; i++) {
+            int x = random.nextInt(16);
+            int z = random.nextInt(16);
+            int y = minY + random.nextInt(Math.max(1, maxY - minY));
+            
+            // Check if near a cave (air neighbor)
+            boolean nearCave = false;
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        if (x + dx >= 0 && x + dx < 16 && y + dy >= 0 && y + dy < Chunk.HEIGHT && z + dz >= 0 && z + dz < 16) {
+                            if (chunk.getBlock(x + dx, y + dy, z + dz) == Block.AIR) {
+                                nearCave = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (nearCave) break;
+                }
+                if (nearCave) break;
+            }
+
+            int finalCount = nearCave ? size.count * 2 : size.count;
+
+            if (chunk.getBlock(x, y, z) == Block.STONE || chunk.getBlock(x, y, z) == Block.STONE_DARK) {
+                // Simplified clump logic: sprinkle around center
+                for (int c = 0; c < finalCount; c++) {
+                    int dx = random.nextInt(3) - 1;
+                    int dy = random.nextInt(3) - 1;
+                    int dz = random.nextInt(3) - 1;
+                    if (x + dx >= 0 && x + dx < 16 && y + dy >= 0 && y + dy < Chunk.HEIGHT && z + dz >= 0 && z + dz < 16) {
+                        if (chunk.getBlock(x + dx, y + dy, z + dz) == Block.STONE || chunk.getBlock(x + dx, y + dy, z + dz) == Block.STONE_DARK) {
+                            chunk.setBlock(x + dx, y + dy, z + dz, ore);
+                        }
+                    }
+                }
             }
         }
     }
 
-    private void spawnTreeType(Chunk c, int x, int y, int z, Block log, Block leaf) {
+    private void spawnTreeType(Chunk chunk, int x, int y, int z, Block log, Block leaves) {
         int h = 5 + (int) (Math.random() * 3);
         int r = 2;
         if (log == Block.REDWOOD_WOOD) {
@@ -362,13 +404,13 @@ public class World {
         if (y + h + 2 >= Chunk.HEIGHT)
             return;
         for (int i = 0; i < h; i++)
-            c.setBlock(x, y + i, z, log);
+            chunk.setBlock(x, y + i, z, log);
         for (int lx = -r; lx <= r; lx++)
             for (int lz = -r; lz <= r; lz++)
                 for (int ly = -2; ly <= 2; ly++) {
                     if (Math.abs(lx) + Math.abs(lz) + Math.abs(ly / 2) <= r + 1) {
-                        if (c.getBlock(x + lx, y + h + ly, z + lz).isAir())
-                            c.setBlock(x + lx, y + h + ly, z + lz, leaf);
+                        if (chunk.getBlock(x + lx, y + h + ly, z + lz).isAir())
+                            chunk.setBlock(x + lx, y + h + ly, z + lz, leaves);
                     }
                 }
     }
@@ -475,20 +517,104 @@ public class World {
 
     public void tick(float dt, minicraft.item.ProcessingManager pm) {
         weatherManager.update(dt);
+
+        // Iterate through all facilities using the optimized long keys
         for (Map.Entry<Long, minicraft.entity.ProcessingFacility> entry : worldFacilities.entrySet()) {
             long pos = entry.getKey();
             int fx = unpackX(pos);
             int fy = unpackY(pos);
             int fz = unpackZ(pos);
+
             Block b = getBlock(fx, fy, fz);
-            if (b != Block.FURNACE && b != Block.COOKER)
+
+            // Only process if the block at this position is actually a smelting block
+            if (b != Block.FURNACE && b != Block.COOKER && b != Block.ALLOY_FORGE)
                 continue;
+
             minicraft.entity.ProcessingFacility fac = entry.getValue();
             boolean isCooker = (b == Block.COOKER);
             boolean wasActive = fac.isActive;
-            // ... (Fuel and Processing Logic here) ...
-            if (wasActive != fac.isActive)
+
+            // --------------------------------------------------------------------
+            // 1. FUEL MANAGEMENT
+            // --------------------------------------------------------------------
+            if (fac.remainingFuelTime <= 0) {
+                minicraft.item.ItemStack fuelStack = fac.getSlot(1); // Slot 1 is Fuel
+                if (fuelStack != null) {
+                    // Get fuel duration from the ProcessingManager based on item and machine type
+                    float fuelVal = pm.getFuelTime(fuelStack.getItem().getName(), isCooker);
+                    if (fuelVal > 0) {
+                        fac.remainingFuelTime = fuelVal;
+                        fac.maxFuelTime = fuelVal;
+                        fuelStack.remove(1); // Consume one piece of fuel
+                        if (fuelStack.getCount() <= 0)
+                            fac.setSlot(1, null);
+                    }
+                }
+            }
+
+            // --------------------------------------------------------------------
+            // 2. PROCESSING LOGIC (The Smelting)
+            // --------------------------------------------------------------------
+            minicraft.item.ItemStack input = fac.getSlot(0); // Slot 0 is Input
+            if (input != null && fac.remainingFuelTime > 0) {
+                // Determine the recipe based on the machine type
+                minicraft.item.Recipe res = isCooker
+                        ? pm.getCookerResult(input.getItem().getName())
+                        : pm.getFurnaceResult(input.getItem().getName());
+
+                if (res != null) {
+                    // Check if the output slot (Slot 2) is empty or has space for the result
+                    minicraft.item.ItemStack output = fac.getSlot(2);
+                    if (output == null || (output.getItem().equals(res.getResult()) && output.getCount() < 64)) {
+
+                        fac.isActive = true;
+                        // Progress is (Time Elapsed / Total Time Required for this specific item)
+                        fac.processProgress += dt / pm.getProcessTime(input.getItem().getName());
+                        fac.remainingFuelTime -= dt;
+
+                        // Check if smelting is complete
+                        if (fac.processProgress >= 1.0f) {
+                            input.remove(1); // Consume the raw material
+                            if (input.getCount() <= 0)
+                                fac.setSlot(0, null);
+
+                            // Add the result to the output slot
+                            if (output == null) {
+                                fac.setSlot(2, new minicraft.item.ItemStack(res.getResult(), res.getResultCount()));
+                            } else {
+                                output.add(res.getResultCount());
+                            }
+                            fac.processProgress = 0; // Reset for next item
+                        }
+                    } else {
+                        // Output slot is full of a different item; furnace jams
+                        fac.isActive = false;
+                        fac.processProgress = 0;
+                    }
+                } else {
+                    // Item is not smeltable in this machine
+                    fac.isActive = false;
+                    fac.processProgress = 0;
+                }
+            } else {
+                // No input or no fuel
+                fac.isActive = false;
+                fac.processProgress = 0;
+                // Passive fuel drain if it's just sitting there (optional)
+                if (fac.remainingFuelTime > 0)
+                    fac.remainingFuelTime -= dt * 0.1f;
+            }
+
+            // --------------------------------------------------------------------
+            // 3. VISUAL SYNC
+            // --------------------------------------------------------------------
+            // If the furnace just started or stopped, we MUST mark the chunk dirty.
+            // This forces the mesh to rebuild, which changes the texture from "furnace" to
+            // "furnace_lit".
+            if (wasActive != fac.isActive) {
                 markChunkDirty(Math.floorDiv(fx, 16), Math.floorDiv(fz, 16));
+            }
         }
     }
 
@@ -516,7 +642,7 @@ public class World {
     }
 
     private int unpackX(long pos) {
-        return (int) (pos & 0x1FFFFF);
+        return (int) ((pos << 43) >> 43); // Sign-extended 21-bit X
     }
 
     private int unpackY(long pos) {
@@ -524,7 +650,7 @@ public class World {
     }
 
     private int unpackZ(long pos) {
-        return (int) ((pos >> 32) & 0x1FFFFF);
+        return (int) ((pos >> 32) << 11 >> 11); // Sign-extended 21-bit Z
     }
 
     public WeatherManager getWeather() {

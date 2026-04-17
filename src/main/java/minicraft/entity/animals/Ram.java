@@ -15,8 +15,8 @@ public class Ram extends PassiveAnimal {
     }
 
     @Override
-    public void damage(float amount) {
-        super.damage(amount);
+    public void damage(float amount, Entity attacker) {
+        super.damage(amount, attacker);
         retaliateTimer = 5f; // 5-second aggro window after being hit
         state = EntityState.FLEEING; // rams briefly charge then flee
     }
