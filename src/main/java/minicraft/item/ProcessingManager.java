@@ -81,24 +81,32 @@ public class ProcessingManager {
         String tex = null;
         String normalizedInput = normalize(input);
 
-        // High-fidelity texture mapping
+        // High-fidelity texture mapping - Ores and Gems
         if (output.contains("IRON")) tex = "item_ingot_iron_standalone";
         else if (output.contains("GOLD")) tex = "item_ingot_gold_standalone";
         else if (output.contains("TITANIUM")) tex = "item_ingot_titanium_standalone";
-        else if (output.contains("URANIUM")) tex = "item_pick_uranium"; // Existing pick icon used as placeholder
+        else if (output.contains("TIN")) tex = "item_ingot_titanium_standalone"; // Shared icon for now
+        else if (output.contains("COPPER")) tex = "item_ingot_gold_standalone"; // Shared icon for now
+        else if (output.contains("SILVER")) tex = "item_ingot_iron_standalone"; // Shared icon for now
+        else if (output.contains("URANIUM")) tex = "item_pick_uranium"; 
+        else if (output.contains("PLUTONIUM")) tex = "item_pick_uranium";
         else if (output.contains("DIAMOND")) tex = "item_gem_diamond_standalone_v2";
         else if (output.contains("RUBY")) tex = "item_gem_ruby_standalone_v2";
         else if (output.contains("SAPPHIRE")) tex = "item_ingot_sapphire_standalone";
         else if (output.contains("EMERALD")) tex = "item_gem_emerald_standalone_v2";
-        else if (output.contains("TOPAZ")) tex = "item_gem_topaz";
-        else if (output.contains("AMETHYST")) tex = "item_gem_amethyst";
-        else if (output.contains("AQUAMARINE")) tex = "item_gem_aquamarine";
+        else if (output.contains("TOPAZ")) tex = "item_gem_topaz_standalone";
+        else if (output.contains("AMETHYST")) tex = "item_gem_amethyst_standalone";
+        else if (output.contains("AQUAMARINE")) tex = "item_gem_aquamarine_standalone";
+        else if (output.contains("TANZANITE")) tex = "item_gem_amethyst_standalone";
+        else if (output.contains("QUARTZ")) tex = "item_quartz_shard";
+        else if (output.contains("MITHRIL")) tex = "item_ingot_sapphire_standalone";
+        else if (output.contains("ADAMANTINE")) tex = "item_ingot_titanium_standalone";
 
-        furnaceRecipes.put(normalizedInput, new Recipe(output, Recipe.Category.BLOCKS, null, new Item(output, null, tex, 64), 1));
+        furnaceRecipes.put(normalizedInput, new Recipe(output, Recipe.Category.BLOCKS, null, new Item(output, null, tex, 64), 1, time));
     }
 
     private void addCookerRecipe(String input, String output, float time) {
-        cookerRecipes.put(normalize(input), new Recipe(output, Recipe.Category.SURVIVAL, null, new Item(output, null, "item_food_cooked", 64), 1));
+        cookerRecipes.put(normalize(input), new Recipe(output, Recipe.Category.SURVIVAL, null, new Item(output, null, "item_food_cooked", 64), 1, time));
     }
 
     public Recipe getFurnaceResult(String inputName) {
@@ -121,7 +129,8 @@ public class ProcessingManager {
     }
 
     public float getProcessTime(String inputName) {
-        // Standard process time logic can be expanded here
-        return 5.0f;
+        Recipe r = getFurnaceResult(inputName);
+        if (r == null) r = getCookerResult(inputName);
+        return (r != null) ? r.getProcessTime() : 5.0f;
     }
 }

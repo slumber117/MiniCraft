@@ -335,6 +335,7 @@ public class Inventory {
     }
 
     public minicraft.math.Vector3f getTotalGlow() {
+        if (getFullSetTier() == null) return new minicraft.math.Vector3f(0, 0, 0); // Full set required for radiation
         minicraft.math.Vector3f total = new minicraft.math.Vector3f(0, 0, 0);
         if (helmet != null && helmet.getGlowColor() != null) total.add(helmet.getGlowColor());
         if (chestplate != null && chestplate.getGlowColor() != null) total.add(chestplate.getGlowColor());

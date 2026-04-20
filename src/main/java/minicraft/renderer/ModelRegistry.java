@@ -29,24 +29,67 @@ public class ModelRegistry {
             Mesh ironPick = OBJLoader.loadModel("/models/pickaxe_iron.obj", ironTexture);
             models.put("pickaxe_iron", ironPick);
 
-            // 4. Load the high-fidelity zombie
+            // 4. Load the high-fidelity diamond pickaxe
+            TextureRegion diamondRegion = textureRegistry.get("alloy_plate");
+            Texture diamondTexture = diamondRegion != null ? diamondRegion.getTexture() : null;
+            Mesh diamondPick = OBJLoader.loadModel("/models/pickaxe_diamond.obj", diamondTexture);
+            models.put("pickaxe_diamond", diamondPick);
+
+            // 5. Load the high-fidelity zombie
             TextureRegion zombieRegion = textureRegistry.get("zombie_hd");
             Texture zombieTexture = zombieRegion != null ? zombieRegion.getTexture() : null;
             Mesh zombie = OBJLoader.loadModel("/models/zombie.obj", zombieTexture);
             models.put("zombie", zombie);
 
-            // 3. Load the player's custom Stalwart model
+            // 6. Load the player's custom Stalwart model
             // This is a 54MB high-fidelity asset!
             TextureRegion shipRegion = textureRegistry.get("alloy_plate");
             Texture shipTexture = shipRegion != null ? shipRegion.getTexture() : null;
             Mesh shipModel = OBJLoader.loadModel("/models/sof_.obj", shipTexture);
             models.put("ship_stalwart", shipModel);
+            
+            // 7. Primitives
+            models.put("primitive_cube", createCubeMesh());
 
-            System.out.println("Model Registry: Loaded high-fidelity assets (Pickaxe, Zombie & Stalwart).");
+            System.out.println("Model Registry: Loaded high-fidelity assets (Pickaxes, Zombie & Stalwart).");
         } catch (Exception e) {
             System.err.println("Failed to load 3D models: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private static Mesh createCubeMesh() {
+        float[] positions = {
+            // Front face
+            -0.5f, -0.5f,  0.5f,  0.5f, -0.5f,  0.5f,  0.5f,  0.5f,  0.5f, -0.5f,  0.5f,  0.5f,
+            // Back face
+            -0.5f, -0.5f, -0.5f, -0.5f,  0.5f, -0.5f,  0.5f,  0.5f, -0.5f,  0.5f, -0.5f, -0.5f,
+            // Top face
+            -0.5f,  0.5f, -0.5f, -0.5f,  0.5f,  0.5f,  0.5f,  0.5f,  0.5f,  0.5f,  0.5f, -0.5f,
+            // Bottom face
+            -0.5f, -0.5f, -0.5f,  0.5f, -0.5f, -0.5f,  0.5f, -0.5f,  0.5f, -0.5f, -0.5f,  0.5f,
+            // Right face
+             0.5f, -0.5f, -0.5f,  0.5f,  0.5f, -0.5f,  0.5f,  0.5f,  0.5f,  0.5f, -0.5f,  0.5f,
+            // Left face
+            -0.5f, -0.5f, -0.5f, -0.5f, -0.5f,  0.5f, -0.5f,  0.5f,  0.5f, -0.5f,  0.5f, -0.5f,
+        };
+        float[] uvs = {
+            0,0, 1,0, 1,1, 0,1,
+            0,0, 0,1, 1,1, 1,0,
+            0,1, 0,0, 1,0, 1,1,
+            0,0, 1,0, 1,1, 0,1,
+            0,0, 0,1, 1,1, 1,0,
+            1,0, 0,0, 0,1, 1,1,
+        };
+        int[] indices = {
+            0,1,2, 0,2,3,
+            4,5,6, 4,6,7,
+            8,9,10, 8,10,11,
+            12,13,14, 12,14,15,
+            16,17,18, 16,18,19,
+            20,21,22, 20,22,23
+        };
+        return new Mesh(positions, uvs, indices, null);
     }
 
     public static Mesh getModel(String name) {

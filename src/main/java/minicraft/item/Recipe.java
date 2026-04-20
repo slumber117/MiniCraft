@@ -12,15 +12,23 @@ public class Recipe {
     private final Map<Item, Integer> ingredients;
     private final Item result;
     private final int resultCount;
+    private final float processTime;
     private final Category category;
 
-    public Recipe(String name, Category category, Map<Item, Integer> ingredients, Item result, int resultCount) {
+    public Recipe(String name, Category category, Map<Item, Integer> ingredients, Item result, int resultCount, float processTime) {
         this.name = name;
         this.category = category;
         this.ingredients = ingredients;
         this.result = result;
         this.resultCount = resultCount;
+        this.processTime = processTime;
     }
+
+    public Recipe(String name, Category category, Map<Item, Integer> ingredients, Item result, int resultCount) {
+        this(name, category, ingredients, result, resultCount, 0.0f);
+    }
+
+    public float getProcessTime() { return processTime; }
 
     public String getName() { return name; }
     public Category getCategory() { return category; }

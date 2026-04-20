@@ -39,7 +39,7 @@ public class UIRenderer {
     // top edge of hotbar = H - HOTBAR_MARGIN_BOT - HOTBAR_H
 
     private static final float XP_BAR_H = 10f;
-    private static final float XP_TO_HOTBAR_GAP = 4f;
+    private static final float XP_TO_HOTBAR_GAP = 34f; // Increased from 4f to lift XP and Stats higher
     // top of XP bar = hotbar_top - XP_BAR_H - XP_TO_HOTBAR_GAP
 
     private static final float STAT_BAR_W = 210f;
@@ -190,7 +190,7 @@ public class UIRenderer {
         float hotbarTop = height - HOTBAR_MARGIN_BOT - HOTBAR_H;
         float xpBarTop = hotbarTop - XP_BAR_H - XP_TO_HOTBAR_GAP;
         float xpLabelTop = xpBarTop - 13f;
-        float statBottom = xpLabelTop - STAT_TO_XP_GAP;
+        float statBottom = xpLabelTop - 36f; // Increased from 6f to move HUD higher
         float statTop = statBottom - STAT_PANEL_H;
 
         float marginLeft = 22f;
@@ -427,7 +427,7 @@ public class UIRenderer {
         Matrix4f baseModelMatrix = new Matrix4f().identity()
                 .translate(cx, cy, 50f) 
                 .scale(scale * (1f + pulse), -scale * (1f + pulse), scale)
-                .rotateY(rotation);
+                .rotateY((float) Math.toRadians(rotation));
         
         shader.setUniform("modelMatrix", baseModelMatrix);
         shader.setUniform("useLighting", 1.0f);
@@ -463,6 +463,41 @@ public class UIRenderer {
                     shader.setUniform("modelMatrix", shellMatrix);
                     
                     human.render(textures.get("alloy_plate").getTexture()); // Metallic texture
+                }
+            }
+
+            // 3. Render Held Tool (if any)
+            minicraft.item.Item held = player.inventory.getSelectedItem();
+            if (held instanceof minicraft.item.ToolItem) {
+                minicraft.item.ToolItem tool = (minicraft.item.ToolItem) held;
+                String toolName = tool.getName();
+                String modelId = null;
+
+                if (toolName.contains("Wood")) modelId = "pickaxe_wooden";
+                else if (toolName.contains("Stone")) modelId = "pickaxe_stone";
+                else if (toolName.contains("Iron")) modelId = "pickaxe_iron";
+                else if (toolName.contains("Diamond")) modelId = "pickaxe_diamond";
+
+                if (modelId != null) {
+                    Mesh toolMesh = ModelRegistry.getModel(modelId);
+                    if (toolMesh != null) {
+                        // Offset to the 'hand' position (right-side, slightly forward)
+                        Matrix4f toolMatrix = new Matrix4f(baseModelMatrix)
+                                .translate(0.35f, -0.6f, 0.5f) // Position in hand
+                                .rotateZ((float) Math.toRadians(135f)) // Angle it correctly
+                                .scale(0.85f, 0.85f, 0.85f);
+                        
+                        shader.setUniform("modelMatrix", toolMatrix);
+                        
+                        // Apply Diamond tint if applicable
+                        if (toolName.contains("Diamond")) {
+                            shader.setUniform("colorTint", new Vector4f(0.5f, 0.95f, 1.0f, 1.0f));
+                        } else {
+                            shader.setUniform("colorTint", new Vector4f(1f, 1f, 1f, 1f));
+                        }
+
+                        toolMesh.render(textures.get("alloy_plate").getTexture());
+                    }
                 }
             }
         }
@@ -892,21 +927,33 @@ public class UIRenderer {
         drawSlot(shader, cx - 36, cy + 52, slotSize, main.activeFacility.getSlot(1));
         drawText(shader, "FUEL", cx - 36, cy + 36, 0.52f, highlightColor);
 
-        // Fuel ratio bar
+        // Fuel ratio bar with Heat animation
         float fuelRatio = main.activeFacility.getFuelRatio();
-        drawRectInternal(shader, cx - 36, cy + 132, slotSize * fuelRatio, 5,
-                new Vector4f(1, 0.5f, 0, 0.9f));
+        float heatPulse = main.activeFacility.isActive ? 0.8f + 0.2f * (float)Math.sin(System.currentTimeMillis() / 150.0) : 1.0f;
+        Vector4f fuelCol = main.furnaceOpen ? new Vector4f(1.0f, 0.4f * heatPulse, 0, 0.9f) : new Vector4f(0.2f, 0.6f, 1.0f, 0.9f);
+        
+        drawRectInternal(shader, cx - 36, cy + 132, slotSize * fuelRatio, 6, fuelCol);
+        drawRectInternal(shader, cx - 36, cy + 132, slotSize, 1, glassBorderColor); // Track
+
+        // Smelting Flame Icon (Flickering Glow)
+        if (main.activeFacility.isActive) {
+            float flameAlpha = 0.4f + 0.6f * (float)Math.random(); // Fast jitter
+            drawRectInternal(shader, cx - 12, cy + 12, 24, 24, new Vector4f(1.0f, 0.5f, 0, flameAlpha * 0.4f));
+            drawRectInternal(shader, cx - 6, cy + 18, 12, 12, new Vector4f(1.0f, 0.8f, 0, flameAlpha));
+        }
 
         // Output
         drawSlot(shader, cx + 98, cy - 36, slotSize, main.activeFacility.getSlot(2));
         drawText(shader, "OUTPUT", cx + 98, cy - 52, 0.52f, highlightColor);
 
-        // Progress arrow
+        // Progress arrow / bar
         float prog = main.activeFacility.getProgress();
         drawRectInternal(shader, cx - 66, cy, 130, 8, new Vector4f(1, 1, 1, 0.10f));
-        drawRectInternal(shader, cx - 66, cy, 130 * prog, 8, titleCol);
-        if (prog > 0)
+        if (prog > 0) {
+            Vector4f progCol = new Vector4f(titleCol.x, titleCol.y, titleCol.z, 0.7f + 0.3f * (float)Math.sin(System.currentTimeMillis() / 200.0));
+            drawRectInternal(shader, cx - 66, cy, 130 * prog, 8, progCol);
             drawText(shader, (int) (prog * 100) + "%", cx - 14, cy + 18, 0.58f, textColor);
+        }
 
         // Player inventory (3×9 in middle of panel)
         final float ISLOT = 54f, IGAP = 6f;

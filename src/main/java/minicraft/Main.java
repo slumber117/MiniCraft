@@ -16,6 +16,8 @@ import minicraft.renderer.ShaderProgram;
 import minicraft.renderer.Mesh;
 import minicraft.renderer.ModelRegistry;
 import minicraft.renderer.TextureRegistry;
+import minicraft.renderer.TextureRegion;
+import minicraft.renderer.GTBuffer;
 import minicraft.math.Vector3f;
 import minicraft.math.Vector4f;
 import minicraft.math.Matrix4f;
@@ -42,6 +44,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL13.*;
+import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL42.*;
+import static org.lwjgl.opengl.GL43.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import minicraft.renderer.UIRenderer;
@@ -59,6 +65,14 @@ public class Main {
     private ShaderProgram shaderProgram;
     private TextureRegistry textures;
     private UIRenderer uiRenderer;
+
+    // ── RTGI Subsystem ───────────────────────────────────────────────────
+    private GTBuffer gtBuffer;
+    private ShaderProgram rtgiShader;
+    private ShaderProgram compositeShader;
+    private int giTexture;
+    private Mesh screenQuad;
+    private boolean rtgiEnabled = true;
 
     // ── World ─────────────────────────────────────────────────────────────
     private World world;
@@ -81,8 +95,8 @@ public class Main {
     private final ConcurrentLinkedQueue<Runnable> pendingActions = new ConcurrentLinkedQueue<>();
 
     // ── Performance: reusable matrix/vector objects (avoids GC pressure) ──
-    private int framebufferW = WIN_W;
-    private int framebufferH = WIN_H;
+    private int framebufferW, framebufferH;
+    private int resizeCounter = 0;
     private final Matrix4f projectionMatrix = new Matrix4f();
     private final Matrix4f viewMatrix = new Matrix4f();
     private final Matrix4f modelMatrix = new Matrix4f();
@@ -206,9 +220,10 @@ public class Main {
         glfwDefaultWindowHints();
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
         glfwWindowHint(GLFW_SAMPLES, 4);
 
         window = glfwCreateWindow(WIN_W, WIN_H, TITLE, NULL, NULL);
@@ -248,6 +263,10 @@ public class Main {
                     glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
                     firstMouse = true;
                 }
+                if (key == GLFW_KEY_G) {
+                    rtgiEnabled = !rtgiEnabled;
+                    System.out.println("RTGI: " + (rtgiEnabled ? "Enabled" : "Disabled"));
+                }
             }
         });
 
@@ -286,22 +305,26 @@ public class Main {
         glfwSetScrollCallback(window, (win, xoff, yoff) -> {
             if (inventoryOpen) {
                 // Scroll the inventory grid (30px per notch)
-                inventoryScroll -= (int)(yoff * 30);
-                // Clamp: 9 rows total, 3 rows visible. Each row is ~66px. 
+                inventoryScroll -= (int) (yoff * 30);
+                // Clamp: 9 rows total, 3 rows visible. Each row is ~66px.
                 // Max scroll is (9-3) * 66 = 396
                 inventoryScroll = Math.max(0, Math.min(inventoryScroll, 396));
             } else if (craftingOpen) {
                 final int VISIBLE = 11;
                 List<Recipe> filtered = new ArrayList<>();
                 for (Recipe r : craftingManager.getRecipes())
-                    if (r.getCategory() == activeCategory) filtered.add(r);
-                if (filtered.isEmpty()) return;
+                    if (r.getCategory() == activeCategory)
+                        filtered.add(r);
+                if (filtered.isEmpty())
+                    return;
 
-                if (yoff > 0) recipeScrollOffset--;
-                else if (yoff < 0) recipeScrollOffset++;
+                if (yoff > 0)
+                    recipeScrollOffset--;
+                else if (yoff < 0)
+                    recipeScrollOffset++;
 
                 int maxOff = Math.max(0, filtered.size() - VISIBLE);
-                recipeScrollOffset = (int)Math.max(0, Math.min(recipeScrollOffset, maxOff));
+                recipeScrollOffset = (int) Math.max(0, Math.min(recipeScrollOffset, maxOff));
             } else {
                 // Default: Change hotbar selection
                 player.inventory.changeSelection((int) -yoff);
@@ -378,7 +401,7 @@ public class Main {
         ToolItem pick = new ToolItem("Wooden Pickaxe", ToolItem.ToolType.PICKAXE, 0, 2.0f, "item_pick_wood");
         player.inventory.add(sword, 1);
         player.inventory.add(pick, 1);
-        
+
         // Testing kits for new Facilities
         player.inventory.add(Block.COOKER, 1);
         player.inventory.add(Block.FURNACE, 1);
@@ -393,11 +416,13 @@ public class Main {
 
         // ── Register fixed-tick systems ───────────────────────────────────
         gameLoop.addTickable(dt -> {
-            if (statusMessageTimer > 0) statusMessageTimer -= dt;
-            else activeStatusMessage = "";
+            if (statusMessageTimer > 0)
+                statusMessageTimer -= dt;
+            else
+                activeStatusMessage = "";
 
             updateFocusedBlock();
-            
+
             entityManager.update(dt, world, particleManager);
             world.tick(dt, processingManager);
             particleManager.update(dt);
@@ -418,6 +443,60 @@ public class Main {
         uiRenderer = new UIRenderer(textures);
         entityRenderer = new EntityRenderer(textures);
         weatherRenderer = new minicraft.renderer.WeatherRenderer();
+
+        // ── GI Initialisation ─────────────────────────────────────────────
+        gtBuffer = new GTBuffer(framebufferW, framebufferH);
+
+        rtgiShader = new ShaderProgram();
+        rtgiShader.createComputeShader(Utils.loadResource("/shaders/rtgi.glsl"));
+        rtgiShader.link();
+
+        // Final validation for GI shader
+        glValidateProgram(rtgiShader.getProgramId());
+        if (glGetProgrami(rtgiShader.getProgramId(), GL_VALIDATE_STATUS) == GL_FALSE)
+            throw new RuntimeException("RTGI shader invalid: " + glGetProgramInfoLog(rtgiShader.getProgramId()));
+
+        for (String u : new String[] { "texAlbedo", "texNormal", "texDepth", "projectionMatrix", "viewMatrix",
+                "invProjection", "invView", "cameraPos", "uTime" })
+            rtgiShader.createUniform(u);
+
+        compositeShader = new ShaderProgram();
+        compositeShader.createVertexShader(Utils.loadResource("/shaders/post_vertex.glsl"));
+        compositeShader.createFragmentShader(Utils.loadResource("/shaders/composite.glsl"));
+        compositeShader.link();
+        compositeShader.createUniform("texAlbedo");
+        compositeShader.createUniform("texGI");
+        compositeShader.createUniform("texNormal");
+        compositeShader.createUniform("texDepth");
+        compositeShader.createUniform("torchPos");
+        compositeShader.createUniform("torchStrength");
+        compositeShader.createUniform("invProjection");
+        compositeShader.createUniform("invView");
+        compositeShader.createUniform("rtgiEnabled");
+
+        glValidateProgram(compositeShader.getProgramId());
+        if (glGetProgrami(compositeShader.getProgramId(), GL_VALIDATE_STATUS) == GL_FALSE) {
+            System.err.println("COMPOSITE SHADER INVALID: " + glGetProgramInfoLog(compositeShader.getProgramId()));
+        }
+
+        // Create GI Storage Texture
+        giTexture = glGenTextures();
+        glBindTexture(GL_TEXTURE_2D, giTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, framebufferW, framebufferH, 0, GL_RGBA, GL_FLOAT, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        float[] clearColor = { 0f, 0f, 0f, 1f };
+        // Ensure GL44 is imported if glClearTexImage is to be used,
+        // using simple clear fallback if not explicitly available.
+        // For now, we manually bind and clear to be safe across environments.
+        org.lwjgl.opengl.GL44.glClearTexImage(giTexture, 0, GL_RGBA, GL_FLOAT, clearColor);
+
+        // Screen Quad for Composite
+        float[] quadPos = { -1, 1, 0, -1, -1, 0, 1, -1, 0, 1, 1, 0 };
+        float[] quadUV = { 0, 1, 0, 0, 1, 0, 1, 1 };
+        int[] quadIdx = { 0, 1, 2, 0, 2, 3 };
+        screenQuad = new Mesh(quadPos, quadUV, quadIdx, null);
 
         ModelRegistry.init(textures);
     }
@@ -441,14 +520,42 @@ public class Main {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             }
 
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
             int currentW, currentH;
             try (MemoryStack stack = stackPush()) {
                 IntBuffer pw = stack.mallocInt(1), ph = stack.mallocInt(1);
-                glfwGetWindowSize(window, pw, ph);
+                glfwGetFramebufferSize(window, pw, ph);
                 currentW = pw.get(0);
                 currentH = ph.get(0);
+            }
+
+            // ── RESOLUTION RESILIENCE ─────────────────────────────────────
+            if (currentW != framebufferW || currentH != framebufferH) {
+                resizeCounter++;
+                if (resizeCounter > 20) { // Debounce: Wait for 20 frames of stability
+                    framebufferW = currentW;
+                    framebufferH = currentH;
+                    System.out.println("Resizing rendering pipeline: " + framebufferW + "x" + framebufferH);
+                    try {
+                        gtBuffer.cleanup();
+                        gtBuffer = new minicraft.renderer.GTBuffer(framebufferW, framebufferH);
+
+                        // Re-create GI Storage Texture
+                        glDeleteTextures(giTexture);
+                        giTexture = glGenTextures();
+                        glBindTexture(GL_TEXTURE_2D, giTexture);
+                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, framebufferW, framebufferH, 0, GL_RGBA, GL_FLOAT, 0);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+                        float[] clr = { 0, 0, 0, 1 };
+                        org.lwjgl.opengl.GL44.glClearTexImage(giTexture, 0, GL_RGBA, GL_FLOAT, clr);
+                        resizeCounter = 0;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else {
+                resizeCounter = 0;
             }
 
             // ── 1. Input ──────────────────────────────────────────────────
@@ -458,30 +565,24 @@ public class Main {
             gameLoop.update(dt);
 
             // ── 3. Drain pending one-shot actions (ship spawns, etc.) ─────
-            // These are posted by callbacks to avoid doing heavy work
-            // inside a GLFW callback. Runs on the main thread where it
-            // is safe to call world.setBlock().
             Runnable action;
             while ((action = pendingActions.poll()) != null) {
                 action.run();
             }
 
             // ── 4. Camera sync ────────────────────────────────────────────
-            // NOTE: player.isRiding() and getRidingShip() are stubbed until
-            // Phase 3 builds ShipEntity. The else-branch handles all cases now.
             if (player.isRiding()) {
                 minicraft.entity.ship.ShipEntity ship = player.getRidingShip();
-                float distance = 120.0f; // Far back for massive frigate
+                float distance = 120.0f;
                 float yawRad = (float) Math.toRadians(ship.yaw);
                 float cos = (float) Math.cos(yawRad);
                 float sin = (float) Math.sin(yawRad);
-                
+
                 // Position camera behind and above the ship
                 camera.setPosition(
-                    ship.position.x + sin * distance,
-                    ship.position.y + 35.0f,
-                    ship.position.z + cos * distance
-                );
+                        ship.position.x + sin * distance,
+                        ship.position.y + 35.0f,
+                        ship.position.z + cos * distance);
                 camera.setRotation(camera.getRotation().x, ship.yaw, 0); // Preserve user pitch, follow ship yaw
             } else {
                 camera.setPosition(player.position.x, player.position.y + 1.6f, player.position.z);
@@ -492,10 +593,17 @@ public class Main {
             int cz = (int) Math.floor(player.position.z / 16.0);
             world.update(cx, cz, dt);
 
-            // ── 6. Render ─────────────────────────────────────────────────
-            shaderProgram.bind();
+            // ── 6. Render Pass — Geometry (G-Buffer) ──────────────────────
+            gtBuffer.bind();
+            updateAtmosphere(dt); // Set the dynamic sky clear color
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glEnable(GL_DEPTH_TEST);
+            glEnable(GL_CULL_FACE);
+            glDisable(GL_BLEND);
 
+            shaderProgram.bind();
             float aspect = (float) framebufferW / Math.max(1, framebufferH);
+
             projectionMatrix.perspective(FOV, aspect, Z_NEAR, Z_FAR);
             viewMatrix.set(camera.getViewMatrix());
             modelMatrix.identity();
@@ -505,25 +613,13 @@ public class Main {
             shaderProgram.setUniform("modelMatrix", modelMatrix);
             shaderProgram.setUniform("texture_sampler", 0);
             shaderProgram.setUniform("colorTint", whiteTint);
-
-            updateAtmosphere(dt);
-
+            shaderProgram.setUniform("sunBrightness", world.getWeatherManager().getSunBrightness());
             shaderProgram.setUniform("torchPos", player.position);
-            
-            // Handheld Torch logic
-            float torchPower = player.inventory.hasTorchEquipped() ? 1.0f : 0.0f;
-            shaderProgram.setUniform("torchStrength", torchPower);
+            shaderProgram.setUniform("torchStrength", (player.inventory.hasTorchEquipped() ? 1.0f : 0.0f));
 
-            // Combined Armor Glow (Uranium, Plutonium, etc.)
             minicraft.math.Vector3f totalGlow = player.inventory.getTotalGlow();
-            if (totalGlow.x + totalGlow.y + totalGlow.z > 0.01f) {
-                shaderProgram.setUniform("glowColor", totalGlow);
-                shaderProgram.setUniform("glowStrength", 1.0f);
-            } else {
-                shaderProgram.setUniform("glowColor", new minicraft.math.Vector3f(0, 0, 0));
-                shaderProgram.setUniform("glowStrength", 0.0f);
-            }
-
+            shaderProgram.setUniform("glowColor", totalGlow);
+            shaderProgram.setUniform("glowStrength", (totalGlow.x + totalGlow.y + totalGlow.z > 0.01f ? 1.0f : 0.0f));
             boolean isUnderwater = world.getBlock(
                     (int) Math.floor(player.position.x),
                     (int) Math.floor(player.position.y + 1.6f),
@@ -533,7 +629,8 @@ public class Main {
                     isUnderwater ? new Vector4f(0.4f, 0.6f, 1.0f, 1.0f) : whiteTint);
 
             world.render(shaderProgram, player.position, 1.0f);
-            
+            shaderProgram.setUniform("useLighting", 1.0f); // IMPORTANT: Enable Lighting Engine
+
             float sun = world.getWeatherManager().getSunBrightness();
             entityRenderer.render(entityManager, shaderProgram, textures, viewMatrix, sun);
             particleManager.render(shaderProgram, textures, viewMatrix, projectionMatrix);
@@ -545,9 +642,91 @@ public class Main {
             renderHand(shaderProgram, dt);
             glEnable(GL_DEPTH_TEST);
 
-            glEnable(GL_BLEND);
+            shaderProgram.unbind();
+            gtBuffer.unbind();
 
-            // Item pickup
+            // ── 7. Render Pass — RTGI (Compute) ──────────────────────────
+            rtgiShader.bind();
+
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, gtBuffer.getAlbedoTexture());
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, gtBuffer.getNormalTexture());
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_2D, gtBuffer.getDepthTexture());
+
+            glBindImageTexture(0, giTexture, 0, false, 0, GL_WRITE_ONLY, GL_RGBA16F);
+
+            rtgiShader.setUniform("projectionMatrix", projectionMatrix);
+            rtgiShader.setUniform("viewMatrix", viewMatrix);
+
+            Matrix4f invProj = new Matrix4f(projectionMatrix).invert();
+            Matrix4f invView = new Matrix4f(viewMatrix).invert();
+            rtgiShader.setUniform("invProjection", invProj);
+            rtgiShader.setUniform("invView", invView);
+
+            rtgiShader.setUniform("cameraPos", camera.getPosition());
+            rtgiShader.setUniform("uTime", (float) (System.currentTimeMillis() % 100000) / 1000f);
+
+            if (rtgiEnabled) {
+                rtgiShader.dispatchCompute((framebufferW + 15) / 16, (framebufferH + 15) / 16, 1);
+                glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+                // CLEANUP: Unbind image unit 0
+                glBindImageTexture(0, 0, 0, false, 0, GL_WRITE_ONLY, GL_RGBA16F);
+            }
+
+            rtgiShader.unbind();
+
+            // ── 8. Render Pass — Final Composite (Full-Screen) ────────────
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glViewport(0, 0, framebufferW, framebufferH);
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Restore black clear
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glDisable(GL_DEPTH_TEST);
+            glDisable(GL_BLEND);
+
+            compositeShader.bind();
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, gtBuffer.getAlbedoTexture());
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, giTexture);
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, gtBuffer.getNormalTexture());
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_2D, gtBuffer.getDepthTexture());
+
+            compositeShader.setUniform("texAlbedo", 0);
+            compositeShader.setUniform("texGI", 1);
+            compositeShader.setUniform("texNormal", 2);
+            compositeShader.setUniform("texDepth", 3);
+            compositeShader.setUniform("torchPos", player.position);
+            compositeShader.setUniform("torchStrength", (player.inventory.hasTorchEquipped() ? 1.0f : 0.0f));
+            compositeShader.setUniform("invProjection", invProj);
+            compositeShader.setUniform("invView", invView);
+
+            compositeShader.setUniform("rtgiEnabled", rtgiEnabled ? 1 : 0);
+
+            // FIXED: Don't use screenQuad.render() because it unbinds unit 0
+            glBindVertexArray(screenQuad.getVaoId());
+            glDrawElements(GL_TRIANGLES, screenQuad.getVertexCount(), GL_UNSIGNED_INT, 0);
+            glBindVertexArray(0);
+
+            compositeShader.unbind();
+
+
+            // ── 9. Overlays (Inventory / UI) ─────────────────────────────
+            glDisable(GL_DEPTH_TEST);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            
+            shaderProgram.bind();
+            uiRenderer.render(player, shaderProgram, currentW, currentH, this);
+            shaderProgram.unbind();
+
+            glEnable(GL_DEPTH_TEST);
+
+            // Item pickup logic
             if (!craftingOpen) {
                 minicraft.entity.Entity item = entityManager.getNearestOfType(
                         camera.getPosition().x, camera.getPosition().y, camera.getPosition().z,
@@ -557,8 +736,6 @@ public class Main {
                     item.damage(100f, null);
                 }
             }
-
-            uiRenderer.render(player, shaderProgram, currentW, currentH, this);
 
             shaderProgram.unbind();
             glfwSwapBuffers(window);
@@ -596,14 +773,15 @@ public class Main {
                 wz + bridge.z + 0.5f);
 
         // 3. Create the ShipEntity for physics and piloting
-        minicraft.entity.ship.ShipEntity ship = new minicraft.entity.ship.ShipEntity(minicraft.entity.EntityType.SHIP, def);
+        minicraft.entity.ship.ShipEntity ship = new minicraft.entity.ship.ShipEntity(minicraft.entity.EntityType.SHIP,
+                def);
         ship.position.set(wx, wy, wz);
         entityManager.spawn(ship);
 
         // 4. Force player into Neural Link (Riding State)
         player.setRiding(ship);
         ship.setPassenger(player);
-        
+
         System.out.println("NEURAL LINK ESTABLISHED: Pilot synchronized with " + def.displayName);
     }
 
@@ -660,12 +838,14 @@ public class Main {
             boolean d = glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
             boolean space = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
             boolean shift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
-            
+
             ship.handleInput(w, s, a, d, space, shift, dt);
 
             // Weapons
-            if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && !prevF) ship.nextWeapon();
-            if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS && !prevG) ship.prevWeapon();
+            if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && !prevF)
+                ship.nextWeapon();
+            if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS && !prevG)
+                ship.prevWeapon();
             prevF = glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS;
             prevG = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
 
@@ -770,7 +950,8 @@ public class Main {
 
     // ─────────────────────────────────────────────────────────────────────
     public void setStatusMessage(String msg) {
-        if (msg == null || msg.isEmpty()) return;
+        if (msg == null || msg.isEmpty())
+            return;
         this.activeStatusMessage = msg;
         this.statusMessageTimer = 3.2f; // ~3 seconds visibility
     }
@@ -826,18 +1007,19 @@ public class Main {
     }
 
     private void handleFacilityClick() {
-        if (activeFacility == null) return;
-        
+        if (activeFacility == null)
+            return;
+
         double[] mx = new double[1], my = new double[1];
         glfwGetCursorPos(window, mx, my);
         int[] winW = new int[1], winH = new int[1];
         glfwGetWindowSize(window, winW, winH);
         float x = (float) mx[0] * ((float) framebufferW / Math.max(1, winW[0]));
         float y = (float) my[0] * ((float) framebufferH / Math.max(1, winH[0]));
-        
+
         float panelW = 680f, panelH = 580f;
         float sx = (framebufferW - panelW) / 2f, sy = (framebufferH - panelH) / 2f;
-        float cx = sx + panelW/2f, cy = sy + 180;
+        float cx = sx + panelW / 2f, cy = sy + 180;
         float slotSize = 72f;
 
         // Hide system cursor while menu is open
@@ -849,7 +1031,8 @@ public class Main {
             minicraft.item.ItemStack clicked = activeFacility.getSlot(0);
             activeFacility.setSlot(0, player.inventory.getCursorStack());
             player.inventory.setCursorStack(clicked);
-            if (activeFacility.getSlot(0) != null) setStatusMessage(activeFacility.getSlot(0).getItem().getDisplayName());
+            if (activeFacility.getSlot(0) != null)
+                setStatusMessage(activeFacility.getSlot(0).getItem().getDisplayName());
             return;
         }
         // Fuel
@@ -857,16 +1040,19 @@ public class Main {
             minicraft.item.ItemStack clicked = activeFacility.getSlot(1);
             activeFacility.setSlot(1, player.inventory.getCursorStack());
             player.inventory.setCursorStack(clicked);
-            if (activeFacility.getSlot(1) != null) setStatusMessage(activeFacility.getSlot(1).getItem().getDisplayName());
+            if (activeFacility.getSlot(1) != null)
+                setStatusMessage(activeFacility.getSlot(1).getItem().getDisplayName());
             return;
         }
         // Output
         if (x >= cx + 98 && x <= cx + 98 + slotSize && y >= cy - 36 && y <= cy - 36 + slotSize) {
             minicraft.item.ItemStack clicked = activeFacility.getSlot(2);
-            if (clicked != null && !clicked.isEmpty() && (player.inventory.getCursorStack() == null || player.inventory.getCursorStack().isEmpty())) {
+            if (clicked != null && !clicked.isEmpty()
+                    && (player.inventory.getCursorStack() == null || player.inventory.getCursorStack().isEmpty())) {
                 // Quick Move to inventory if cursor is empty
                 for (int i = 0; i < 27; i++) {
-                    if (player.inventory.getMainInventory()[i] == null || player.inventory.getMainInventory()[i].isEmpty()) {
+                    if (player.inventory.getMainInventory()[i] == null
+                            || player.inventory.getMainInventory()[i].isEmpty()) {
                         player.inventory.getMainInventory()[i] = clicked;
                         activeFacility.setSlot(2, null);
                         return;
@@ -876,7 +1062,8 @@ public class Main {
             // Standard swap
             activeFacility.setSlot(2, player.inventory.getCursorStack());
             player.inventory.setCursorStack(clicked);
-            if (clicked != null) setStatusMessage(clicked.getItem().getDisplayName());
+            if (clicked != null)
+                setStatusMessage(clicked.getItem().getDisplayName());
             return;
         }
 
@@ -894,7 +1081,8 @@ public class Main {
             if (x >= slotX && x <= slotX + ISLOT && y >= slotY && y <= slotY + ISLOT) {
                 player.inventory.clickSlot(i, false);
                 minicraft.item.ItemStack s = player.inventory.getMainInventory()[i];
-                if (s != null && !s.isEmpty()) setStatusMessage(s.getItem().getDisplayName());
+                if (s != null && !s.isEmpty())
+                    setStatusMessage(s.getItem().getDisplayName());
                 return;
             }
         }
@@ -924,23 +1112,23 @@ public class Main {
 
         // ── Must exactly match UIRenderer.renderInventoryScreen constants ──
         final float SLOT = 58f;
-        final float GAP  = 8f;
+        final float GAP = 8f;
         final float COLS = 9f;
         final float ROWS = 4f;
 
-        float gridW  = COLS * SLOT + (COLS - 1) * GAP;
-        float dollAreaW = 240f; 
-        float panelW = gridW + dollAreaW + 80f; 
-        float panelH = 4 * SLOT + 3 * GAP + 140f; 
-        float sx     = (framebufferW - panelW) / 2f;
-        float sy     = (framebufferH - panelH) / 2f;
+        float gridW = COLS * SLOT + (COLS - 1) * GAP;
+        float dollAreaW = 240f;
+        float panelW = gridW + dollAreaW + 80f;
+        float panelH = 4 * SLOT + 3 * GAP + 140f;
+        float sx = (framebufferW - panelW) / 2f;
+        float sy = (framebufferH - panelH) / 2f;
 
-        float dollX      = sx + 28f;
-        float armorX     = dollX + 160f + 12f;
+        float dollX = sx + 28f;
+        float armorX = dollX + 160f + 12f;
         float armorYBase = sy + 64f;
 
         float gridStartX = sx + dollAreaW + 50f;
-        float mainGridY  = sy + 64f;
+        float mainGridY = sy + 64f;
 
         // ── Main 81-slot grid (Scrollable) ──────────────────────────────────
         float gridVisibleYMin = mainGridY;
@@ -954,8 +1142,10 @@ public class Main {
             // Only allow interaction if the slot is within the visible scissored window
             if (slotY + SLOT > gridVisibleYMin && slotY < gridVisibleYMax) {
                 if (x >= slotX && x <= slotX + SLOT && y >= slotY && y <= slotY + SLOT) {
-                    if (isShift) player.inventory.quickMove(i, false);
-                    else         player.inventory.clickSlot(i, false);
+                    if (isShift)
+                        player.inventory.quickMove(i, false);
+                    else
+                        player.inventory.clickSlot(i, false);
                     return;
                 }
             }
@@ -973,13 +1163,15 @@ public class Main {
 
         // ── Hotbar row ─────────────────────────────────────────────────────
         // Separator line sits at mainGridY + 3*(SLOT+GAP) + 6, hotbar row 14px below
-        float sepY       = mainGridY + 3 * (SLOT + GAP) + 6f;
+        float sepY = mainGridY + 3 * (SLOT + GAP) + 6f;
         float hotbarRowY = sepY + 14f;
         for (int i = 0; i < 9; i++) {
             float slotX = gridStartX + i * (SLOT + GAP);
             if (x >= slotX && x <= slotX + SLOT && y >= hotbarRowY && y <= hotbarRowY + SLOT) {
-                if (isShift) player.inventory.quickMove(i, true);
-                else         player.inventory.clickSlot(i, true);
+                if (isShift)
+                    player.inventory.quickMove(i, true);
+                else
+                    player.inventory.clickSlot(i, true);
                 return;
             }
         }
@@ -1029,20 +1221,21 @@ public class Main {
 
     private void handleCraftingInput() {
         // ── Constants MUST match UIRenderer.renderCraftingMenu exactly ────────
-        final int   COLS       = 7;
-        final float MENU_W     = 700f, MENU_H = 540f;
-        final float ICON_SIZE  = 56f, ICON_GAP = 8f;
+        final int COLS = 7;
+        final float MENU_W = 700f, MENU_H = 540f;
+        final float ICON_SIZE = 56f, ICON_GAP = 8f;
         final float GRID_OFF_X = 14f, GRID_OFF_Y = 60f;
-        final float DETAIL_W   = 182f;
-        final float SX         = (framebufferW - MENU_W) / 2f;
-        final float SY         = (framebufferH - MENU_H) / 2f;
-        final float GX         = SX + GRID_OFF_X;
-        final float GY         = SY + GRID_OFF_Y;
+        final float DETAIL_W = 182f;
+        final float SX = (framebufferW - MENU_W) / 2f;
+        final float SY = (framebufferH - MENU_H) / 2f;
+        final float GX = SX + GRID_OFF_X;
+        final float GY = SY + GRID_OFF_Y;
         final float GRID_AREA_W = COLS * ICON_SIZE + (COLS - 1) * ICON_GAP;
 
         List<Recipe> filtered = new ArrayList<>();
         for (Recipe r : craftingManager.getRecipes())
-            if (r.getCategory() == activeCategory) filtered.add(r);
+            if (r.getCategory() == activeCategory)
+                filtered.add(r);
 
         boolean mouseLeftDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
         if (mouseLeftDown && !prevMouseLeftDown) {
@@ -1074,7 +1267,8 @@ public class Main {
                 int col = i % COLS, row = i / COLS;
                 float ix = GX + col * (ICON_SIZE + ICON_GAP);
                 float iy = GY + row * (ICON_SIZE + ICON_GAP);
-                if (iy + ICON_SIZE > SY + MENU_H - 30f) break;
+                if (iy + ICON_SIZE > SY + MENU_H - 30f)
+                    break;
                 if (x >= ix && x <= ix + ICON_SIZE && y >= iy && y <= iy + ICON_SIZE) {
                     recipeIndex = i;
                     break;
@@ -1092,27 +1286,32 @@ public class Main {
         }
 
         // Arrow keys navigate the grid (left/right/up/down)
-        boolean isUp    = glfwGetKey(window, GLFW_KEY_UP)    == GLFW_PRESS;
-        boolean isDown  = glfwGetKey(window, GLFW_KEY_DOWN)  == GLFW_PRESS;
-        boolean isLeft  = glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS;
+        boolean isUp = glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS;
+        boolean isDown = glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS;
+        boolean isLeft = glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS;
         boolean isRight = glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS;
         boolean isEnter = glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS;
 
         if (!filtered.isEmpty()) {
-            if (isUp    && !prevUp)    recipeIndex = Math.max(0, recipeIndex - COLS);
-            if (isDown  && !prevDown)  recipeIndex = Math.min(filtered.size() - 1, recipeIndex + COLS);
-            if (isLeft  && !prevLeft)  recipeIndex = Math.max(0, recipeIndex - 1);
-            if (isRight && !prevRight) recipeIndex = Math.min(filtered.size() - 1, recipeIndex + 1);
+            if (isUp && !prevUp)
+                recipeIndex = Math.max(0, recipeIndex - COLS);
+            if (isDown && !prevDown)
+                recipeIndex = Math.min(filtered.size() - 1, recipeIndex + COLS);
+            if (isLeft && !prevLeft)
+                recipeIndex = Math.max(0, recipeIndex - 1);
+            if (isRight && !prevRight)
+                recipeIndex = Math.min(filtered.size() - 1, recipeIndex + 1);
         }
         if (isEnter && !prevEnter && recipeIndex < filtered.size())
             craftingManager.craft(filtered.get(recipeIndex), player.inventory);
 
-        prevUp = isUp; prevDown = isDown;
-        prevLeft = isLeft; prevRight = isRight;
+        prevUp = isUp;
+        prevDown = isDown;
+        prevLeft = isLeft;
+        prevRight = isRight;
         prevEnter = isEnter;
         prevMouseLeftDown = mouseLeftDown;
     }
-
 
     // ─────────────────────────────────────────────────────────────────────
     // Combat + placement
@@ -1122,10 +1321,9 @@ public class Main {
         float pitch = (float) Math.toRadians(camera.getRotation().x);
         float yaw = (float) Math.toRadians(camera.getRotation().y);
         return new org.joml.Vector3f(
-            (float) (Math.sin(yaw) * Math.cos(pitch)),
-            (float) -Math.sin(pitch),
-            (float) (-Math.cos(yaw) * Math.cos(pitch))
-        );
+                (float) (Math.sin(yaw) * Math.cos(pitch)),
+                (float) -Math.sin(pitch),
+                (float) (-Math.cos(yaw) * Math.cos(pitch)));
     }
 
     private void updateFocusedBlock() {
@@ -1232,7 +1430,8 @@ public class Main {
             Block targeted = world.getBlock(gx, gy, gz);
 
             if (targeted == Block.CHEST || targeted == Block.CRAFTING_TABLE
-                    || targeted == Block.FURNACE || targeted == Block.SHIP_CONSOLE) {
+                    || targeted == Block.FURNACE || targeted == Block.COOKER 
+                    || targeted == Block.ALLOY_FORGE || targeted == Block.SHIP_CONSOLE) {
                 if (targeted == Block.CHEST) {
                     activeChest = world.getContainer(gx, gy, gz);
                     chestOpen = true;
@@ -1240,10 +1439,17 @@ public class Main {
                 } else if (targeted == Block.FURNACE) {
                     activeFacility = world.getFacility(gx, gy, gz);
                     furnaceOpen = true;
+                    setStatusMessage("INDUSTRIAL SMELTER LINKED");
                     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
                 } else if (targeted == Block.COOKER) {
                     activeFacility = world.getFacility(gx, gy, gz);
                     cookerOpen = true;
+                    setStatusMessage("COOKING UNIT LINKED");
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+                } else if (targeted == Block.ALLOY_FORGE) {
+                    activeFacility = world.getFacility(gx, gy, gz);
+                    furnaceOpen = true; // Use furnace UI for now
+                    setStatusMessage("ALLOY FORGE LINKED");
                     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
                 } else if (targeted == Block.CRAFTING_TABLE) {
                     craftingOpen = true;
@@ -1328,8 +1534,19 @@ public class Main {
             model = ModelRegistry.getModel("pickaxe_iron");
         else if (heldItem.getName().equalsIgnoreCase("Stone Pickaxe"))
             model = ModelRegistry.getModel("pickaxe_stone");
+        else if (heldItem.getName().equalsIgnoreCase("Diamond Pickaxe"))
+            model = ModelRegistry.getModel("pickaxe_diamond");
         else if (heldItem.getName().contains("Pickaxe"))
             model = ModelRegistry.getModel("pickaxe_wooden");
+        else if (heldItem instanceof minicraft.item.ArmorItem) {
+            String tier = ((minicraft.item.ArmorItem) heldItem).getTierName().toLowerCase();
+            TextureRegion reg = textures.get(tier + "_ore");
+            model = ModelRegistry.getModel("primitive_cube");
+            if (model != null && reg != null) {
+                model.updateUVs(reg);
+            }
+        }
+
         if (model == null)
             return;
 
@@ -1392,6 +1609,18 @@ public class Main {
             entityRenderer.cleanup();
         if (uiRenderer != null)
             uiRenderer.cleanup();
+
+        // GI Cleanup
+        if (gtBuffer != null)
+            gtBuffer.cleanup();
+        if (rtgiShader != null)
+            rtgiShader.cleanup();
+        if (compositeShader != null)
+            compositeShader.cleanup();
+        if (giTexture != 0)
+            glDeleteTextures(giTexture);
+        if (screenQuad != null)
+            screenQuad.cleanup();
 
         glfwFreeCallbacks(window);
         glfwDestroyWindow(window);

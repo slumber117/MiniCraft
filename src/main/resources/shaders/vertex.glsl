@@ -27,6 +27,6 @@ void main()
     vec4 worldPos = modelMatrix * vec4(animatedPos, 1.0);
     gl_Position = projectionMatrix * viewMatrix * worldPos;
     outTexCoord = texCoord;
-    vLightLevel = lightInfo;
+    vLightLevel = vec2(1.0, 1.0); // DIAGNOSTIC: Bypass zeroed voxel lighting
     vPosition   = worldPos.xyz;
 }

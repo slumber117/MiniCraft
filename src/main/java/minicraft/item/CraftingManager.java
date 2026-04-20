@@ -43,15 +43,15 @@ public class CraftingManager {
                 new Item("FURNACE", Block.FURNACE), 1));
 
         // --- 3. IRON TIER (Refinement Required) ---
-        addArmorSet("Iron", "IRON_INGOT", 0.12f, 3, 0.3f, 0.7f, 0.2f, null);
+        addArmorSet("Iron", "IRON_INGOT", 0.12f, 3, 0.3f, 0.85f, 0.2f, null);
         addToolSet("Iron", "IRON_INGOT", 2, 8.0f);
 
-        // --- 4. GOLD TIER (Refinement Required) ---
-        addArmorSet("Gold", "GOLD_INGOT", 0.16f, 4, 0.2f, 0.85f, 0.3f, null); // Heavy weight penalty
-        addToolSet("Gold", "GOLD_INGOT", 2, 10.0f);
+        // --- 4. GOLD TIER (Precision & Speed) ---
+        addArmorSet("Gold", "GOLD_INGOT", 0.15f, 4, 0.2f, 1.15f, 0.3f, null); // Lightweight & Aerodynamic
+        addToolSet("Gold", "GOLD_INGOT", 2, 15.0f); // Fast mining speed
 
         // --- 5. TITANIUM TIER (High Industry) ---
-        addArmorSet("Titanium", "TITANIUM_INGOT", 0.20f, 3, 0.6f, 0.95f, 0.3f, null); // Slight penalty
+        addArmorSet("Titanium", "TITANIUM_INGOT", 0.20f, 3, 0.6f, 0.95f, 0.3f, null);
         addToolSet("Titanium", "TITANIUM_INGOT", 3, 12.0f);
 
         // --- 6. GEM & SPECIAL TIERS ---
@@ -63,8 +63,8 @@ public class CraftingManager {
         addArmorSet("Ruby", "RUBY_ORE", 0.22f, 3, 1.5f, 1.0f, 0.4f, null);
         addToolSet("Ruby", "RUBY_ORE", 5, 18.0f);
 
-        addArmorSet("Quartz", "QUARTZ_ORE", 0.15f, 2, -0.1f, 1.10f, 0.5f, null); // +10% speed boost
-        addToolSet("Quartz", "QUARTZ_ORE", 2, 12.0f);
+        addArmorSet("Quartz", "QUARTZ_ORE", 0.20f, 2, -0.1f, 0.65f, 0.5f, null); // Heavy Crystal Armor
+        addToolSet("Quartz", "QUARTZ_ORE", 3, 11.0f); // Tier 3 Mining Capability
 
         addArmorSet("Tanzanite", "TANZANITE_ORE", 0.24f, 4, 0.8f, 1.0f, 0.3f, null); // Thorns Set
 

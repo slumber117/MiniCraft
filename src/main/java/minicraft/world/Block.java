@@ -1,5 +1,8 @@
 package minicraft.world;
 
+import minicraft.Main;
+import minicraft.world.behavior.*;
+
 /**
  * All placeable block types in MiniCraft.
  */
@@ -82,9 +85,9 @@ public enum Block {
 
     BRONZE_BLOCK(true, 0, 5.0f, 2.0f, "bronze_block"),
     CRAFTING_TABLE(true, 0, 2.5f, 5.0f, "crafting_table"),
-    FURNACE(true, 0, 3.5f, 10.0f, "furnace"),
-    ALLOY_FORGE(true, 0, 4.0f, 15.0f, "alloy_forge"),
-    CHEST(true, 0, 2.5f, 5.0f, "chest"),
+    FURNACE(true, 0, 3.5f, 10.0f, "furnace", Block.MeshType.CUBE, new minicraft.world.behavior.FurnaceBlock("INDUSTRIAL SMELTER", "FURNACE")),
+    ALLOY_FORGE(true, 0, 4.0f, 15.0f, "alloy_forge", Block.MeshType.CUBE, new minicraft.world.behavior.FurnaceBlock("FUSION FORGE", "ALLOY_FORGE")),
+    CHEST(true, 0, 2.5f, 5.0f, "chest", Block.MeshType.CUBE, new minicraft.world.behavior.ChestBlock()),
 
     // ── Vegetation & Undersea ─────────────────────────────────────────────
     TALL_GRASS(false, 0, 0f, 0f, "tall_grass", MeshType.CROSS),
@@ -100,8 +103,8 @@ public enum Block {
     // ── Advanced Scientific blocks ───────────────────────────────────────
     ALLOY_PLATE(true, 1, 10.0f, 2.0f, "alloy_plate"),
     TRANSMAT_PAD(true, 1, 10.0f, 5.0f, "transmat_pad"),
-    SHIP_CONSOLE(true, 0, 2.5f, 10.0f, "ship_console"),
-    COOKER(true, 0, 3.0f, 10.0f, "cooker_top", "stone", "cooker_side"), // High-efficiency food preparation unit
+    SHIP_CONSOLE(true, 0, 2.5f, 10.0f, "ship_console", Block.MeshType.CUBE, new minicraft.world.behavior.ConsoleBlock()),
+    COOKER(true, 0, 3.0f, 10.0f, "cooker_top", "stone", "cooker_side", new minicraft.world.behavior.FurnaceBlock("COOKING UNIT", "COOKER")), // High-efficiency food preparation unit
     STONE_DARK(true, 0, 5.0f, 1.0f, "stone_dark"), // Deep layer industrial stone
     LAVA(false, 0, 0f, 0f, "lava"), // High-intensity surface liquid hazard
     MAGMA(true, 0, 1.0f, 5.0f, "magma"); // Glowing underground solid hazard
@@ -121,12 +124,17 @@ public enum Block {
     public final float hardness;
     public final float xpValue;
     public final MeshType meshType;
+    public final BlockInteraction interaction;
     
     Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String textureName) {
         this(solid, requiredHarvestLevel, hardness, xpValue, textureName, MeshType.CUBE);
     }
 
     Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String textureName, MeshType meshType) {
+        this(solid, requiredHarvestLevel, hardness, xpValue, textureName, meshType, null);
+    }
+
+    Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String textureName, MeshType meshType, BlockInteraction interaction) {
         this.solid = solid;
         this.requiredHarvestLevel = requiredHarvestLevel;
         this.hardness = hardness;
@@ -137,9 +145,14 @@ public enum Block {
         this.sideTexture = textureName;
         this.paddingTop = solid ? 1.0f : 0.0f;
         this.paddingSide = solid ? 1.0f : 0.0f;
+        this.interaction = interaction;
     }
 
     Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String top, String bottom, String side) {
+        this(solid, requiredHarvestLevel, hardness, xpValue, top, bottom, side, null);
+    }
+
+    Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String top, String bottom, String side, BlockInteraction interaction) {
         this.solid = solid;
         this.requiredHarvestLevel = requiredHarvestLevel;
         this.hardness = hardness;
@@ -150,8 +163,13 @@ public enum Block {
         this.sideTexture = side;
         this.paddingTop = solid ? 1.0f : 0.0f;
         this.paddingSide = solid ? 1.0f : 0.0f;
+        this.interaction = interaction;
     }
-
+    public void onInteract(Main main, World world, int x, int y, int z) {
+        if (interaction != null) {
+            interaction.onInteract(main, world, x, y, z);
+        }
+    }
     public String getTextureForFace(Face face) {
         return getTextureForFace(face, false);
     }

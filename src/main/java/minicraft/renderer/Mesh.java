@@ -109,6 +109,24 @@ public class Mesh {
         }
     }
 
+    /**
+     * Updates all 6 faces of a cube mesh with the same TextureRegion.
+     */
+    public void updateUVs(TextureRegion region) {
+        if (region == null) return;
+        float u1 = region.getU1(), v1 = region.getV1(), u2 = region.getU2(), v2 = region.getV2();
+        float[] uvs = new float[48];
+        for (int i = 0; i < 6; i++) {
+            int off = i * 8;
+            uvs[off + 0] = u1; uvs[off + 1] = v2;
+            uvs[off + 2] = u2; uvs[off + 3] = v2;
+            uvs[off + 4] = u2; uvs[off + 5] = v1;
+            uvs[off + 6] = u1; uvs[off + 7] = v1;
+        }
+        setUVs(uvs);
+        this.texture = region.getTexture();
+    }
+
     public int getVaoId() { return vaoId; }
     public int getVertexCount() { return vertexCount; }
     public void setTexture(Texture texture) { this.texture = texture; }

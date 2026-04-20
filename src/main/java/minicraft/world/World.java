@@ -1,5 +1,7 @@
 package minicraft.world;
 
+import minicraft.Main;
+import minicraft.world.behavior.*;
 import minicraft.world.cave.CaveCarver;
 import minicraft.world.cave.CaveCell;
 import minicraft.world.cave.CaveType;
@@ -92,7 +94,7 @@ public class World {
             markChunkDirty(cx, cz + 1);
     }
 
-    private void markChunkDirty(int cx, int cz) {
+    public void markChunkDirty(int cx, int cz) {
         Chunk neighbor = chunks.get(key(cx, cz));
         if (neighbor != null)
             neighbor.markDirty();
@@ -525,96 +527,9 @@ public class World {
             int fy = unpackY(pos);
             int fz = unpackZ(pos);
 
-            Block b = getBlock(fx, fy, fz);
-
-            // Only process if the block at this position is actually a smelting block
-            if (b != Block.FURNACE && b != Block.COOKER && b != Block.ALLOY_FORGE)
-                continue;
-
             minicraft.entity.ProcessingFacility fac = entry.getValue();
-            boolean isCooker = (b == Block.COOKER);
-            boolean wasActive = fac.isActive;
-
-            // --------------------------------------------------------------------
-            // 1. FUEL MANAGEMENT
-            // --------------------------------------------------------------------
-            if (fac.remainingFuelTime <= 0) {
-                minicraft.item.ItemStack fuelStack = fac.getSlot(1); // Slot 1 is Fuel
-                if (fuelStack != null) {
-                    // Get fuel duration from the ProcessingManager based on item and machine type
-                    float fuelVal = pm.getFuelTime(fuelStack.getItem().getName(), isCooker);
-                    if (fuelVal > 0) {
-                        fac.remainingFuelTime = fuelVal;
-                        fac.maxFuelTime = fuelVal;
-                        fuelStack.remove(1); // Consume one piece of fuel
-                        if (fuelStack.getCount() <= 0)
-                            fac.setSlot(1, null);
-                    }
-                }
-            }
-
-            // --------------------------------------------------------------------
-            // 2. PROCESSING LOGIC (The Smelting)
-            // --------------------------------------------------------------------
-            minicraft.item.ItemStack input = fac.getSlot(0); // Slot 0 is Input
-            if (input != null && fac.remainingFuelTime > 0) {
-                // Determine the recipe based on the machine type
-                minicraft.item.Recipe res = isCooker
-                        ? pm.getCookerResult(input.getItem().getName())
-                        : pm.getFurnaceResult(input.getItem().getName());
-
-                if (res != null) {
-                    // Check if the output slot (Slot 2) is empty or has space for the result
-                    minicraft.item.ItemStack output = fac.getSlot(2);
-                    if (output == null || (output.getItem().equals(res.getResult()) && output.getCount() < 64)) {
-
-                        fac.isActive = true;
-                        // Progress is (Time Elapsed / Total Time Required for this specific item)
-                        fac.processProgress += dt / pm.getProcessTime(input.getItem().getName());
-                        fac.remainingFuelTime -= dt;
-
-                        // Check if smelting is complete
-                        if (fac.processProgress >= 1.0f) {
-                            input.remove(1); // Consume the raw material
-                            if (input.getCount() <= 0)
-                                fac.setSlot(0, null);
-
-                            // Add the result to the output slot
-                            if (output == null) {
-                                fac.setSlot(2, new minicraft.item.ItemStack(res.getResult(), res.getResultCount()));
-                            } else {
-                                output.add(res.getResultCount());
-                            }
-                            fac.processProgress = 0; // Reset for next item
-                        }
-                    } else {
-                        // Output slot is full of a different item; furnace jams
-                        fac.isActive = false;
-                        fac.processProgress = 0;
-                    }
-                } else {
-                    // Item is not smeltable in this machine
-                    fac.isActive = false;
-                    fac.processProgress = 0;
-                }
-            } else {
-                // No input or no fuel
-                fac.isActive = false;
-                fac.processProgress = 0;
-                // Passive fuel drain if it's just sitting there (optional)
-                if (fac.remainingFuelTime > 0)
-                    fac.remainingFuelTime -= dt * 0.1f;
-            }
-
-            // --------------------------------------------------------------------
-            // 3. VISUAL SYNC
-            // --------------------------------------------------------------------
-            // If the furnace just started or stopped, we MUST mark the chunk dirty.
-            // This forces the mesh to rebuild, which changes the texture from "furnace" to
-            // "furnace_lit".
-            if (wasActive != fac.isActive) {
-                markChunkDirty(Math.floorDiv(fx, 16), Math.floorDiv(fz, 16));
-            }
+            // Delegate all facility logic to the FurnaceBlock behavioral handler
+            minicraft.world.behavior.FurnaceBlock.tick(fac, this, fx, fy, fz, dt, pm);
         }
     }
 
