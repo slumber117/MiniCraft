@@ -970,8 +970,9 @@ public class Main {
     private void handleShipConsoleClick() {
         double[] mx = new double[1], my = new double[1];
         glfwGetCursorPos(window, mx, my);
-        float x = (float) mx[0];
-        float y = (float) my[0];
+        float[] mouse = getScaledMouse();
+        float x = mouse[0];
+        float y = mouse[1];
 
         float panelW = 900;
         float panelH = 600;
@@ -1008,105 +1009,24 @@ public class Main {
     }
 
     private void handleFacilityClick() {
-        if (activeFacility == null)
-            return;
+        if (activeFacility == null) return;
+        float[] mouse = getScaledMouse();
+        minicraft.world.behavior.FurnaceBlock.handleClick(activeFacility, player, this, mouse[0], mouse[1], framebufferW, framebufferH);
+    }
 
+    public float[] getScaledMouse() {
         double[] mx = new double[1], my = new double[1];
         glfwGetCursorPos(window, mx, my);
         int[] winW = new int[1], winH = new int[1];
         glfwGetWindowSize(window, winW, winH);
-        float x = (float) mx[0] * ((float) framebufferW / Math.max(1, winW[0]));
-        float y = (float) my[0] * ((float) framebufferH / Math.max(1, winH[0]));
-
-        float panelW = 680f, panelH = 580f;
-        float sx = (framebufferW - panelW) / 2f, sy = (framebufferH - panelH) / 2f;
-        float cx = sx + panelW / 2f, cy = sy + 180;
-        float slotSize = 72f;
-
-        // Hide system cursor while menu is open
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-
-        // ── 1. Facility Slots ──
-        // Input
-        if (x >= cx - 170 && x <= cx - 170 + slotSize && y >= cy - 36 && y <= cy - 36 + slotSize) {
-            minicraft.item.ItemStack clicked = activeFacility.getSlot(0);
-            activeFacility.setSlot(0, player.inventory.getCursorStack());
-            player.inventory.setCursorStack(clicked);
-            if (activeFacility.getSlot(0) != null)
-                setStatusMessage(activeFacility.getSlot(0).getItem().getDisplayName());
-            return;
-        }
-        // Fuel
-        if (x >= cx - 36 && x <= cx - 36 + slotSize && y >= cy + 52 && y <= cy + 52 + slotSize) {
-            minicraft.item.ItemStack clicked = activeFacility.getSlot(1);
-            activeFacility.setSlot(1, player.inventory.getCursorStack());
-            player.inventory.setCursorStack(clicked);
-            if (activeFacility.getSlot(1) != null)
-                setStatusMessage(activeFacility.getSlot(1).getItem().getDisplayName());
-            return;
-        }
-        // Output
-        if (x >= cx + 98 && x <= cx + 98 + slotSize && y >= cy - 36 && y <= cy - 36 + slotSize) {
-            minicraft.item.ItemStack clicked = activeFacility.getSlot(2);
-            if (clicked != null && !clicked.isEmpty()
-                    && (player.inventory.getCursorStack() == null || player.inventory.getCursorStack().isEmpty())) {
-                // Quick Move to inventory if cursor is empty
-                for (int i = 0; i < 27; i++) {
-                    if (player.inventory.getMainInventory()[i] == null
-                            || player.inventory.getMainInventory()[i].isEmpty()) {
-                        player.inventory.getMainInventory()[i] = clicked;
-                        activeFacility.setSlot(2, null);
-                        return;
-                    }
-                }
-            }
-            // Standard swap
-            activeFacility.setSlot(2, player.inventory.getCursorStack());
-            player.inventory.setCursorStack(clicked);
-            if (clicked != null)
-                setStatusMessage(clicked.getItem().getDisplayName());
-            return;
-        }
-
-        // ── 2. Player Inventory Grid ──
-        final float ISLOT = 54f, IGAP = 6f;
-        float invGridW = 9 * ISLOT + 8 * IGAP;
-        float invStartX = sx + (panelW - invGridW) / 2f;
-        float invStartY = sy + 300f;
-
-        // Main 3x9
-        for (int i = 0; i < 27; i++) {
-            int r = i / 9, c = i % 9;
-            float slotX = invStartX + c * (ISLOT + IGAP);
-            float slotY = invStartY + r * (ISLOT + IGAP);
-            if (x >= slotX && x <= slotX + ISLOT && y >= slotY && y <= slotY + ISLOT) {
-                player.inventory.clickSlot(i, false);
-                minicraft.item.ItemStack s = player.inventory.getMainInventory()[i];
-                if (s != null && !s.isEmpty())
-                    setStatusMessage(s.getItem().getDisplayName());
-                return;
-            }
-        }
-
-        // Hotbar 1x9
-        float hotStartY = invStartY + 3 * (ISLOT + IGAP) + 18f;
-        for (int i = 0; i < 9; i++) {
-            float slotX = invStartX + i * (ISLOT + IGAP);
-            if (x >= slotX && x <= slotX + ISLOT && y >= hotStartY && y <= hotStartY + ISLOT) {
-                player.inventory.clickSlot(i, true);
-                return;
-            }
-        }
+        float scaleX = winW[0] > 0 ? (float) framebufferW / winW[0] : 1f;
+        float scaleY = winH[0] > 0 ? (float) framebufferH / winH[0] : 1f;
+        return new float[] { (float) mx[0] * scaleX, (float) my[0] * scaleY };
     }
 
     private void handleInventoryClick() {
-        double[] mx = new double[1], my = new double[1];
-        glfwGetCursorPos(window, mx, my);
-
-        int[] winW = new int[1], winH = new int[1];
-        glfwGetWindowSize(window, winW, winH);
-        float x = (float) mx[0] * ((float) framebufferW / Math.max(1, winW[0]));
-        float y = (float) my[0] * ((float) framebufferH / Math.max(1, winH[0]));
+        float[] mouse = getScaledMouse();
+        float x = mouse[0], y = mouse[1];
 
         boolean isShift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS
                 || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
@@ -1179,15 +1099,9 @@ public class Main {
     }
 
     private void handleChestClick() {
-        if (activeChest == null)
-            return;
-        double[] mx = new double[1], my = new double[1];
-        glfwGetCursorPos(window, mx, my);
-
-        int[] winW = new int[1], winH = new int[1];
-        glfwGetWindowSize(window, winW, winH);
-        float x = (float) mx[0] * ((float) framebufferW / Math.max(1, winW[0]));
-        float y = (float) my[0] * ((float) framebufferH / Math.max(1, winH[0]));
+        if (activeChest == null) return;
+        float[] mouse = getScaledMouse();
+        float x = mouse[0], y = mouse[1];
 
         float panelW = 800;
         float sx = (framebufferW - panelW) / 2f;
@@ -1240,12 +1154,8 @@ public class Main {
 
         boolean mouseLeftDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
         if (mouseLeftDown && !prevMouseLeftDown) {
-            double[] mx = new double[1], my = new double[1];
-            glfwGetCursorPos(window, mx, my);
-            int[] winW = new int[1], winH = new int[1];
-            glfwGetWindowSize(window, winW, winH);
-            float x = (float) mx[0] * ((float) framebufferW / Math.max(1, winW[0]));
-            float y = (float) my[0] * ((float) framebufferH / Math.max(1, winH[0]));
+            float[] mouse = getScaledMouse();
+            float x = mouse[0], y = mouse[1];
 
             // Tab clicks
             Recipe.Category[] cats = Recipe.Category.values();

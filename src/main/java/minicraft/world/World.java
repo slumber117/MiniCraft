@@ -46,6 +46,7 @@ public class World {
     private final CaveCarver caveCarver;
     private final int renderDistance;
     private final WeatherManager weatherManager = new WeatherManager();
+    private int tickCounter = 0;
     private final Random random = new Random();
 
     public World(long seed, TextureRegistry textures, int renderDistance) {
@@ -548,6 +549,10 @@ public class World {
 
     public void tick(float dt, minicraft.item.ProcessingManager pm) {
         weatherManager.update(dt);
+        tickCounter++;
+        if (tickCounter % 300 == 0) {
+            System.out.println("WORLD: Ticking " + worldFacilities.size() + " registered facilities.");
+        }
 
         // Iterate through all facilities using the optimized long keys
         for (Map.Entry<Long, minicraft.entity.ProcessingFacility> entry : worldFacilities.entrySet()) {
