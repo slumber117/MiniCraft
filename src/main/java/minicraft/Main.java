@@ -273,12 +273,13 @@ public class Main {
         // ── Mouse button callback ─────────────────────────────────────────
         glfwSetMouseButtonCallback(window, (win, button, action, mods) -> {
             if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-                if (inventoryOpen)
-                    handleInventoryClick();
+                // Prioritize facility interactions over general inventory clicks
+                if (furnaceOpen || cookerOpen)
+                    handleFacilityClick();
                 else if (chestOpen)
                     handleChestClick();
-                else if (furnaceOpen || cookerOpen)
-                    handleFacilityClick();
+                else if (inventoryOpen)
+                    handleInventoryClick();
                 else if (shipConsoleOpen)
                     handleShipConsoleClick();
             }
@@ -286,7 +287,7 @@ public class Main {
 
         // ── Cursor callback ───────────────────────────────────────────────
         glfwSetCursorPosCallback(window, (win, xpos, ypos) -> {
-            if (!inventoryOpen && !craftingOpen && !shipConsoleOpen && !chestOpen) {
+            if (!inventoryOpen && !craftingOpen && !shipConsoleOpen && !chestOpen && !furnaceOpen && !cookerOpen) {
                 if (firstMouse) {
                     lastMouseX = xpos;
                     lastMouseY = ypos;
@@ -1429,38 +1430,19 @@ public class Main {
             int gz = (int) Math.floor(pos.z + dz * dist);
             Block targeted = world.getBlock(gx, gy, gz);
 
-            if (targeted == Block.CHEST || targeted == Block.CRAFTING_TABLE
-                    || targeted == Block.FURNACE || targeted == Block.COOKER 
-                    || targeted == Block.ALLOY_FORGE || targeted == Block.SHIP_CONSOLE) {
-                if (targeted == Block.CHEST) {
-                    activeChest = world.getContainer(gx, gy, gz);
-                    chestOpen = true;
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-                } else if (targeted == Block.FURNACE) {
-                    activeFacility = world.getFacility(gx, gy, gz);
-                    furnaceOpen = true;
-                    setStatusMessage("INDUSTRIAL SMELTER LINKED");
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-                } else if (targeted == Block.COOKER) {
-                    activeFacility = world.getFacility(gx, gy, gz);
-                    cookerOpen = true;
-                    setStatusMessage("COOKING UNIT LINKED");
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-                } else if (targeted == Block.ALLOY_FORGE) {
-                    activeFacility = world.getFacility(gx, gy, gz);
-                    furnaceOpen = true; // Use furnace UI for now
-                    setStatusMessage("ALLOY FORGE LINKED");
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-                } else if (targeted == Block.CRAFTING_TABLE) {
-                    craftingOpen = true;
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-                } else if (targeted == Block.SHIP_CONSOLE) {
-                    shipConsoleOpen = true;
-                    drydockX = gx;
-                    drydockY = gy - 1;
-                    drydockZ = gz;
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-                }
+            // ── 1. Block Interactions ──
+            if (targeted.interaction != null) {
+                targeted.onInteract(this, world, gx, gy, gz);
+                return;
+            }
+
+            // Fallback for non-interaction blocks (legacy safety)
+            if (targeted == Block.SHIP_CONSOLE) { // SHIP_CONSOLE is handled by its behavior, so this block could be removed too, but let's be safe.
+                shipConsoleOpen = true;
+                drydockX = gx;
+                drydockY = gy - 1;
+                drydockZ = gz;
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
                 return;
             }
 

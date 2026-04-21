@@ -84,7 +84,7 @@ public enum Block {
     DRAGON_SCALE_ORE(false, 1, 3, 100.0f, "dragon_scale_ore"),
 
     BRONZE_BLOCK(true, 0, 5.0f, 2.0f, "bronze_block"),
-    CRAFTING_TABLE(true, 0, 2.5f, 5.0f, "crafting_table"),
+    CRAFTING_TABLE(true, 0, 2.5f, 5.0f, "crafting_table", Block.MeshType.CUBE, new minicraft.world.behavior.CraftingTableBlock()),
     FURNACE(true, 0, 3.5f, 10.0f, "furnace", Block.MeshType.CUBE, new minicraft.world.behavior.FurnaceBlock("INDUSTRIAL SMELTER", "FURNACE")),
     ALLOY_FORGE(true, 0, 4.0f, 15.0f, "alloy_forge", Block.MeshType.CUBE, new minicraft.world.behavior.FurnaceBlock("FUSION FORGE", "ALLOY_FORGE")),
     CHEST(true, 0, 2.5f, 5.0f, "chest", Block.MeshType.CUBE, new minicraft.world.behavior.ChestBlock()),

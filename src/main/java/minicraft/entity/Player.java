@@ -267,10 +267,17 @@ public class Player extends Entity {
         float altitude = position.y;
         float baseTemp = 15.0f; // Sea level "Okay" temperature
         
-        // 1. Altitude Cold Factor (Starts at 120, gets lethal by 200)
+        // 1. Geothermal Boost (Thermal Gradient for deep layers)
+        if (altitude < 80) {
+            // Linear boost from 0 (at Y=80) to +17.0C (at Y=1)
+            float depthFactor = Math.max(0, (80 - altitude) / 80f);
+            baseTemp += depthFactor * 17.0f; 
+        }
+
+        // 2. Altitude Cold Factor (Starts at 120, gets lethal by 200)
         float altitudeColdFactor = Math.max(0, (altitude - 120) * 0.15f);
         
-        // 2. Armor Insulation
+        // 3. Armor Insulation
         float insulation = inventory.getTotalInsulation();
         float protection = Math.min(0.95f, insulation);
         
@@ -278,9 +285,9 @@ public class Player extends Entity {
         float effectiveCold = altitudeColdFactor * (1.0f - protection);
         temperature = baseTemp - effectiveCold;
 
-        // 3. Leather Thermal Stress: If at sea level (warm) and wearing leather, it heats you up
-        if (baseTemp >= 15.0f && inventory.getFullSetTier() != null && inventory.getFullSetTier().equalsIgnoreCase("Leather")) {
-            temperature += 10.0f; // Heats up the player
+        // 4. Clothing/Armor Stress: Leather heats you up further if already warm
+        if (temperature >= 15.0f && inventory.hasFullSet("Leather")) {
+            temperature += 10.0f; 
         }
 
         if (temperature < -5.0f) tempState = "Severe Hypothermia";

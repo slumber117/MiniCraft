@@ -1,6 +1,7 @@
 package minicraft.world.cave;
 
 import minicraft.world.WorldCell;
+import minicraft.world.cave.geode.*;
 
 /**
  * CaveCarver — master coordinator for all underground carving systems.
@@ -49,6 +50,7 @@ public class CaveCarver {
     private final WormCarver         wormCarver;
     private final RavineCarver       ravineCarver;
     private final UnderwaterCaveCarver underwaterCarver;
+    private final GemGeode           gemGeode;
 
     private final long worldSeed;
 
@@ -66,6 +68,7 @@ public class CaveCarver {
         this.wormCarver      = new WormCarver(worldSeed);
         this.ravineCarver    = new RavineCarver(worldSeed);
         this.underwaterCarver = new UnderwaterCaveCarver(worldSeed);
+        this.gemGeode        = new GemGeode(worldSeed);
     }
 
     // ── Chunk preparation ─────────────────────────────────────────────────
@@ -108,6 +111,17 @@ public class CaveCarver {
         if (y >= surfaceY) return CaveCell.SOLID;
 
         float depthFraction = 1.0f - ((float) y / (float) Math.max(1, surfaceY));
+
+        // ── 0. Gem Geodes (Constructive) ───────────────────────────────────
+        GeodeCell geode = gemGeode.query(x, y, z, surfaceY, isUnderwater);
+        if (geode.layer != GeodeCell.Layer.OUTSIDE) {
+            if (geode.layer == GeodeCell.Layer.SHELL)
+                return new CaveCell(false, CaveType.GEODE_SHELL, geode.depth);
+            if (geode.layer == GeodeCell.Layer.CRYSTAL)
+                return new CaveCell(false, CaveType.GEODE_CRYSTAL, geode.depth, geode.gemType);
+            if (geode.layer == GeodeCell.Layer.HOLLOW)
+                return new CaveCell(true, CaveType.GEODE_HOLLOW, geode.depth);
+        }
 
         // ── 1. Ravine (surface crack) ──────────────────────────────────────
         if (ravineCarver.isCarved(x, y, z)) {

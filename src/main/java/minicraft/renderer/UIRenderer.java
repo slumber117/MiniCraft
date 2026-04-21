@@ -63,7 +63,7 @@ public class UIRenderer {
     private final Vector4f healthColor2 = new Vector4f(0.55f, 0.04f, 0.04f, 1.0f);
     private final Vector4f hungerColor = new Vector4f(0.95f, 0.52f, 0.00f, 1.0f);
     private final Vector4f hungerColor2 = new Vector4f(0.65f, 0.30f, 0.00f, 1.0f);
-    private final Vector4f glassBgColor = new Vector4f(0.00f, 0.00f, 0.00f, 0.55f);
+    private final Vector4f glassBgColor = new Vector4f(0.00f, 0.00f, 0.00f, 0.82f);
     private final Vector4f glassBorderColor = new Vector4f(0.17f, 0.72f, 0.79f, 0.45f);
     private final Vector4f highlightColor = new Vector4f(0.17f, 0.72f, 0.79f, 0.22f);
     private final Vector4f textColor = new Vector4f(1.00f, 1.00f, 1.00f, 1.0f);
@@ -172,9 +172,11 @@ public class UIRenderer {
                             mouseX + iconSize / 2f - 14, mouseY + iconSize / 2f - 8, 0.65f);
             }
 
-            // Pointer crosshair
-            drawRectInternal(shader, mouseX - 1, mouseY - 8, 2, 16, new Vector4f(1, 1, 1, 0.9f));
-            drawRectInternal(shader, mouseX - 8, mouseY - 1, 16, 2, new Vector4f(1, 1, 1, 0.9f));
+            // High-visibility pointer crosshair
+            Vector4f cursorCol = (cursor != null && !cursor.isEmpty()) ? new Vector4f(1,1,1,0.5f) : new Vector4f(0, 1, 1, 0.9f);
+            drawRectInternal(shader, mouseX - 1, mouseY - 10, 2, 20, cursorCol);
+            drawRectInternal(shader, mouseX - 10, mouseY - 1, 20, 2, cursorCol);
+            drawRectInternal(shader, mouseX - 2, mouseY - 2, 4, 4, new Vector4f(1,1,1,1)); // Center dot
         }
 
         glDisable(GL_BLEND);
@@ -1138,6 +1140,22 @@ public class UIRenderer {
     /** Returns true if (mx, my) is inside the rectangle. */
     private boolean isHovered(float mx, float my, float rx, float ry, float rw, float rh) {
         return mx >= rx && mx <= rx + rw && my >= ry && my <= ry + rh;
+    }
+
+    /**
+     * Renders a small tactical crosshair when the hardware cursor is hidden.
+     */
+    private void drawMenuCursor(ShaderProgram shader, float mx, float my) {
+        float size = 16f;
+        float thickness = 2f;
+        Vector4f col = new Vector4f(0.17f, 0.72f, 0.79f, 0.95f); // Theme cyan
+
+        // Crosshair (+)
+        drawRectInternal(shader, mx - size / 2f, my - thickness / 2f, size, thickness, col);
+        drawRectInternal(shader, mx - thickness / 2f, my - size / 2f, thickness, size, col);
+        
+        // Dot (.)
+        drawRectInternal(shader, mx - thickness, my - thickness, thickness * 2, thickness * 2, new Vector4f(1, 1, 1, 0.8f));
     }
 
     private void drawTacticalFrame(ShaderProgram shader, float x, float y, float w, float h) {

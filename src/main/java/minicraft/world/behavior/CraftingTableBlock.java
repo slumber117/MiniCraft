@@ -6,16 +6,14 @@ import minicraft.world.BlockInteraction;
 import static org.lwjgl.glfw.GLFW.*;
 
 /**
- * Handles interaction logic for ship consoles.
+ * Handles interaction logic for the Crafting Table.
  */
-public class ConsoleBlock implements BlockInteraction {
+public class CraftingTableBlock implements BlockInteraction {
 
     @Override
     public void onInteract(Main main, World world, int gx, int gy, int gz) {
-        main.drydockX = gx;
-        main.drydockY = gy;
-        main.drydockZ = gz;
-        main.shipConsoleOpen = true;
+        main.craftingOpen = true;
+        main.setStatusMessage("CRAFTING GRID ACCESSED");
         glfwSetInputMode(main.getWindow(), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     }
 }

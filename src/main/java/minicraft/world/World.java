@@ -8,6 +8,7 @@ import minicraft.world.cave.CaveType;
 import minicraft.math.Matrix4f;
 import minicraft.renderer.ShaderProgram;
 import minicraft.renderer.TextureRegistry;
+import minicraft.world.cave.geode.*;
 import java.util.*;
 
 /**
@@ -24,6 +25,18 @@ public class World {
     private final WorldGenerator generator;
     private final TextureRegistry textures;
     private final Map<Long, Chunk> chunks = new HashMap<>();
+
+    private Block getGemBlock(GemType type) {
+        if (type == null) return Block.STONE;
+        switch (type) {
+            case DIAMOND:   return Block.DIAMOND_ORE;
+            case EMERALD:   return Block.EMERALD_ORE;
+            case RUBY:      return Block.RUBY_ORE;
+            case TANZANITE: return Block.TANZANITE_ORE;
+            case AMETHYST: 
+            default:        return Block.AMETHYST_ORE;
+        }
+    }
 
     // FIXED: Changed String to Long to match packPos logic
     private final Map<Long, minicraft.entity.Inventory> worldContainers = new HashMap<>();
@@ -211,12 +224,28 @@ public class World {
 
                 for (int y = BEDROCK_Y + 1; y < surfaceY; y++) {
                     CaveCell caveCell = caveCarver.query(gx, y, gz, cell, surfaceY);
+                    
+                    // ── Geode Materialization ──────────────────────────────────────
+                    if (caveCell.type == CaveType.GEODE_SHELL) {
+                        chunk.setBlock(x, y, z, Block.STONE_DARK);
+                        continue;
+                    }
+                    if (caveCell.type == CaveType.GEODE_CRYSTAL) {
+                        chunk.setBlock(x, y, z, getGemBlock(caveCell.gemType));
+                        continue;
+                    }
+
                     if (caveCell.isCarved) {
                         Block b = Block.AIR;
-                        if (caveCell.type == CaveType.UNDERWATER)
-                            b = Block.WATER;
-                        else if (y < 80 && Math.random() < 0.05)
+                        if (caveCell.type == CaveType.UNDERWATER || caveCell.type == CaveType.GEODE_HOLLOW)
+                            b = Block.WATER; // Use water for underwater, air for geode hollows (overridden later)
+                        
+                        if (caveCell.type == CaveType.GEODE_HOLLOW) b = Block.AIR;
+
+                        if (caveCell.type == CaveType.UNDERWATER) b = Block.WATER;
+                        else if (y < 80 && Math.random() < 0.05 && caveCell.type != CaveType.GEODE_HOLLOW)
                             b = Block.LAVA;
+                        
                         chunk.setBlock(x, y, z, b);
                     } else if (y < 80 && Math.random() < 0.03) {
                         chunk.setBlock(x, y, z, Block.MAGMA);
@@ -341,7 +370,7 @@ public class World {
         spawnOreGrip(chunk, Block.EMERALD_ORE, ClusterSize.TINY, 2, 80, 512); // Mountains only usually, but deep too
         spawnOreGrip(chunk, Block.RUBY_ORE, ClusterSize.TINY, 2, 5, 50);
         spawnOreGrip(chunk, Block.SAPPHIRE_ORE, ClusterSize.TINY, 2, 5, 50);
-        spawnOreGrip(chunk, Block.TITANIUM_ORE, ClusterSize.SMALL, 4, 5, 60);
+        spawnOreGrip(chunk, Block.TITANIUM_ORE, ClusterSize.SMALL, 12, 5, 60);
 
         // Tier 4: Rare & Radioactive (Y: 0 - 25)
         spawnOreGrip(chunk, Block.URANIUM_ORE, ClusterSize.SMALL, 3, 2, 25);

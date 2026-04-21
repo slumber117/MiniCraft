@@ -97,7 +97,16 @@ public class ElevationMap {
      * @return  Elevation in [0, 1] where 0.18 is roughly sea level.
      */
     public float getElevation(double x, double z) {
+        float raw = getRawElevation(x, z);
+        return applyBiomeShaping(x, z, raw);
+    }
 
+    /**
+     * Returns the raw, unshaped elevation level.
+     * This is the "pure" geological height before biomes warp it into
+     * specific profiles (like flat deserts or rolling hills).
+     */
+    public float getRawElevation(double x, double z) {
         // ── 1. Domain warp the coordinates ────────────────────────────────
         double warpX = terrainWarpNoise.noise(x * WARP_SCALE,         0, z * WARP_SCALE        ) * WARP_STRENGTH;
         double warpZ = terrainWarpNoise.noise(x * WARP_SCALE + 3.7,   0, z * WARP_SCALE + 9.2  ) * WARP_STRENGTH;
@@ -115,33 +124,38 @@ public class ElevationMap {
         double ridge = ridgedFractal(wx * RIDGE_SCALE, wz * RIDGE_SCALE);
 
         // Mountains only rise when continentalness is high (deep inland).
-        // Below the threshold they contribute nothing; above it they scale up
-        // smoothly so there's always a long gradual approach.
         float mountainFactor = mountainInfluence(continentalness);
         double mountainContrib = ridge * mountainFactor;
 
-        // ── 5. Fine detail ────────────────────────────────────────────────
-        double detail = detailNoise.fractalNoise(wx * DETAIL_SCALE, 0, wz * DETAIL_SCALE, DETAIL_OCTAVES, DETAIL_PERSISTENCE);
-        detail = (detail + 1.0) * 0.5; // → [0, 1]
-
-        // ── 6. Blend layers into a raw elevation ──────────────────────────
-        //   continentalness acts as additive floor
-        //   base adds general landscape shape
-        //   mountains add on top of that in eligible regions
-        //   detail adds surface texture, gated by biome roughness (see step 8)
+        // ── 5. Blend layers into a raw elevation ──────────────────────────
         double rawElevation = continentalness * 0.45
                             + base            * 0.25
                             + mountainContrib * 0.30;
 
-        rawElevation = Math.max(0.0, Math.min(1.0, rawElevation));
+        return (float) Math.max(0.0, Math.min(1.0, rawElevation));
+    }
 
-        // ── 7. Biome-blended shaping ──────────────────────────────────────
-        BlendedBiomeParams params = sampleBlendedBiomeParams(x, z, (float) rawElevation);
+    /**
+     * Takes a possibly eroded raw elevation and applies biome-specific
+     * shaping curves and high-frequency detail.
+     */
+    public float applyBiomeShaping(double x, double z, float rawElevation) {
+        // ── 1. Domain warp for detail sampling ────────────────────────────
+        double warpX = terrainWarpNoise.noise(x * WARP_SCALE,         0, z * WARP_SCALE        ) * WARP_STRENGTH;
+        double warpZ = terrainWarpNoise.noise(x * WARP_SCALE + 3.7,   0, z * WARP_SCALE + 9.2  ) * WARP_STRENGTH;
+        double wx = x + warpX;
+        double wz = z + warpZ;
 
-        // ── 8. Apply biome elevation curve ────────────────────────────────
+        // ── 2. Biome-blended shaping ──────────────────────────────────────
+        BlendedBiomeParams params = sampleBlendedBiomeParams(x, z, rawElevation);
+
+        // ── 3. Apply biome elevation curve ────────────────────────────────
         double shaped = applyBiomeCurve(rawElevation, params.baseHeight, params.maxHeight);
 
-        // ── 9. Add biome-gated detail roughness ───────────────────────────
+        // ── 4. Add biome-gated detail roughness ───────────────────────────
+        double detail = detailNoise.fractalNoise(wx * DETAIL_SCALE, 0, wz * DETAIL_SCALE, DETAIL_OCTAVES, DETAIL_PERSISTENCE);
+        detail = (detail + 1.0) * 0.5; // → [0, 1]
+        
         shaped += detail * params.roughness * 0.12;
 
         return (float) Math.max(0.0, Math.min(1.0, shaped));

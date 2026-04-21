@@ -94,11 +94,48 @@ public class WorldGenerator {
      * @param width   Number of tiles along the X axis
      * @param height  Number of tiles along the Z axis
      */
+    /**
+     * Generates a rectangular grid of world cells with High-Fidelity Thermal Erosion.
+     *
+     * This method generates a larger heightmap "halo", applies 25 passes of 
+     * geological settling (erosion), and then classifies biomes based on the 
+     * final settled height.
+     */
     public WorldCell[][] generateRegion(int originX, int originZ, int width, int height) {
+        int padding = 4; // To ensure erosion is stable at the edges
+        int gridW = width + padding * 2;
+        int gridH = height + padding * 2;
+        float[][] rawHeights = new float[gridW][gridH];
+
+        // 1. Generate raw geological noise
+        for (int dx = 0; dx < gridW; dx++) {
+            for (int dz = 0; dz < gridH; dz++) {
+                rawHeights[dx][dz] = elevation.getRawElevation(originX - padding + dx, originZ - padding + dz);
+            }
+        }
+
+        // 2. Apply High-Fidelity Thermal Erosion
+        TerrainProcessor processor = new TerrainProcessor(0.12f, 0.45f, 25);
+        processor.erode(rawHeights);
+
+        // 3. Finalize WorldCells (Biome shaping + Detail)
         WorldCell[][] cells = new WorldCell[width][height];
         for (int dx = 0; dx < width; dx++) {
             for (int dz = 0; dz < height; dz++) {
-                cells[dx][dz] = generate(originX + dx, originZ + dz);
+                int worldX = originX + dx;
+                int worldZ = originZ + dz;
+                float erodedElev = rawHeights[dx + padding][dz + padding];
+                
+                // Re-sample climate at the exact spot
+                float temp = climate.getTemperature(worldX, worldZ);
+                float humid = climate.getHumidity(worldX, worldZ);
+                float continental = climate.getContinentalness(worldX, worldZ);
+                
+                // Shape the eroded height via biome curves
+                float finalElev = elevation.applyBiomeShaping(worldX, worldZ, erodedElev);
+                Biome biome = Biome.classify(temp, humid, finalElev);
+
+                cells[dx][dz] = new WorldCell(finalElev, temp, humid, continental, biome);
             }
         }
         return cells;

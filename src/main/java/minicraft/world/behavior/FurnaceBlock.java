@@ -62,40 +62,38 @@ public class FurnaceBlock implements BlockInteraction {
         minicraft.item.ItemStack output = fac.getSlot(2);
 
         if (input != null) {
-            minicraft.item.Recipe res = isCooker 
-                ? pm.getCookerResult(input.getItem().getName()) 
-                : pm.getFurnaceResult(input.getItem().getName());
+                    String inputName = input.getItem().getName();
+                    minicraft.item.Recipe res = isCooker 
+                        ? pm.getCookerResult(inputName) 
+                        : pm.getFurnaceResult(inputName);
 
-            if (res != null) {
-                // Check if output slot is compatible
-                if (output == null || (output.getItem().equals(res.getResult()) && output.getCount() + res.getResultCount() <= 64)) {
-                    
-                    // Consume fuel if needed
-                    if (fac.remainingFuelTime <= 0 && fuel != null) {
+                    if (fac.remainingFuelTime <= 0 && fuel != null && res != null) {
                         float fuelVal = pm.getFuelTime(fuel.getItem().getName(), isCooker);
                         if (fuelVal > 0) {
                             fac.maxFuelTime = fac.remainingFuelTime = fuelVal;
                             fuel.add(-1);
                             if (fuel.getCount() <= 0) fac.setSlot(1, null);
+                            System.out.println("Processing facility consumed fuel. Added " + fuelVal + "s");
                         }
                     }
 
                     if (fac.remainingFuelTime > 0) {
                         fac.isActive = true;
-                        // Progress is (Time Elapsed / Total Time Required for this specific item)
-                        fac.processProgress += dt / pm.getProcessTime(input.getItem().getName());
+                        fac.processProgress += dt / pm.getProcessTime(inputName);
 
                         if (fac.processProgress >= 1.0f) {
+                            System.out.println("Processing complete: " + inputName + " -> " + res.getResult().getName());
+                            // Add result
+                            minicraft.item.ItemStack currentOutput = fac.getSlot(2);
+                            if (currentOutput == null) {
+                                fac.setSlot(2, new minicraft.item.ItemStack(res.getResult(), res.getResultCount()));
+                            } else if (currentOutput.getItem().equals(res.getResult())) {
+                                currentOutput.add(res.getResultCount());
+                            }
+                            
                             // Consume input
                             input.add(-1);
                             if (input.getCount() <= 0) fac.setSlot(0, null);
-
-                            // Add result
-                            if (output == null) {
-                                fac.setSlot(2, new minicraft.item.ItemStack(res.getResult(), res.getResultCount()));
-                            } else {
-                                output.add(res.getResultCount());
-                            }
                             fac.processProgress = 0;
                         }
                     } else {

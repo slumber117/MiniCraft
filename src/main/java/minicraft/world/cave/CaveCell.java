@@ -1,5 +1,7 @@
 package minicraft.world.cave;
 
+import minicraft.world.cave.geode.GemType;
+
 /**
  * Immutable snapshot of cave carver data for a single voxel.
  *
@@ -29,16 +31,28 @@ public final class CaveCell {
      */
     public final float depth;
 
+    /**
+     * Metadata field for geode crystals. Will be null for all non-geode
+     * cave types.
+     */
+    public final GemType gemType;
+
     public CaveCell(boolean isCarved, CaveType type, float depth) {
+        this(isCarved, type, depth, null);
+    }
+
+    public CaveCell(boolean isCarved, CaveType type, float depth, GemType gemType) {
         this.isCarved = isCarved;
         this.type     = type;
         this.depth    = depth;
+        this.gemType  = gemType;
     }
 
-    public static final CaveCell SOLID = new CaveCell(false, CaveType.NONE, 0f);
+    public static final CaveCell SOLID = new CaveCell(false, CaveType.NONE, 0f, null);
 
     @Override
     public String toString() {
-        return String.format("CaveCell[carved=%b, type=%s, depth=%.2f]", isCarved, type, depth);
+        return String.format("CaveCell[carved=%b, type=%s, depth=%.2f, gem=%s]", 
+            isCarved, type, depth, gemType);
     }
 }

@@ -58,5 +58,12 @@ public enum CaveType {
      * Canyon / ravine — near-vertical slice from surface downward.
      * Essentially a surface crack rather than an underground void.
      */
-    RAVINE
+    RAVINE,
+
+    /** Outer hard shell of a gem geode. */
+    GEODE_SHELL,
+    /** Gem crystal growing inside a geode. */
+    GEODE_CRYSTAL,
+    /** Air pocket interior of a geode. */
+    GEODE_HOLLOW
 }

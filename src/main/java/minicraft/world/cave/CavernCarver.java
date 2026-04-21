@@ -18,6 +18,18 @@ import minicraft.world.PerlinNoise;
  * GROTTO detection: isolated small cavern pockets near the surface are
  * tagged separately so decorators can place water, moss, and light shafts.
  *
+ * ── Tuning changes vs original ──────────────────────────────────────────
+ *
+ * • NOISE_A_SCALE / NOISE_B_SCALE lowered → bigger individual chambers.
+ * • THRESHOLD_A / THRESHOLD_B raised → more voxels pass the carve test
+ * (larger, more frequent caverns).
+ * • CAVERN_START_DEPTH lowered → caverns begin forming earlier
+ * below the surface.
+ * • depthGain coefficient raised (0.12 → 0.18) → the envelope gives a
+ * stronger boost at peak depth, creating extra-large deep chambers.
+ * • CAVERN_PEAK_DEPTH shifted downward → the richest zone is now deeper,
+ * which helps geodes stay nestled in solid rock at shallower depths.
+ *
  * ── How it works ────────────────────────────────────────────────────────
  *
  * Carve if:
@@ -37,23 +49,36 @@ public class CavernCarver {
 
     // ── Tuning ────────────────────────────────────────────────────────────
 
-    /** Primary noise scale — controls chamber size. Smaller = bigger chambers. */
-    private static final double NOISE_A_SCALE = 0.045;
-    private static final double NOISE_B_SCALE = 0.065;
+    /**
+     * Primary noise scale — controls chamber size.
+     * ↓ Smaller value = larger individual chambers.
+     * Original: 0.045 / 0.065 → New: 0.032 / 0.048
+     */
+    private static final double NOISE_A_SCALE = 0.032; // was 0.045
+    private static final double NOISE_B_SCALE = 0.048; // was 0.065
 
     /**
      * Carve threshold for each noise field.
      * Value in [-1, 1]. Intersection of both < threshold defines carved space.
-     * Higher threshold = more carved, larger caverns.
+     * ↑ Higher threshold = more carved, larger and more frequent caverns.
+     * Original: -0.22 / -0.28 → New: -0.12 / -0.16
      */
-    private static final double THRESHOLD_A = -0.22;
-    private static final double THRESHOLD_B = -0.28;
+    private static final double THRESHOLD_A = -0.12; // was -0.22
+    private static final double THRESHOLD_B = -0.16; // was -0.28
 
-    /** Depth fraction at which caverns start appearing (below surface). */
-    private static final float CAVERN_START_DEPTH = 0.15f;
+    /**
+     * Depth fraction at which caverns start appearing (below surface).
+     * ↓ Lowered so caves begin forming closer to the surface.
+     * Original: 0.15 → New: 0.10
+     */
+    private static final float CAVERN_START_DEPTH = 0.10f; // was 0.15
 
-    /** Depth fraction at which caverns are most common. */
-    private static final float CAVERN_PEAK_DEPTH = 0.45f;
+    /**
+     * Depth fraction at which caverns are most common.
+     * Shifted slightly deeper to leave shallow layers for geodes to stand out.
+     * Original: 0.45 → New: 0.50
+     */
+    private static final float CAVERN_PEAK_DEPTH = 0.50f; // was 0.45
 
     /**
      * Depth fraction below which caverns are suppressed again (solid bedrock zone).
@@ -109,8 +134,10 @@ public class CavernCarver {
         // Peaks at CAVERN_PEAK_DEPTH, falls off toward start and end.
         double depthGain = depthEnvelope(depthFraction);
 
-        double threshA = THRESHOLD_A + depthGain * 0.12;
-        double threshB = THRESHOLD_B + depthGain * 0.12;
+        // Raised from 0.12 to 0.18 — the envelope now opens thresholds wider
+        // at peak depth, yielding larger deep chambers.
+        double threshA = THRESHOLD_A + depthGain * 0.18; // was 0.12
+        double threshB = THRESHOLD_B + depthGain * 0.18; // was 0.12
 
         // ── 4. Domain warp ─────────────────────────────────────────────────
         double warpScale = 0.015;
