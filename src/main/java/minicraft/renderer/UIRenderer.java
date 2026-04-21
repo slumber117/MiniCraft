@@ -789,14 +789,22 @@ public class UIRenderer {
 
         float gx = sx + GRID_OFF_X;
         float gy = sy + GRID_OFF_Y;
+        float gridAreaH = MENU_H - GRID_OFF_Y - 20f;
+
+        // Scissor viewport to the grid area
+        glEnable(GL_SCISSOR_TEST);
+        // Scissor uses bottom-left window coords
+        int scX = (int) (gx * ((float) main.getFramebufferW() / width));
+        int scY = (int) ((height - (gy + gridAreaH)) * ((float) main.getFramebufferH() / height));
+        int scW = (int) (gridAreaW * ((float) main.getFramebufferW() / width));
+        int scH = (int) (gridAreaH * ((float) main.getFramebufferH() / height));
+        glScissor(scX, scY, scW, scH);
 
         for (int i = 0; i < filtered.size(); i++) {
             int col = i % COLS;
             int row = i / COLS;
             float ix = gx + col * (ICON_SIZE + ICON_GAP);
-            float iy = gy + row * (ICON_SIZE + ICON_GAP);
-            // Clip to panel
-            if (iy + ICON_SIZE > sy + MENU_H - 30f) break;
+            float iy = gy + row * (ICON_SIZE + ICON_GAP) - main.recipeScrollOffset;
 
             boolean selected = (i == main.recipeIndex);
 
@@ -833,6 +841,22 @@ public class UIRenderer {
             // Tiny affordability dot (top-right corner)
             drawRectInternal(shader, ix + ICON_SIZE - 8f, iy, 8f, 8f,
                     canAfford ? tactGreen : new Vector4f(0.90f, 0.18f, 0.18f, 1f));
+        }
+        glDisable(GL_SCISSOR_TEST);
+
+        // ── Scrollbar Visual ──────────────────────────────────────────────────
+        int totalRows = (int) Math.ceil(filtered.size() / (float) COLS);
+        float totalH = totalRows * (ICON_SIZE + ICON_GAP);
+        if (totalH > gridAreaH) {
+            float sbX = gx + gridAreaW + 4f;
+            float sbY = gy;
+            float sbW = 4f;
+            float sbH = gridAreaH;
+            drawRectInternal(shader, sbX, sbY, sbW, sbH, new Vector4f(0.05f, 0.05f, 0.10f, 0.5f));
+            
+            float thumbH = Math.max(20f, (gridAreaH / totalH) * gridAreaH);
+            float thumbY = sbY + (main.recipeScrollOffset / (totalH - gridAreaH)) * (gridAreaH - thumbH);
+            drawRectInternal(shader, sbX, thumbY, sbW, thumbH, tactOrange);
         }
 
         // ── Detail panel (right side) ─────────────────────────────────────────
@@ -1349,6 +1373,49 @@ public class UIRenderer {
             textQuadMesh.render();
             currentX += w;
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Loading Screen — shown during initial AI world syntheses
+    // ══════════════════════════════════════════════════════════════════════════
+    public void renderLoadingScreen(ShaderProgram shader, int width, int height, minicraft.Main main) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+
+        shader.bind();
+        shader.setUniform("projectionMatrix", new Matrix4f().identity().ortho(0, width, height, 0, -1, 1));
+        shader.setUniform("useTexture", 1);
+        whiteTexture.bind();
+
+        // 1. Dark Background
+        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0.02f, 0.02f, 0.05f, 1.0f));
+        
+        // 2. Center Content
+        float barW = width * 0.4f;
+        float barH = 14f;
+        float x = (width - barW) / 2f;
+        float y = height / 2f;
+
+        // Progress Text
+        drawText(shader, "MINICRAFT ALPHA", x, y - 60, 0.8f, tactBlue);
+        drawText(shader, main.loadingStatus.toUpperCase(), x, y - 25, 0.4f, textColor);
+
+        // Bar frame
+        drawTacticalFrame(shader, x - 10, y - 5, barW + 20, barH + 20);
+        
+        // Progress Bar
+        float fill = barW * main.loadingProgress;
+        drawRectInternal(shader, x, y, barW, barH, new Vector4f(0, 0, 0, 0.5f)); // Track
+        drawRectInternal(shader, x, y, fill, barH, tactBlue); // Fill
+        drawRectInternal(shader, x, y, fill, 2f, barShine);   // Shine
+        
+        // Percentage
+        String pct = String.format("%d%%", (int)(main.loadingProgress * 100));
+        drawText(shader, pct, x + barW - 40, y - 25, 0.4f, tactBlue);
+
+        glDisable(GL_BLEND);
     }
 
     public void cleanup() {

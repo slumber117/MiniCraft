@@ -91,6 +91,7 @@ public class CraftingManager {
         addToolSet("Uranium", "URANIUM_ORE", 5, 20.0f);
         addArmorSet("Plutonium", "PLUTONIUM_ORE", 0.28f, 4, 1.0f, 1.0f, 0.5f,
                 new minicraft.math.Vector3f(1.0f, 0.45f, 0.05f)); // Orange Glow
+        addToolSet("Plutonium", "PLUTONIUM_ORE", 6, 25.0f);
 
         // --- 7. ADVANCED TECHNOLOGY ---
         Map<Item, Integer> consoleIng = new HashMap<>();

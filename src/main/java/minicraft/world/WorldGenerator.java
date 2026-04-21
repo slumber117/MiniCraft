@@ -1,178 +1,117 @@
 package minicraft.world;
 
+import com.github.xandergos.terraindiffusionmc.pipeline.LocalTerrainProvider;
+import com.github.xandergos.terraindiffusionmc.pipeline.LocalTerrainProvider.HeightmapData;
+
 /**
  * WorldGenerator — public entry point for terrain generation.
  *
- * Usage:
- * <pre>
- *   WorldGenerator gen = new WorldGenerator(12345L);
- *
- *   // Query a single tile:
- *   WorldCell cell = gen.generate(worldX, worldZ);
- *
- *   // Query a rectangular region (e.g., a chunk):
- *   WorldCell[][] chunk = gen.generateRegion(chunkOriginX, chunkOriginZ, 16, 16);
- * </pre>
- *
- * All coordinates are world-space integers (or doubles for sub-tile precision).
- * The generator is stateless after construction and fully thread-safe — multiple
- * chunk-loading threads may call it concurrently without synchronisation.
- *
- * ── Architecture overview ────────────────────────────────────────────────────
- *
- *   WorldGenerator
- *       │
- *       ├── ClimateMap          (temperature, humidity, continentalness)
- *       │       └── PerlinNoise ×5  (temp, humid, continent, warp×2)
- *       │
- *       └── ElevationMap        (final heightmap)
- *               └── PerlinNoise ×4  (base, ridge, detail, warp)
- *                   ClimateMap  (shared — passed by reference)
- *
- * The separation means climate and elevation can be queried independently.
- * For example, a biome-colour minimap only needs ClimateMap; a heightmap
- * renderer only needs ElevationMap.
+ * Modified to utilize HuggingFace/ONNX AI Terrain Diffusion via LocalTerrainProvider.
  */
 public class WorldGenerator {
 
-    private final ClimateMap  climate;
-    private final ElevationMap elevation;
-
     private final long seed;
 
-    // ── Constructor ───────────────────────────────────────────────────────
-
-    /**
-     * Constructs a new world generator with the given seed.
-     *
-     * @param seed Any long — identical seeds always produce identical worlds.
-     */
     public WorldGenerator(long seed) {
-        this.seed      = seed;
-        this.climate   = new ClimateMap(seed);
-        this.elevation = new ElevationMap(seed, climate);
+        this.seed = seed;
+        LocalTerrainProvider.init(seed);
+        com.github.xandergos.terraindiffusionmc.pipeline.ModelAssetManager.ensureAssetsReady();
     }
 
-    // ── Single-tile query ─────────────────────────────────────────────────
-
-    /**
-     * Generates full world data for a single world-space coordinate.
-     *
-     * This is the core method. All other generate* methods delegate here.
-     *
-     * @param x World X coordinate
-     * @param z World Z coordinate (depth/south axis)
-     * @return  A {@link WorldCell} containing elevation, climate, and biome.
-     */
     public WorldCell generate(double x, double z) {
-        float temp         = climate.getTemperature(x, z);
-        float humid        = climate.getHumidity(x, z);
-        float continental  = climate.getContinentalness(x, z);
-        float elev         = elevation.getElevation(x, z);
-
-        Biome biome = Biome.classify(temp, humid, elev);
-
-        return new WorldCell(elev, temp, humid, continental, biome);
+        int ix = (int) Math.floor(x);
+        int iz = (int) Math.floor(z);
+        return generateRegion(ix, iz, 1, 1)[0][0];
     }
 
-    /** Integer-coordinate convenience overload. */
     public WorldCell generate(int x, int z) {
-        return generate((double) x, (double) z);
+        return generateRegion(x, z, 1, 1)[0][0];
     }
 
-    // ── Region query ──────────────────────────────────────────────────────
-
     /**
-     * Generates a rectangular grid of world cells.
-     *
-     * The returned array is indexed as [x][z] — i.e., result[0][0] corresponds
-     * to (originX, originZ) and result[width-1][height-1] to
-     * (originX + width - 1, originZ + height - 1).
-     *
-     * @param originX World X of the top-left corner
-     * @param originZ World Z of the top-left corner
-     * @param width   Number of tiles along the X axis
-     * @param height  Number of tiles along the Z axis
-     */
-    /**
-     * Generates a rectangular grid of world cells with High-Fidelity Thermal Erosion.
-     *
-     * This method generates a larger heightmap "halo", applies 25 passes of 
-     * geological settling (erosion), and then classifies biomes based on the 
-     * final settled height.
+     * Generates a rectangular grid using ML inference.
      */
     public WorldCell[][] generateRegion(int originX, int originZ, int width, int height) {
-        int padding = 4; // To ensure erosion is stable at the edges
-        int gridW = width + padding * 2;
-        int gridH = height + padding * 2;
-        float[][] rawHeights = new float[gridW][gridH];
+        LocalTerrainProvider provider = LocalTerrainProvider.getInstance();
+        HeightmapData data = provider.fetchHeightmap(originZ, originX, originZ + height, originX + width);
 
-        // 1. Generate raw geological noise
-        for (int dx = 0; dx < gridW; dx++) {
-            for (int dz = 0; dz < gridH; dz++) {
-                rawHeights[dx][dz] = elevation.getRawElevation(originX - padding + dx, originZ - padding + dz);
-            }
-        }
-
-        // 2. Apply High-Fidelity Thermal Erosion
-        TerrainProcessor processor = new TerrainProcessor(0.12f, 0.45f, 25);
-        processor.erode(rawHeights);
-
-        // 3. Finalize WorldCells (Biome shaping + Detail)
         WorldCell[][] cells = new WorldCell[width][height];
-        for (int dx = 0; dx < width; dx++) {
-            for (int dz = 0; dz < height; dz++) {
-                int worldX = originX + dx;
-                int worldZ = originZ + dz;
-                float erodedElev = rawHeights[dx + padding][dz + padding];
-                
-                // Re-sample climate at the exact spot
-                float temp = climate.getTemperature(worldX, worldZ);
-                float humid = climate.getHumidity(worldX, worldZ);
-                float continental = climate.getContinentalness(worldX, worldZ);
-                
-                // Shape the eroded height via biome curves
-                float finalElev = elevation.applyBiomeShaping(worldX, worldZ, erodedElev);
-                Biome biome = Biome.classify(temp, humid, finalElev);
+        for (int x = 0; x < width; x++) {
+            for (int z = 0; z < height; z++) {
+                float meters = data.heightmap[z][x];
+                int targetY = com.github.xandergos.terraindiffusionmc.world.HeightConverter.convertToMinecraftHeight((short)meters);
+                float elev = (float)targetY / minicraft.world.Chunk.HEIGHT;
 
-                cells[dx][dz] = new WorldCell(finalElev, temp, humid, continental, biome);
+                short mlBiomeId = data.biomeIds[z][x];
+                Biome biome = mapMlBiome(mlBiomeId);
+
+                // Climate values are normalized mock data since the engine previously used [0..1] Perlin noise
+                float temp = getMockTemp(biome);
+                float humid = getMockHumid(biome);
+                float continental = elev / 100f; // Scale it down for the engine's internal checks
+
+                cells[x][z] = new WorldCell(elev, temp, humid, continental, biome);
             }
         }
         return cells;
     }
 
-    // ── Thin accessors for specialised use ────────────────────────────────
+    private Biome mapMlBiome(short mlId) {
+        switch (mlId) {
+            case 1:  /* PLAINS */ return Biome.GRASSLAND;
+            case 3:  /* SNOWY_PLAINS */ return Biome.TUNDRA;
+            case 5:  /* DESERT */ return Biome.DESERT;
+            case 6:  /* SWAMP */ return Biome.JUNGLE;
+            case 8:  /* FOREST */ return Biome.FOREST;
+            case 15: /* TAIGA */ return Biome.REDWOOD;
+            case 16: /* SNOWY_TAIGA */ return Biome.SNOWY_FOREST;
+            case 17: /* SAVANNA */ return Biome.SAVANNA;
+            case 19: /* WINDSWEPT_HILLS */ return Biome.HIGHLANDS;
+            case 23: /* JUNGLE */ return Biome.JUNGLE;
+            case 26: /* BADLANDS */ return Biome.DESERT;
+            case 29: /* MEADOW */ return Biome.GRASSLAND;
+            case 31: /* GROVE */ return Biome.FOREST;
+            case 32: /* SNOWY_SLOPES */ return Biome.SNOWY_PEAKS;
+            case 33: /* FROZEN_PEAKS */ return Biome.SNOWY_PEAKS;
+            case 35: /* STONY_PEAKS */ return Biome.MOUNTAINS;
+            case 41: /* WARM_OCEAN */ return Biome.OCEAN;
+            case 44: /* OCEAN */ return Biome.OCEAN;
+            case 46: /* COLD_OCEAN */ return Biome.OCEAN;
+            case 48: /* FROZEN_OCEAN */ return Biome.FROZEN_OCEAN;
+            case 108: /* FOREST_SPARSE */ return Biome.FOREST;
+            case 115: /* TAIGA_SPARSE */ return Biome.REDWOOD;
+            case 116: /* SNOWY_TAIGA_SPARSE */ return Biome.SNOWY_FOREST;
+            default: return Biome.GRASSLAND;
+        }
+    }
 
-    /**
-     * Returns only the elevation at the given coordinate.
-     * Cheaper than {@link #generate} when climate data is not needed.
-     */
+    private float getMockTemp(Biome b) {
+        if (b == Biome.ARCTIC || b == Biome.TUNDRA || b == Biome.SNOWY_FOREST || b == Biome.SNOWY_PEAKS || b == Biome.FROZEN_OCEAN) return 0.1f;
+        if (b == Biome.DESERT || b == Biome.JUNGLE || b == Biome.SAVANNA) return 0.9f;
+        return 0.5f;
+    }
+
+    private float getMockHumid(Biome b) {
+        if (b == Biome.OCEAN || b == Biome.FROZEN_OCEAN || b == Biome.JUNGLE || b == Biome.FOREST || b == Biome.REDWOOD) return 0.8f;
+        if (b == Biome.DESERT || b == Biome.SAVANNA || b == Biome.ARCTIC) return 0.1f;
+        return 0.5f;
+    }
+
     public float getElevationOnly(double x, double z) {
-        return elevation.getElevation(x, z);
+        return generate(x, z).elevation;
     }
 
-    /**
-     * Returns only the temperature at the given coordinate.
-     */
     public float getTemperatureOnly(double x, double z) {
-        return climate.getTemperature(x, z);
+        return generate(x, z).temperature;
     }
 
-    /**
-     * Returns only the humidity at the given coordinate.
-     */
     public float getHumidityOnly(double x, double z) {
-        return climate.getHumidity(x, z);
+        return generate(x, z).humidity;
     }
 
-    /**
-     * Returns only the continentalness at the given coordinate.
-     */
     public float getContinentalnessOnly(double x, double z) {
-        return climate.getContinentalness(x, z);
+        return generate(x, z).continentalness;
     }
-
-    // ── Metadata ──────────────────────────────────────────────────────────
 
     public long getSeed() {
         return seed;

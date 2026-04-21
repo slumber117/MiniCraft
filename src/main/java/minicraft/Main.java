@@ -124,11 +124,14 @@ public class Main {
 
     // ── UI state ──────────────────────────────────────────────────────────
     public boolean craftingOpen = false;
-    public boolean inventoryOpen = false;
-    public boolean chestOpen = false;
-    public boolean furnaceOpen = false;
-    public boolean cookerOpen = false;
-    public boolean shipConsoleOpen = false;
+    public boolean inventoryOpen = false, chestOpen = false;
+    public boolean shipConsoleOpen = false, furnaceOpen = false, cookerOpen = false;
+
+    // --- Loading State ---
+    public volatile boolean isLoading = true;
+    public volatile float loadingProgress = 0f;
+    public volatile String loadingStatus = "Waking up AI Terrain Diffusion...";
+    public long gameStartedTime = 0;
     public minicraft.entity.Inventory activeChest = null;
     public minicraft.entity.ProcessingFacility activeFacility = null;
     public String activeStatusMessage = "";
@@ -172,31 +175,13 @@ public class Main {
 
     public void run() {
         try {
-            System.out.println("MiniCraft | LWJGL " + Version.getVersion());
-
-            // ── Initialise registries BEFORE anything else ────────────────
-            ShipRegistry.initialize();
-
-            // ── Fixed-timestep game loop (20 Hz) ─────────────────────────
-            gameLoop = new GameLoop(20);
-
-            init();
+            initLWJGL();
             setup();
             loop();
-            cleanup();
-
         } catch (Exception e) {
-            System.err.println("CRITICAL ENGINE ERROR: See crash_report.txt");
-            try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter("crash_report.txt"))) {
-                e.printStackTrace(pw);
-                pw.println("\n--- Engine State ---");
-                pw.println("World ready:    " + (world != null));
-                pw.println("Player health:  " + (player != null ? player.getHealth() : "N/A"));
-            } catch (java.io.IOException io) {
-                io.printStackTrace();
-            }
             e.printStackTrace();
-            System.exit(-1);
+        } finally {
+            cleanup();
         }
     }
 
@@ -208,11 +193,14 @@ public class Main {
         return world;
     }
 
+    public int getFramebufferW() { return framebufferW; }
+    public int getFramebufferH() { return framebufferH; }
+
     // ─────────────────────────────────────────────────────────────────────
     // init() — GLFW window + callbacks
     // ─────────────────────────────────────────────────────────────────────
 
-    private void init() {
+    private void initLWJGL() {
         GLFWErrorCallback.createPrint(System.err).set();
         if (!glfwInit())
             throw new IllegalStateException("Cannot init GLFW");
@@ -365,6 +353,9 @@ public class Main {
 
     private void setup() throws Exception {
         GL.createCapabilities();
+        gameLoop = new GameLoop(20);
+        entityManager = new EntityManager();
+        ShipRegistry.initialize();
 
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
@@ -378,42 +369,72 @@ public class Main {
 
         // ── World — created ONCE ──────────────────────────────────────────
         world = new World(SEED, textures, RENDER_DISTANCE);
-        System.out.println("Generating initial chunks...");
-        world.update(0, 0, 0f);
-        System.out.println("World ready.");
-
         camera = new Camera();
-
-        for (int x = -1; x <= 1; x++)
-            for (int z = -1; z <= 1; z++)
-                world.getOrGenerate(x, z);
-
-        minicraft.math.Vector3f spawnPos = world.findSafeGrassSpawn(8, 8);
-        System.out.println("Spawn: " + spawnPos);
-
         player = new Player(camera);
-        player.setPosition(spawnPos.x, spawnPos.y, spawnPos.z);
 
-        Item torch = new Item("TORCH", Block.TORCH);
-        player.inventory.add(torch, 10);
-        player.inventory.setOffhandItem(torch);
+        // Start background generation
+        new Thread(() -> {
+            try {
+                loadingStatus = "Analyzing neural landscape...";
+                loadingProgress = 0.1f;
+                
+                // Pre-warm the ML assets
+                com.github.xandergos.terraindiffusionmc.pipeline.ModelAssetManager.ensureAssetsReady();
+                loadingProgress = 0.3f;
+                loadingStatus = "Synthesizing natural landforms...";
 
-        ToolItem sword = new ToolItem("Bronze Sword", ToolItem.ToolType.SWORD, 2, 5.0f, "item_sword_bronze");
-        ToolItem pick = new ToolItem("Wooden Pickaxe", ToolItem.ToolType.PICKAXE, 0, 2.0f, "item_pick_wood");
-        player.inventory.add(sword, 1);
-        player.inventory.add(pick, 1);
+                // Generate initial spawn region
+                for (int x = -1; x <= 1; x++) {
+                    for (int z = -1; z <= 1; z++) {
+                        world.getOrGenerate(x, z);
+                        loadingProgress = 0.3f + 0.2f * ((x + 1) * 3 + (z + 1)) / 9f;
+                    }
+                }
 
-        // Testing kits for new Facilities
-        player.inventory.add(Block.COOKER, 1);
-        player.inventory.add(Block.FURNACE, 1);
-        player.inventory.add(Block.COAL_ORE, 15);
-        player.inventory.add(Block.IRON_ORE, 5);
-        player.inventory.add(new Item("RAW_MEAT"), 5);
+                loadingStatus = "Finding optimal landing site...";
+                loadingProgress = 0.7f;
+                minicraft.math.Vector3f spawnPos = world.findSafeGrassSpawn(8, 8);
+                
+                int scx = Math.floorDiv((int)spawnPos.x, minicraft.world.Chunk.WIDTH);
+                int scz = Math.floorDiv((int)spawnPos.z, minicraft.world.Chunk.DEPTH);
+                
+                loadingStatus = "Synthesizing landing zone...";
+                world.getOrGenerate(scx, scz); // Ensure it's requested
+                
+                // Safety Gate: Wait for actual chunk arrival
+                while(world.getChunk(scx, scz) == null) {
+                    Thread.sleep(100);
+                }
 
-        camera.setPosition(spawnPos.x, spawnPos.y + 1.6f, spawnPos.z);
+                player.setPosition(spawnPos.x, spawnPos.y + 1.2f, spawnPos.z);
+                camera.setPosition(spawnPos.x, spawnPos.y + 1.2f + 1.6f, spawnPos.z);
+                
+                // --- Initial Player Status ---
+                player.inventory.add(new Item("TORCH", Block.TORCH), 10);
+                player.inventory.setOffhandItem(new Item("TORCH", Block.TORCH));
+                player.inventory.add(new ToolItem("Bronze Sword", ToolItem.ToolType.SWORD, 2, 5.0f, "item_sword_bronze"), 1);
+                player.inventory.add(new ToolItem("Wooden Pickaxe", ToolItem.ToolType.PICKAXE, 0, 2.0f, "item_pick_wood"), 1);
+                
+                // Facility testing kit
+                player.inventory.add(Block.COOKER, 1);
+                player.inventory.add(Block.FURNACE, 1);
+                player.inventory.add(Block.COAL_ORE, 15);
+                player.inventory.add(Block.IRON_ORE, 5);
+                player.inventory.add(new Item("RAW_MEAT"), 5);
 
-        entityManager = new EntityManager();
-        entityManager.spawn(player);
+                entityManager.spawn(player);
+
+                loadingStatus = "Finalizing terrain integration...";
+                loadingProgress = 1.0f;
+                Thread.sleep(800); // Premium pause
+                
+                isLoading = false;
+                gameStartedTime = System.currentTimeMillis();
+            } catch (Exception e) {
+                e.printStackTrace();
+                loadingStatus = "Initialization failed: " + e.getMessage();
+            }
+        }, "WorldGenThread").start();
 
         // ── Register fixed-tick systems ───────────────────────────────────
         gameLoop.addTickable(dt -> {
@@ -513,6 +534,14 @@ public class Main {
             long now = System.nanoTime();
             float dt = (now - lastTime) / 1_000_000_000f;
             lastTime = now;
+
+            if (isLoading) {
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                uiRenderer.renderLoadingScreen(shaderProgram, framebufferW, framebufferH, this);
+                glfwSwapBuffers(window);
+                glfwPollEvents();
+                continue;
+            }
 
             // ── Cursor mode ───────────────────────────────────────────────
             if (inventoryOpen || craftingOpen || shipConsoleOpen || chestOpen || furnaceOpen || cookerOpen) {
@@ -1177,9 +1206,12 @@ public class Main {
             for (int i = 0; i < filtered.size(); i++) {
                 int col = i % COLS, row = i / COLS;
                 float ix = GX + col * (ICON_SIZE + ICON_GAP);
-                float iy = GY + row * (ICON_SIZE + ICON_GAP);
-                if (iy + ICON_SIZE > SY + MENU_H - 30f)
-                    break;
+                float iy = GY + row * (ICON_SIZE + ICON_GAP) - recipeScrollOffset;
+                
+                // Clip to viewport
+                if (iy + ICON_SIZE < GY || iy > SY + MENU_H - 30f)
+                    continue;
+
                 if (x >= ix && x <= ix + ICON_SIZE && y >= iy && y <= iy + ICON_SIZE) {
                     recipeIndex = i;
                     break;
@@ -1212,6 +1244,26 @@ public class Main {
                 recipeIndex = Math.max(0, recipeIndex - 1);
             if (isRight && !prevRight)
                 recipeIndex = Math.min(filtered.size() - 1, recipeIndex + 1);
+
+            // Handle Mouse Wheel
+            if (glfwGetWindowAttrib(window, GLFW_HOVERED) != 0) {
+                // Approximate wheel delta from a static or pending scroll field if it existed, 
+                // but since we don't have a direct scroll callback field for crafting yet, 
+                // we use a simple jump for now until I add a scroll callback or use a known one.
+                // For now, let's just ensure Smart Scroll works.
+            }
+
+            // Smart Scroll: Ensure recipeIndex is in view
+            int selRow = recipeIndex / COLS;
+            float selYMin = GY + selRow * (ICON_SIZE + ICON_GAP) - recipeScrollOffset;
+            float selYMax = selYMin + ICON_SIZE;
+            float viewMax = SY + MENU_H - 30f;
+
+            if (selYMin < GY) {
+                recipeScrollOffset = (int) (selRow * (ICON_SIZE + ICON_GAP));
+            } else if (selYMax > viewMax) {
+                recipeScrollOffset = (int) ((selRow + 1) * (ICON_SIZE + ICON_GAP) - (viewMax - GY));
+            }
         }
         if (isEnter && !prevEnter && recipeIndex < filtered.size())
             craftingManager.craft(filtered.get(recipeIndex), player.inventory);

@@ -28,31 +28,49 @@ public class TerrainProcessor {
     public void erode(float[][] grid) {
         int width = grid.length;
         int height = grid[0].length;
+        float[][] nextGrid = new float[width][height];
 
         for (int iter = 0; iter < iterations; iter++) {
-            // We use a simple 4-neighbor check. 
-            // In each pass, we check slopes and move height from high to low.
+            for (int x = 0; x < width; x++) {
+                System.arraycopy(grid[x], 0, nextGrid[x], 0, height);
+            }
+
             for (int x = 1; x < width - 1; x++) {
                 for (int z = 1; z < height - 1; z++) {
                     float h = grid[x][z];
                     
-                    // Check neighbors: North, South, East, West
-                    // We look for the neighbor with the lowest height
-                    int lowX = x, lowZ = z;
-                    float minH = h;
+                    float dN = h - grid[x][z-1];
+                    float dS = h - grid[x][z+1];
+                    float dE = h - grid[x+1][z];
+                    float dW = h - grid[x-1][z];
 
-                    if (grid[x+1][z] < minH) { minH = grid[x+1][z]; lowX = x+1; lowZ = z; }
-                    if (grid[x-1][z] < minH) { minH = grid[x-1][z]; lowX = x-1; lowZ = z; }
-                    if (grid[x][z+1] < minH) { minH = grid[x][z+1]; lowX = x;   lowZ = z+1; }
-                    if (grid[x][z-1] < minH) { minH = grid[x][z-1]; lowX = x;   lowZ = z-1; }
+                    float maxDiff = Math.max(Math.max(dN, dS), Math.max(dE, dW));
 
-                    float diff = h - minH;
-                    if (diff > talusThreshold) {
-                        float move = (diff - talusThreshold) * erosionRate;
-                        grid[x][z] -= move;
-                        grid[lowX][lowZ] += move;
+                    if (maxDiff > talusThreshold) {
+                        float slopes = 0;
+                        if (dN > talusThreshold) slopes += dN;
+                        if (dS > talusThreshold) slopes += dS;
+                        if (dE > talusThreshold) slopes += dE;
+                        if (dW > talusThreshold) slopes += dW;
+
+                        // Total amount to move is proportional to the max slope over threshold
+                        // Bounded by half the max diff to avoid oscillating
+                        float totalMove = (maxDiff - talusThreshold) * erosionRate;
+                        if (totalMove > maxDiff * 0.5f) {
+                            totalMove = maxDiff * 0.5f;
+                        }
+
+                        nextGrid[x][z] -= totalMove;
+                        if (dN > talusThreshold) nextGrid[x][z-1] += totalMove * (dN / slopes);
+                        if (dS > talusThreshold) nextGrid[x][z+1] += totalMove * (dS / slopes);
+                        if (dE > talusThreshold) nextGrid[x+1][z] += totalMove * (dE / slopes);
+                        if (dW > talusThreshold) nextGrid[x-1][z] += totalMove * (dW / slopes);
                     }
                 }
+            }
+
+            for (int x = 0; x < width; x++) {
+                System.arraycopy(nextGrid[x], 0, grid[x], 0, height);
             }
         }
     }

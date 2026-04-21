@@ -10,6 +10,7 @@ import minicraft.renderer.ShaderProgram;
 import minicraft.renderer.TextureRegistry;
 import minicraft.world.cave.geode.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Procedural world system (400 Height optimized).
@@ -24,7 +25,7 @@ public class World {
 
     private final WorldGenerator generator;
     private final TextureRegistry textures;
-    private final Map<Long, Chunk> chunks = new HashMap<>();
+    private final Map<Long, Chunk> chunks = new ConcurrentHashMap<>();
 
     private Block getGemBlock(GemType type) {
         if (type == null) return Block.STONE;
@@ -39,8 +40,8 @@ public class World {
     }
 
     // FIXED: Changed String to Long to match packPos logic
-    private final Map<Long, minicraft.entity.Inventory> worldContainers = new HashMap<>();
-    private final Map<Long, minicraft.entity.ProcessingFacility> worldFacilities = new HashMap<>();
+    private final Map<Long, minicraft.entity.Inventory> worldContainers = new ConcurrentHashMap<>();
+    private final Map<Long, minicraft.entity.ProcessingFacility> worldFacilities = new ConcurrentHashMap<>();
 
     private final StructureGenerator structGen = new StructureGenerator();
     private final CaveCarver caveCarver;
@@ -76,6 +77,10 @@ public class World {
 
     public Chunk getOrGenerate(int cx, int cz) {
         return chunks.computeIfAbsent(key(cx, cz), k -> generate(cx, cz));
+    }
+
+    public Chunk getChunk(int cx, int cz) {
+        return chunks.get(key(cx, cz));
     }
 
     public Block getBlock(int globalX, int globalY, int globalZ) {
@@ -477,33 +482,20 @@ public class World {
     }
 
     public minicraft.math.Vector3f findSafeGrassSpawn(int startX, int startZ) {
-        int maxSteps = 50000;
+        // Optimized for AI: Scan only local area first to save on CPU inference
+        int maxSteps = 10; 
         for (int i = 0; i < maxSteps; i++) {
-            int rx = startX + (int) (Math.random() * 40000 - 20000);
-            int rz = startZ + (int) (Math.random() * 40000 - 20000);
-            int cx = (int) Math.floor(rx / 16.0);
-            int cz = (int) Math.floor(rz / 16.0);
-            cx = (cx / 64) * 64;
-            cz = (cz / 64) * 64;
-            rx = cx * 16;
-            rz = cz * 16;
+            int rx = startX + (int) (Math.random() * 200 - 100);
+            int rz = startZ + (int) (Math.random() * 200 - 100);
             WorldCell cell = generator.generate(rx, rz);
-            if (cell.biome == Biome.MOUNTAINS || cell.biome == Biome.SNOWY_PEAKS || cell.biome == Biome.HIGHLANDS) {
-                int predictedSurfaceY = (int) (cell.elevation * Chunk.HEIGHT);
-                boolean isInitialSpawnChunk = (cx == 0 && cz == 0);
-                if (predictedSurfaceY > 160 || isInitialSpawnChunk) {
-                    WorldCell syncCell = generator.generate(cx * 16 + 8, cz * 16 + 8);
-                    boolean isShipyardBiome = (syncCell.biome == Biome.MOUNTAINS || syncCell.biome == Biome.SNOWY_PEAKS
-                            || syncCell.biome == Biome.HIGHLANDS);
-                    if (isInitialSpawnChunk || (isShipyardBiome && (int) (syncCell.elevation * Chunk.HEIGHT) > 160)) {
-                        getOrGenerate(cx, cz);
-                        int peakY = getSafeSpawnY(cx * 16 + 12, cz * 16 + 12);
-                        return new minicraft.math.Vector3f(cx * 16 + 15.5f, peakY + 1.0f, cz * 16 + 15.5f);
-                    }
-                }
+            
+            // Look for non-ocean
+            if (cell.elevation > 0.45f) {
+                return new minicraft.math.Vector3f(rx, (float)(cell.elevation * Chunk.HEIGHT) + 2.0f, rz);
             }
         }
-        return new minicraft.math.Vector3f(startX, getSafeSpawnY(startX, startZ), startZ);
+        // Fallback to center if no high ground found quickly
+        return new minicraft.math.Vector3f(startX, 250.0f, startZ);
     }
 
     public int getSafeSpawnY(int x, int z) {
