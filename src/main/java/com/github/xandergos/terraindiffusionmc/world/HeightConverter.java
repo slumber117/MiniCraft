@@ -4,10 +4,13 @@ import com.github.xandergos.terraindiffusionmc.pipeline.WorldPipelineModelConfig
 
 public class HeightConverter {
     private static final int SEA_LEVEL = 102;
-    private static final short MAX_PIPELINE_METERS = 3000; // Cap to keep mountains within 640 limit
+    private static final float GAMMA = 0.92f;
+    private static final float C = 30.0f;
+    private static final float C_GAMMA = (float) Math.pow(C, GAMMA);
 
     private static float getResolutionForScale(int configuredScale) {
-        return WorldPipelineModelConfig.nativeResolution() / WorldScaleManager.clampScale(configuredScale);
+        // We divide by 1.8 to "stretch" the terrain vertically for more dramatic peaks
+        return (WorldPipelineModelConfig.nativeResolution() / WorldScaleManager.clampScale(configuredScale)) / 1.8f;
     }
 
     public static int convertToMinecraftHeight(short meters) {
@@ -15,22 +18,18 @@ public class HeightConverter {
     }
 
     public static int convertToMinecraftHeight(short meters, int configuredScale) {
-        int baseY;
         float resolution = getResolutionForScale(configuredScale);
+        float transformed;
 
         if (meters >= 0) {
-            baseY = (int) (meters / resolution);
+            // High-fidelity gamma compression: keeps detail in lowlands, prevents clipping at peaks
+            transformed = (float) (Math.pow(meters + C, GAMMA) - C_GAMMA);
         } else {
-            baseY = (int) (-Math.sqrt(Math.abs(meters) + 10) + Math.sqrt(10.0)) - 1;
+            // Linear ocean mapping for realistic deep trenches
+            transformed = meters;
         }
 
-        return baseY + SEA_LEVEL;
+        return (int) (transformed / resolution) + SEA_LEVEL;
     }
 
-    /**
-     * Returns the highest generated block Y expected from pipeline output for a given scale.
-     */
-    public static int getMaxGeneratedYForScale(int configuredScale) {
-        return convertToMinecraftHeight(MAX_PIPELINE_METERS, configuredScale);
-    }
 }

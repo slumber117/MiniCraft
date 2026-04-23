@@ -11,6 +11,7 @@ import minicraft.renderer.TextureRegistry;
 import minicraft.world.cave.geode.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Procedural world system (400 Height optimized).
@@ -26,16 +27,29 @@ public class World {
     private final WorldGenerator generator;
     private final TextureRegistry textures;
     private final Map<Long, Chunk> chunks = new ConcurrentHashMap<>();
+    private final Set<Long> pendingChunks = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Queue<long[]> generationQueue = new ConcurrentLinkedQueue<>();
 
     private Block getGemBlock(GemType type) {
         if (type == null) return Block.STONE;
         switch (type) {
-            case DIAMOND:   return Block.DIAMOND_ORE;
-            case EMERALD:   return Block.EMERALD_ORE;
-            case RUBY:      return Block.RUBY_ORE;
-            case TANZANITE: return Block.TANZANITE_ORE;
-            case AMETHYST: 
-            default:        return Block.AMETHYST_ORE;
+            case DIAMOND:       return Block.DIAMOND_ORE;
+            case EMERALD:       return Block.EMERALD_ORE;
+            case RUBY:          return Block.RUBY_ORE;
+            case TANZANITE:     return Block.TANZANITE_ORE;
+            case AMETHYST:      return Block.AMETHYST_ORE;
+            case AGATE:         return Block.AGATE_ORE;
+            case GARNET:        return Block.GARNET_ORE;
+            case TOURMALINE:    return Block.TOURMALINE_ORE;
+            case OPAL:          return Block.OPAL_ORE;
+            case ALEXANDRITE:   return Block.ALEXANDRITE_ORE;
+            case ONYX:          return Block.ONYX_ORE;
+            case PAINITE:       return Block.PAINITE_ORE;
+            case MUSGRAVITE:    return Block.MUSGRAVITE_ORE;
+            case TAAFFEITE:     return Block.TAAFFEITE_ORE;
+            case GRANDIDIERITE: return Block.GRANDIDIERITE_ORE;
+            case SERENDIBITE:   return Block.SERENDIBITE_ORE;
+            default:            return Block.STONE;
         }
     }
 
@@ -77,6 +91,34 @@ public class World {
 
     public Chunk getOrGenerate(int cx, int cz) {
         return chunks.computeIfAbsent(key(cx, cz), k -> generate(cx, cz));
+    }
+
+    public Chunk requestChunk(int cx, int cz) {
+        Chunk chunk = chunks.get(key(cx, cz));
+        if (chunk != null) return chunk;
+
+        long k = key(cx, cz);
+        if (!pendingChunks.contains(k)) {
+            pendingChunks.add(k);
+            generationQueue.add(new long[]{cx, cz});
+        }
+        return null;
+    }
+
+    public void processGeneration(int cx, int cz) {
+        long k = key(cx, cz);
+        if (chunks.containsKey(k)) {
+            pendingChunks.remove(k);
+            return;
+        }
+
+        Chunk chunk = generate(cx, cz);
+        chunks.put(k, chunk);
+        pendingChunks.remove(k);
+    }
+
+    public Queue<long[]> getGenerationQueue() {
+        return generationQueue;
     }
 
     public Chunk getChunk(int cx, int cz) {
@@ -383,6 +425,18 @@ public class World {
         spawnOreGrip(chunk, Block.PLUTONIUM_ORE, ClusterSize.SMALL, 2, 2, 20);
         spawnOreGrip(chunk, Block.ADAMANTINE_ORE, ClusterSize.TINY, 1, 2, 15);
         spawnOreGrip(chunk, Block.MITHRIL_ORE, ClusterSize.TINY, 2, 2, 30);
+
+        // Tier 5: Legendary Gems (Deepest Layers Y: 0 - 15)
+        spawnOreGrip(chunk, Block.ONYX_ORE, ClusterSize.TINY, 1, 2, 12);
+        spawnOreGrip(chunk, Block.ALEXANDRITE_ORE, ClusterSize.TINY, 1, 5, 20);
+        spawnOreGrip(chunk, Block.OPAL_ORE, ClusterSize.TINY, 2, 5, 40);
+
+        // Tier 6: Absolute Rarity (Deepest Core Y: 0 - 8)
+        spawnOreGrip(chunk, Block.SERENDIBITE_ORE, ClusterSize.TINY, 1, 1, 5);
+        spawnOreGrip(chunk, Block.GRANDIDIERITE_ORE, ClusterSize.TINY, 1, 1, 6);
+        spawnOreGrip(chunk, Block.TAAFFEITE_ORE, ClusterSize.TINY, 1, 1, 7);
+        spawnOreGrip(chunk, Block.MUSGRAVITE_ORE, ClusterSize.TINY, 1, 2, 8);
+        spawnOreGrip(chunk, Block.PAINITE_ORE, ClusterSize.TINY, 1, 2, 10);
     }
 
     private enum ClusterSize { TINY(2), SMALL(4), MEDIUM(8), LARGE(12); int count; ClusterSize(int c) { count = c; } }
@@ -474,8 +528,8 @@ public class World {
         weatherManager.update(dt);
         for (int dx = -renderDistance; dx <= renderDistance; dx++) {
             for (int dz = -renderDistance; dz <= renderDistance; dz++) {
-                Chunk chunk = getOrGenerate(cx + dx, cz + dz);
-                if (chunk.isDirty())
+                Chunk chunk = requestChunk(cx + dx, cz + dz);
+                if (chunk != null && chunk.isDirty())
                     chunk.buildMesh(textures, this);
             }
         }

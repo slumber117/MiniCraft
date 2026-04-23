@@ -93,6 +93,42 @@ public class CraftingManager {
                 new minicraft.math.Vector3f(1.0f, 0.45f, 0.05f)); // Orange Glow
         addToolSet("Plutonium", "PLUTONIUM_ORE", 6, 25.0f);
 
+        // --- 8. LEGENDARY GEM TIERS (Zenith Industry) ---
+        addArmorSet("Agate", "AGATE_ORE", 0.20f, 3, 0.5f, 1.05f, 0.3f, null);
+        addToolSet("Agate", "AGATE_ORE", 4, 14.0f);
+
+        addArmorSet("Garnet", "GARNET_ORE", 0.22f, 3, 1.0f, 1.0f, 0.4f, null);
+        addToolSet("Garnet", "GARNET_ORE", 4, 15.0f);
+
+        addArmorSet("Tourmaline", "TOURMALINE_ORE", 0.22f, 3, 0.5f, 1.15f, 0.4f, null);
+        addToolSet("Tourmaline", "TOURMALINE_ORE", 4, 16.0f);
+
+        addArmorSet("Opal", "OPAL_ORE", 0.24f, 4, 2.0f, 1.0f, 0.5f, null);
+        addToolSet("Opal", "OPAL_ORE", 5, 18.0f);
+
+        addArmorSet("Alexandrite", "ALEXANDRITE_ORE", 0.26f, 4, 1.5f, 1.1f, 0.4f, null);
+        addToolSet("Alexandrite", "ALEXANDRITE_ORE", 5, 20.0f);
+
+        addArmorSet("Onyx", "ONYX_ORE", 0.35f, 5, 3.0f, 0.9f, 0.7f, null); // Heavier than Adamantine
+        addToolSet("Onyx", "ONYX_ORE", 6, 22.0f);
+
+        // --- 9. RAREST MINERAL TIERS (The Absolute Limit) ---
+        addArmorSet("Painite", "PAINITE_ORE", 0.40f, 6, 5.0f, 1.0f, 0.8f, null);
+        addToolSet("Painite", "PAINITE_ORE", 7, 30.0f);
+
+        addArmorSet("Musgravite", "MUSGRAVITE_ORE", 0.42f, 6, 6.0f, 1.0f, 0.8f, null);
+        addToolSet("Musgravite", "MUSGRAVITE_ORE", 7, 35.0f);
+
+        addArmorSet("Taaffeite", "TAAFFEITE_ORE", 0.45f, 7, 7.0f, 1.0f, 0.9f, null);
+        addToolSet("Taaffeite", "TAAFFEITE_ORE", 8, 40.0f);
+
+        addArmorSet("Grandidierite", "GRANDIDIERITE_ORE", 0.48f, 7, 8.0f, 1.1f, 0.9f, null);
+        addToolSet("Grandidierite", "GRANDIDIERITE_ORE", 8, 45.0f);
+
+        addArmorSet("Serendibite", "SERENDIBITE_ORE", 0.55f, 8, 10.0f, 1.2f, 1.0f, 
+                new minicraft.math.Vector3f(0.1f, 0.1f, 0.5f)); // Cosmic Glow
+        addToolSet("Serendibite", "SERENDIBITE_ORE", 9, 60.0f);
+
         // --- 7. ADVANCED TECHNOLOGY ---
         Map<Item, Integer> consoleIng = new HashMap<>();
         consoleIng.put(new Item("IRON_INGOT", null), 10);
@@ -114,19 +150,19 @@ public class CraftingManager {
 
         // Gems
         else if (mat.equals("RUBY_ORE"))
-            tex = "item_gem_ruby";
+            tex = "item_gem_ruby_standalone_v2";
         else if (mat.equals("SAPPHIRE_ORE"))
-            tex = "item_ingot_sapphire"; // Rendered as bar per request
+            tex = "item_ingot_sapphire_standalone"; // Rendered as bar per request
         else if (mat.equals("DIAMOND_ORE"))
-            tex = "item_gem_diamond";
+            tex = "item_gem_diamond_standalone_v2";
         else if (mat.equals("EMERALD_ORE"))
-            tex = "item_gem_emerald";
+            tex = "item_gem_emerald_standalone_v2";
         else if (mat.equals("TOPAZ_ORE"))
-            tex = "item_gem_topaz";
+            tex = "item_gem_topaz_standalone";
         else if (mat.equals("AMETHYST_ORE"))
-            tex = "item_gem_amethyst";
+            tex = "item_gem_amethyst_standalone";
         else if (mat.equals("AQUAMARINE_ORE"))
-            tex = "item_gem_aquamarine";
+            tex = "item_gem_aquamarine_standalone";
 
         // Atomic/Special
         else if (mat.equals("URANIUM_ORE"))
@@ -137,6 +173,10 @@ public class CraftingManager {
             tex = "item_leather";
         else if (mat.equals("OBSIDIAN"))
             tex = "block_obsidian";
+        
+        // Legendary Fallbacks (using ore textures until standalone gems are generated)
+        else if (mat.endsWith("_ORE"))
+            tex = mat.toLowerCase();
 
         return new Item(mat, null, tex, 64);
     }

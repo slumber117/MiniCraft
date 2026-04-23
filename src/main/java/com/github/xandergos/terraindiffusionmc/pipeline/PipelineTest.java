@@ -108,9 +108,9 @@ public class PipelineTest {
                     i1p + (cropI1 + localZ) / (float)scale,
                     j1p + (cropJ1 + localX) / (float)scale);
 
-            float RESOLUTION = WorldPipelineModelConfig.nativeResolution() / scale;
-            float GAMMA = 1.0f, C = 30.0f;
-            int SEA_LEVEL = 63;
+            float RESOLUTION = (WorldPipelineModelConfig.nativeResolution() / scale) / 1.8f;
+            float GAMMA = 0.92f, C = 30.0f;
+            int SEA_LEVEL = 102;
             double transformed = Math.pow(elev + C, GAMMA) - Math.pow(C, GAMMA);
             int mcY = (int)(transformed / RESOLUTION) + SEA_LEVEL;
 

@@ -45,9 +45,9 @@ public class WorldGenerator {
                 short mlBiomeId = data.biomeIds[z][x];
                 Biome biome = mapMlBiome(mlBiomeId);
 
-                // Climate values are normalized mock data since the engine previously used [0..1] Perlin noise
-                float temp = getMockTemp(biome);
-                float humid = getMockHumid(biome);
+                // Climate values from real AI inference
+                float temp = data.temperature[z][x];
+                float humid = data.humidity[z][x];
                 float continental = elev / 100f; // Scale it down for the engine's internal checks
 
                 cells[x][z] = new WorldCell(elev, temp, humid, continental, biome);
@@ -83,18 +83,6 @@ public class WorldGenerator {
             case 116: /* SNOWY_TAIGA_SPARSE */ return Biome.SNOWY_FOREST;
             default: return Biome.GRASSLAND;
         }
-    }
-
-    private float getMockTemp(Biome b) {
-        if (b == Biome.ARCTIC || b == Biome.TUNDRA || b == Biome.SNOWY_FOREST || b == Biome.SNOWY_PEAKS || b == Biome.FROZEN_OCEAN) return 0.1f;
-        if (b == Biome.DESERT || b == Biome.JUNGLE || b == Biome.SAVANNA) return 0.9f;
-        return 0.5f;
-    }
-
-    private float getMockHumid(Biome b) {
-        if (b == Biome.OCEAN || b == Biome.FROZEN_OCEAN || b == Biome.JUNGLE || b == Biome.FOREST || b == Biome.REDWOOD) return 0.8f;
-        if (b == Biome.DESERT || b == Biome.SAVANNA || b == Biome.ARCTIC) return 0.1f;
-        return 0.5f;
     }
 
     public float getElevationOnly(double x, double z) {

@@ -67,7 +67,20 @@ public enum Block {
     SAPPHIRE_ORE(true, 3, 15.0f, 15.0f, "sapphire_ore"),
     AMETHYST_ORE(true, 2, 12.0f, 12.0f, "amethyst_ore"),
     JADE_ORE(true, 2, 10.0f, 10.0f, "jade_ore"),
-    OPAL_ORE(true, 2, 15.0f, 15.0f, "opal_ore"),
+    OPAL_ORE(true, 3, 25.0f, 20.0f, "opal_ore"),
+    GARNET_ORE(true, 3, 25.0f, 20.0f, "garnet_ore"),
+    TOURMALINE_ORE(true, 3, 25.0f, 20.0f, "tourmaline_ore"),
+    AGATE_ORE(true, 3, 20.0f, 15.0f, "agate_ore"),
+    ALEXANDRITE_ORE(true, 4, 35.0f, 30.0f, "alexandrite_ore"),
+    ONYX_ORE(true, 5, 60.0f, 55.0f, "onyx_ore"), // Stronger than Adamantine
+
+    // Deepest Rarest Minerals (Tier 6)
+    PAINITE_ORE(true, 6, 80.0f, 100.0f, "painite_ore"),
+    MUSGRAVITE_ORE(true, 6, 85.0f, 120.0f, "musgravite_ore"),
+    TAAFFEITE_ORE(true, 6, 90.0f, 150.0f, "taaffeite_ore"),
+    GRANDIDIERITE_ORE(true, 6, 95.0f, 200.0f, "grandidierite_ore"),
+    SERENDIBITE_ORE(true, 6, 100.0f, 300.0f, "serendibite_ore"),
+
     QUARTZ_ORE(true, 1, 4.0f, 3.0f, "quartz_ore"),
     PYRITE_ORE(true, 1, 4.0f, 4.0f, "pyrite_ore"),
     MITHRIL_ORE(true, 4, 30.0f, 25.0f, "mithril_ore"),

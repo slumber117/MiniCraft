@@ -45,12 +45,18 @@ public final class LocalTerrainProvider {
     public static final class HeightmapData {
         public final short[][] heightmap;
         public final short[][] biomeIds;
+        public final float[][] temperature; // [0..1]
+        public final float[][] humidity;    // [0..1]
         public final int width;
         public final int height;
 
-        public HeightmapData(short[][] heightmap, short[][] biomeIds, int width, int height) {
+        public HeightmapData(short[][] heightmap, short[][] biomeIds, 
+                             float[][] temperature, float[][] humidity,
+                             int width, int height) {
             this.heightmap = heightmap;
             this.biomeIds  = biomeIds;
+            this.temperature = temperature;
+            this.humidity = humidity;
             this.width     = width;
             this.height    = height;
         }
@@ -239,7 +245,7 @@ public final class LocalTerrainProvider {
         float[] climate  = out[1];
 
         short[] biomeFlat = BiomeClassifier.classify(elevFlat, climate, i1, j1, elevPadded, H, W, NATIVE_RESOLUTION);
-        return buildHeightmapData(elevFlat, biomeFlat, H, W);
+        return buildHeightmapData(elevFlat, biomeFlat, climate, H, W);
     }
 
     // =========================================================================
@@ -285,7 +291,7 @@ public final class LocalTerrainProvider {
         float[] elevOut = addElevationNoise(elevSmooth, elevPadded, i1, j1, H, W, pixelSizeM);
 
         short[] biomeFlat = BiomeClassifier.classify(elevSmooth, climate, i1, j1, elevPadded, H, W, pixelSizeM);
-        return buildHeightmapData(elevOut, biomeFlat, H, W);
+        return buildHeightmapData(elevOut, biomeFlat, climate, H, W);
     }
 
     // =========================================================================
@@ -371,15 +377,35 @@ public final class LocalTerrainProvider {
         return a;
     }
 
-    private static HeightmapData buildHeightmapData(float[] elevFlat, short[] biomeFlat, int H, int W) {
+    private static HeightmapData buildHeightmapData(float[] elevFlat, short[] biomeFlat, float[] climateFlat, int H, int W) {
         short[][] heightmap = new short[H][W];
         short[][] biomeIds  = new short[H][W];
-        for (int r = 0; r < H; r++)
+        float[][] temperature = new float[H][W];
+        float[][] humidity    = new float[H][W];
+
+        for (int r = 0; r < H; r++) {
             for (int c = 0; c < W; c++) {
-                float e = elevFlat[r * W + c];
+                int idx = r * W + c;
+                float e = elevFlat[idx];
                 heightmap[r][c] = (short) Math.max(-32768, Math.min(32767, (int) Math.floor(e)));
-                biomeIds[r][c]  = biomeFlat[r * W + c];
+                biomeIds[r][c]  = biomeFlat[idx];
+
+                if (climateFlat != null && climateFlat.length >= 4 * H * W) {
+                    // climateFlat channels: [0]=temp, [1]=t_season, [2]=precip, [3]=p_cv
+                    float t = climateFlat[idx];
+                    float p = climateFlat[2 * H * W + idx];
+
+                    // Normalization to [0..1]
+                    // Temperature: -30C to 40C -> 0 to 1
+                    temperature[r][c] = Math.max(0f, Math.min(1f, (t + 30f) / 70f));
+                    // Humidity (Precipitation): 0mm to 2000mm -> 0 to 1
+                    humidity[r][c] = Math.max(0f, Math.min(1f, p / 2000f));
+                } else {
+                    temperature[r][c] = 0.5f;
+                    humidity[r][c]    = 0.5f;
+                }
             }
-        return new HeightmapData(heightmap, biomeIds, W, H);
+        }
+        return new HeightmapData(heightmap, biomeIds, temperature, humidity, W, H);
     }
 }

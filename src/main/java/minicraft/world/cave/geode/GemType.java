@@ -41,7 +41,22 @@ public enum GemType {
      * in the deep zone approaching magma-chamber territory.
      * Named after Tanzania where the only known deposit exists.
      */
-    TANZANITE(0.72f, 0.88f, 12, "Tanzanite");
+    TANZANITE(0.72f, 0.88f, 12, "Tanzanite"),
+
+    // ── High-Tier Legendary Gems ───────────────────────────────────────────
+    AGATE(0.40f, 0.60f, 35, "Agate"),
+    GARNET(0.45f, 0.65f, 30, "Garnet"),
+    TOURMALINE(0.50f, 0.70f, 25, "Tourmaline"),
+    OPAL(0.55f, 0.75f, 20, "Opal"),
+    ALEXANDRITE(0.65f, 0.80f, 15, "Alexandrite"),
+    ONYX(0.75f, 0.90f, 10, "Onyx"), // Stronger than Adamantium
+
+    // ── Deepest Rarest Minerals ────────────────────────────────────────────
+    PAINITE(0.85f, 0.95f, 5, "Painite"),
+    MUSGRAVITE(0.88f, 0.96f, 4, "Musgravite"),
+    TAAFFEITE(0.90f, 0.97f, 3, "Taaffeite"),
+    GRANDIDIERITE(0.92f, 0.98f, 2, "Grandidierite"),
+    SERENDIBITE(0.94f, 0.99f, 1, "Serendibite");
 
     // ── Fields ────────────────────────────────────────────────────────────
 

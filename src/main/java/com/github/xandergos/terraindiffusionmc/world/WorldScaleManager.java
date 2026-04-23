@@ -5,7 +5,7 @@ package com.github.xandergos.terraindiffusionmc.world;
  * Hardcoded to DEFAULT_SCALE.
  */
 public final class WorldScaleManager {
-    public static final int DEFAULT_SCALE = 2;
+    public static final int DEFAULT_SCALE = 4;
     private static final int MIN_SCALE = 1;
     public static final int MAX_SCALE = 6;
 

@@ -436,6 +436,22 @@ public class Main {
             }
         }, "WorldGenThread").start();
 
+        // ── Chunk Worker Thread — processes the generation queue in background ──
+        new Thread(() -> {
+            while (!glfwWindowShouldClose(window)) {
+                long[] pos = world.getGenerationQueue().poll();
+                if (pos != null) {
+                    world.processGeneration((int) pos[0], (int) pos[1]);
+                } else {
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+            }
+        }, "ChunkWorkerThread").start();
+
         // ── Register fixed-tick systems ───────────────────────────────────
         gameLoop.addTickable(dt -> {
             if (statusMessageTimer > 0)

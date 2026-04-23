@@ -67,6 +67,12 @@ public class GemGeode {
     /** Mask noise: controls which shell-adjacent voxels grow crystals. */
     private final PerlinNoise crystalMask;
 
+    /** ML pipeline for generating organic geode structures. */
+    private final GeodeMLPipeline mlPipeline;
+
+    /** Cache of geode blueprints [grid_size^3] indexed by candidate seed. */
+    private final java.util.Map<Long, byte[][][]> blueprintCache = new java.util.concurrent.ConcurrentHashMap<>();
+
     private final long worldSeed;
 
     // ── Constructor ────────────────────────────────────────────────────────
@@ -80,6 +86,7 @@ public class GemGeode {
         this.warpY      = new PerlinNoise(worldSeed + 9102L);
         this.warpZ      = new PerlinNoise(worldSeed + 9103L);
         this.crystalMask = new PerlinNoise(worldSeed + 9104L);
+        this.mlPipeline = new GeodeMLPipeline();
     }
 
     // ── Public API ─────────────────────────────────────────────────────────
@@ -184,49 +191,36 @@ public class GemGeode {
 
     /**
      * Given a confirmed geode candidate, determines what layer (if any) the
-     * voxel (x, y, z) falls into.
+     * voxel (x, y, z) falls into using the ML-generated blueprint.
      */
     private GeodeCell testVoxel(int x, int y, int z,
             GeodeCandidate c, float depthFraction) {
 
-        // Offset from geode centre (float for warp)
-        double ox = x - c.cx;
-        double oy = y - c.cy;
-        double oz = z - c.cz;
+        // Retrieve or generate the ML blueprint for this geode instance
+        long cellSeed = cellHash(c.cx / GRID_CELL_SIZE, c.cy / GRID_CELL_SIZE, c.cz / GRID_CELL_SIZE);
+        byte[][][] blueprint = blueprintCache.computeIfAbsent(cellSeed, 
+            s -> mlPipeline.generateBlueprint(s, depthFraction));
 
-        // Domain warp: nudge the sampling point so the shell is lumpy
-        double wx = ox + warpX.noise(ox * WARP_SCALE, oy * WARP_SCALE, oz * WARP_SCALE) * WARP_STRENGTH;
-        double wy = oy
-                + warpY.noise(ox * WARP_SCALE + 7.3, oy * WARP_SCALE + 3.1, oz * WARP_SCALE + 5.9) * WARP_STRENGTH;
-        double wz = oz
-                + warpZ.noise(ox * WARP_SCALE + 13.7, oy * WARP_SCALE + 19.2, oz * WARP_SCALE + 2.4) * WARP_STRENGTH;
+        // Offset from geode centre to grid coordinates
+        int mid = 13 / 2; // GRID_SIZE / 2
+        int lx = (x - c.cx) + mid;
+        int ly = (y - c.cy) + mid;
+        int lz = (z - c.cz) + mid;
 
-        double dist = Math.sqrt(wx * wx + wy * wy + wz * wz);
-
-        // ── Outside the geode entirely ─────────────────────────────────────
-        if (dist > OUTER_RADIUS)
+        // Bounds check for the ML grid
+        if (lx < 0 || lx >= 13 || ly < 0 || ly >= 13 || lz < 0 || lz >= 13) {
             return GeodeCell.OUTSIDE;
-
-        // ── Shell layer ────────────────────────────────────────────────────
-        if (dist >= INNER_RADIUS) {
-            return new GeodeCell(GeodeCell.Layer.SHELL, null, depthFraction);
         }
 
-        // ── Crystal layer: inner face of the shell ─────────────────────────
-        // Voxels just inside INNER_RADIUS can grow crystals if the mask allows.
-        if (dist >= INNER_RADIUS - CRYSTAL_DEPTH) {
-            // Crystal mask noise: high-frequency, anisotropic
-            double maskScale = 0.22;
-            double mask = crystalMask.noise(
-                    x * maskScale, y * maskScale * 1.4, z * maskScale);
-            if (mask > CRYSTAL_COVERAGE_THRESHOLD) {
-                return new GeodeCell(GeodeCell.Layer.CRYSTAL, c.gem, depthFraction);
-            }
-            // Failed mask → part of the hollow
+        byte layerOrdinal = blueprint[lx][ly][lz];
+        GeodeCell.Layer layer = GeodeCell.Layer.values()[layerOrdinal];
+
+        if (layer == GeodeCell.Layer.OUTSIDE) {
+            return GeodeCell.OUTSIDE;
         }
 
-        // ── Hollow interior ────────────────────────────────────────────────
-        return new GeodeCell(GeodeCell.Layer.HOLLOW, null, depthFraction);
+        GemType gem = (layer == GeodeCell.Layer.CRYSTAL) ? c.gem : null;
+        return new GeodeCell(layer, gem, depthFraction);
     }
 
     // ── Internal: gem selection ────────────────────────────────────────────

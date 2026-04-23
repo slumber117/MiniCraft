@@ -66,6 +66,21 @@ public class ProcessingManager {
         addFurnaceRecipe("MITHRIL_ORE", "MITHRIL_INGOT", 25.0f);
         addFurnaceRecipe("NEPTUNIUM_ORE", "NEPTUNIUM_INGOT", 25.0f);
 
+        // Legendary Gems (Industrial Refining)
+        addFurnaceRecipe("AGATE_ORE", "AGATE", 15.0f);
+        addFurnaceRecipe("GARNET_ORE", "GARNET", 15.0f);
+        addFurnaceRecipe("TOURMALINE_ORE", "TOURMALINE", 18.0f);
+        addFurnaceRecipe("OPAL_ORE", "OPAL", 20.0f);
+        addFurnaceRecipe("ALEXANDRITE_ORE", "ALEXANDRITE", 25.0f);
+        addFurnaceRecipe("ONYX_ORE", "ONYX", 35.0f);
+
+        // Absolute Rare Minerals (Fusion Level Refining)
+        addFurnaceRecipe("PAINITE_ORE", "PAINITE", 50.0f);
+        addFurnaceRecipe("MUSGRAVITE_ORE", "MUSGRAVITE", 60.0f);
+        addFurnaceRecipe("TAAFFEITE_ORE", "TAAFFEITE", 70.0f);
+        addFurnaceRecipe("GRANDIDIERITE_ORE", "GRANDIDIERITE", 80.0f);
+        addFurnaceRecipe("SERENDIBITE_ORE", "SERENDIBITE", 100.0f);
+
         // --- 3. Cooker Registry (Raw -> Cooked) ---
         addCookerRecipe("RAW_MEAT", "COOKED_MEAT", 4.0f);
         addCookerRecipe("RAW_FISH", "COOKED_FISH", 3.0f);
@@ -101,6 +116,15 @@ public class ProcessingManager {
         else if (output.contains("QUARTZ")) tex = "item_quartz_shard";
         else if (output.contains("MITHRIL")) tex = "item_ingot_sapphire_standalone";
         else if (output.contains("ADAMANTINE")) tex = "item_ingot_titanium_standalone";
+        
+        // Rare Gem Fallbacks
+        else if (output.contains("ONYX")) tex = "item_ingot_titanium_standalone";
+        else if (output.contains("ALEXANDRITE")) tex = "item_gem_amethyst_standalone";
+        else if (output.contains("OPAL")) tex = "item_gem_aquamarine_standalone";
+        else if (output.contains("PAINITE") || output.contains("GARNET")) tex = "item_gem_ruby_standalone_v2";
+        else if (output.contains("TOURMALINE")) tex = "item_gem_emerald_standalone_v2";
+        else if (output.contains("SERENDIBITE")) tex = "item_ingot_sapphire_standalone";
+        else tex = "item_gem_topaz_standalone"; // Default legendary fallback
 
         furnaceRecipes.put(normalizedInput, new Recipe(output, Recipe.Category.BLOCKS, null, new Item(output, null, tex, 64), 1, time));
     }
