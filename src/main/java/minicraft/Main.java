@@ -409,11 +409,10 @@ public class Main {
                 player.setPosition(spawnPos.x, spawnPos.y + 1.2f, spawnPos.z);
                 camera.setPosition(spawnPos.x, spawnPos.y + 1.2f + 1.6f, spawnPos.z);
                 
-                // --- Initial Player Status ---
+                // Starting Tools - Removed duplicates and Stone Pickaxe
                 player.inventory.add(new Item("TORCH", Block.TORCH), 10);
                 player.inventory.setOffhandItem(new Item("TORCH", Block.TORCH));
                 player.inventory.add(new ToolItem("Bronze Sword", ToolItem.ToolType.SWORD, 2, 5.0f, "item_sword_bronze"), 1);
-                player.inventory.add(new ToolItem("Wooden Pickaxe", ToolItem.ToolType.PICKAXE, 0, 2.0f, "item_pick_wood"), 1);
                 
                 // Facility testing kit
                 player.inventory.add(Block.COOKER, 1);
@@ -1358,21 +1357,44 @@ public class Main {
             }
 
             Item held = player.inventory.getSelectedItem();
-            float efficiency = 0.5f;
-            int toolLevel = 0;
+            float baseEfficiency = 0.5f; // Hand efficiency
+            int toolLevel = -1; // Hand tool level
+            ToolItem.ToolType toolType = null;
+
             if (held instanceof ToolItem) {
                 ToolItem t = (ToolItem) held;
-                if (t.getToolType() == ToolItem.ToolType.PICKAXE) {
-                    efficiency = t.getEfficiency();
-                    toolLevel = t.getHarvestLevel();
+                baseEfficiency = t.getEfficiency();
+                toolLevel = t.getHarvestLevel();
+                toolType = t.getToolType();
+            }
+
+            // --- Tool Type Efficiency Check ---
+            float efficiencyMultiplier = 1.0f;
+            boolean isSoftBlock = (b == Block.DIRT || b == Block.GRASS || b == Block.SAND || b == Block.RED_SAND || b == Block.SNOW || b == Block.PODZOL);
+            boolean isHardBlock = (b == Block.STONE || b == Block.STONE_DARK || b == Block.STONE_BRICKS || b.name().contains("ORE") || b.name().contains("BLOCK"));
+            boolean isWoodBlock = (b.name().contains("WOOD") || b == Block.WOOD);
+
+            if (isSoftBlock) {
+                if (toolType != ToolItem.ToolType.SHOVEL) {
+                    efficiencyMultiplier = 0.2f; // 80% slower
+                }
+            } else if (isHardBlock) {
+                if (toolType != ToolItem.ToolType.PICKAXE) {
+                    efficiencyMultiplier = 0.2f; // 80% slower
+                }
+            } else if (isWoodBlock) {
+                if (toolType != ToolItem.ToolType.AXE) {
+                    efficiencyMultiplier = 0.2f; // 80% slower
                 }
             }
+
+            float finalEfficiency = baseEfficiency * efficiencyMultiplier;
 
             if (toolLevel < b.requiredHarvestLevel) {
                 miningProgress = 0f;
             } else {
                 float armorMiningMod = player.inventory.hasFullSet("Plutonium") ? 1.5f : 1.0f;
-                miningProgress += (dt * efficiency * armorMiningMod) / b.hardness;
+                miningProgress += (dt * finalEfficiency * armorMiningMod) / b.hardness;
             }
 
             player.miningProgress = miningProgress;
@@ -1538,7 +1560,7 @@ public class Main {
         Matrix4f h_view = new Matrix4f().identity();
         Matrix4f h_model = new Matrix4f().identity();
         h_model.translate(0.55f + bobX, -0.45f + bobY, -0.65f);
-        h_model.rotate((float) Math.toRadians(160), new Vector3f(0, 1, 0));
+        h_model.rotate((float) Math.toRadians(70), new Vector3f(0, 1, 0)); // Fixed orientation: pointing forward-right
         h_model.rotate((float) Math.toRadians(-25 + (isHandSwinging ? swingRot : 0)), new Vector3f(1, 0, 0));
         h_model.rotate((float) Math.toRadians(20), new Vector3f(0, 0, 1));
         h_model.scale(0.4f, 0.4f, 0.4f);

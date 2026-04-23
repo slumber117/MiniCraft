@@ -43,9 +43,8 @@ public class Player extends Entity {
         this.width = 0.6f;
         this.height = 1.8f;
         
-        // Starting Tools
+        // Starting Tools - Removed Stone Pickaxe for progression
         inventory.add(new ToolItem("Wood Pick", ToolItem.ToolType.PICKAXE, 0, 2.0f, "item_pick_wood"), 1);
-        inventory.add(new ToolItem("Stone Pick", ToolItem.ToolType.PICKAXE, 1, 4.0f, "item_pick_stone"), 1);
         
         // Give player a Torch and a Sword to test the new combat
         minicraft.item.Item torch = new minicraft.item.Item("TORCH", Block.TORCH);
