@@ -11,19 +11,30 @@ public class ToolItem extends Item {
 
     private final ToolType toolType;
     private final int harvestLevel;
-    private final float efficiency;
+    private final float baseEfficiency;
     private final String textureName;
 
     public ToolItem(String name, ToolType type, int level, float efficiency, String textureName) {
-        super(name, null); // Tools aren't placeable blocks
-        this.toolType = type;
-        this.harvestLevel = level;
-        this.efficiency = efficiency;
-        this.textureName = textureName;
+        this(name, type, level, efficiency, textureName, null);
+    }
+
+    /** Quality-aware constructor used by QuestReward. */
+    public ToolItem(String name, ToolType type, int level, float efficiency, String textureName, QualityTier quality) {
+        super(name, null, textureName, 1, quality);
+        this.toolType       = type;
+        this.harvestLevel   = level;
+        this.baseEfficiency = efficiency;
+        this.textureName    = textureName;
     }
 
     public ToolType getToolType() { return toolType; }
-    public int getHarvestLevel() { return harvestLevel; }
-    public float getEfficiency() { return efficiency; }
+    public int getHarvestLevel()  { return harvestLevel; }
+
+    /** Returns efficiency scaled by quality tier multiplier (if any). */
+    public float getEfficiency() {
+        QualityTier q = getQuality();
+        return q != null ? baseEfficiency * q.efficiencyMult : baseEfficiency;
+    }
+
     public String getTextureName() { return textureName; }
 }

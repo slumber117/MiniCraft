@@ -126,6 +126,7 @@ public class Main {
     public boolean craftingOpen = false;
     public boolean inventoryOpen = false, chestOpen = false;
     public boolean shipConsoleOpen = false, furnaceOpen = false, cookerOpen = false;
+    public boolean questLogOpen = false;
 
     // --- Loading State ---
     public volatile boolean isLoading = true;
@@ -150,9 +151,10 @@ public class Main {
     public final CraftingManager craftingManager = new CraftingManager();
     public Block focusedBlock = Block.AIR;
     public final minicraft.item.ProcessingManager processingManager = new minicraft.item.ProcessingManager();
+    public final minicraft.quest.QuestManager questManager = new minicraft.quest.QuestManager();
 
     private boolean prevC = false, prevE = false;
-    private boolean prevF = false, prevG = false;
+    private boolean prevF = false, prevG = false, prevQ = false;
     private boolean prevEnter = false, prevUp = false, prevDown = false;
     private boolean prevLeft = false, prevRight = false;
 
@@ -423,6 +425,9 @@ public class Main {
 
                 entityManager.spawn(player);
 
+                // Register quest kill callback
+                player.onKillCallback = (type) -> questManager.onEntityKilled(type);
+
                 loadingStatus = "Finalizing terrain integration...";
                 loadingProgress = 1.0f;
                 Thread.sleep(800); // Premium pause
@@ -463,6 +468,12 @@ public class Main {
             entityManager.update(dt, world, particleManager);
             world.tick(dt, processingManager);
             particleManager.update(dt);
+
+            // Quest tick — checks depth/level objectives, auto-completes
+            java.util.List<minicraft.quest.Quest> completed = questManager.tick(player);
+            for (minicraft.quest.Quest q : completed) {
+                setStatusMessage("QUEST COMPLETE: " + q.title);
+            }
         });
 
         // ── Shaders ───────────────────────────────────────────────────────
@@ -767,6 +778,9 @@ public class Main {
             
             shaderProgram.bind();
             uiRenderer.render(player, shaderProgram, currentW, currentH, this);
+            if (questLogOpen) {
+                uiRenderer.renderQuestLog(player, shaderProgram, currentW, currentH, this);
+            }
             shaderProgram.unbind();
 
             glEnable(GL_DEPTH_TEST);
@@ -951,6 +965,21 @@ public class Main {
             }
         }
         prevE = currentE;
+
+        // Quest log — Q key
+        boolean isQ = glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS;
+        if (isQ && !prevQ) {
+            questLogOpen = !questLogOpen;
+            if (questLogOpen) {
+                inventoryOpen = false; craftingOpen = false;
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            } else {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            }
+        }
+        prevQ = isQ;
+
+        if (questLogOpen) return; // consume input while journal is open
 
         if (inventoryOpen) {
             handleInventoryInput();
@@ -1403,6 +1432,7 @@ public class Main {
                 world.setBlock(gx, gy, gz, Block.AIR);
                 miningProgress = player.miningProgress = 0f;
                 player.addXp(b.xpValue, particleManager);
+                questManager.onBlockMined(b); // Quest hook
                 if (toolLevel >= b.requiredHarvestLevel) {
                     ItemEntity drop = new ItemEntity(b);
                     drop.setPosition(gx + 0.5f, gy + 0.5f, gz + 0.5f);

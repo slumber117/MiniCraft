@@ -1426,4 +1426,210 @@ public class UIRenderer {
         if (fontTexture != null)
             fontTexture.cleanup();
     }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Quest Journal Screen
+    // ══════════════════════════════════════════════════════════════════════════
+
+    private minicraft.quest.Quest.Phase questPhaseTab = minicraft.quest.Quest.Phase.NOVICE;
+    private int   questSelectedIndex = 0;
+    private float questListScroll    = 0f;
+
+    public void renderQuestLog(Player player, ShaderProgram shader, int width, int height,
+                               minicraft.Main main) {
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        Matrix4f ortho = new Matrix4f().ortho(0, width, height, 0, -1, 1);
+        shader.setUniform("projectionMatrix", ortho);
+        shader.setUniform("viewMatrix",       new Matrix4f().identity());
+        shader.setUniform("useLighting",      0.0f);
+
+        // Full-screen dim
+        drawRectInternal(shader, 0, 0, width, height, new Vector4f(0f, 0f, 0f, 0.84f));
+
+        // Panel geometry
+        final float PW     = Math.min(980f, width  - 60);
+        final float PH     = Math.min(660f, height - 60);
+        final float PX     = (width  - PW) / 2f;
+        final float PY     = (height - PH) / 2f;
+        final float TAB_H  = 32f;
+        final float LPAD   = 16f;
+        final float LIST_W = 230f;
+        final float DX     = PX + LIST_W + LPAD * 2;
+        final float DW     = PW - LIST_W - LPAD * 3;
+        final float BODY_Y = PY + TAB_H + 40f;
+        final float BODY_H = PH - TAB_H - 50f;
+        final float SLOT_H = 42f;
+        final float SLOT_G = 4f;
+
+        drawTacticalFrame(shader, PX, PY, PW, PH);
+
+        // Title
+        drawText(shader, "QUEST JOURNAL", PX + LPAD, PY + 14, 0.90f, tactOrange);
+        drawText(shader, "[Q] CLOSE", PX + PW - 85, PY + 14, 0.42f,
+                new Vector4f(0.55f, 0.55f, 0.55f, 1f));
+
+        // Phase tabs
+        minicraft.quest.Quest.Phase[] phases = minicraft.quest.Quest.Phase.values();
+        float tabW = (PW - LPAD * 2) / phases.length;
+        for (int i = 0; i < phases.length; i++) {
+            minicraft.quest.Quest.Phase p = phases[i];
+            float tx = PX + LPAD + i * tabW;
+            float ty = PY + 38f;
+            boolean active = (p == questPhaseTab);
+            drawRectInternal(shader, tx, ty, tabW - 3f, TAB_H,
+                    active ? new Vector4f(0.12f, 0.45f, 0.85f, 0.95f)
+                           : new Vector4f(0.06f, 0.06f, 0.12f, 0.80f));
+            if (active)
+                drawRectInternal(shader, tx, ty + TAB_H - 2, tabW - 3f, 2f, tactOrange);
+            String label = "Phase " + p.numeral + "  " + p.displayName;
+            drawText(shader, label, tx + 8, ty + 9, 0.55f,
+                    active ? textColor : new Vector4f(0.55f, 0.58f, 0.62f, 1f));
+        }
+
+        // Left list
+        List<minicraft.quest.Quest> phaseQuests = main.questManager.getByPhase(questPhaseTab);
+        if (questSelectedIndex >= phaseQuests.size()) questSelectedIndex = 0;
+
+        float listX = PX + LPAD;
+        float listY = BODY_Y;
+
+        drawRectInternal(shader, listX + LIST_W + LPAD, listY, 1f, BODY_H, glassBorderColor);
+
+        glEnable(GL_SCISSOR_TEST);
+        glScissor((int) listX, (int) (height - (listY + BODY_H)), (int) LIST_W, (int) BODY_H);
+
+        for (int i = 0; i < phaseQuests.size(); i++) {
+            minicraft.quest.Quest q = phaseQuests.get(i);
+            float ey = listY + i * (SLOT_H + SLOT_G) - questListScroll;
+            if (ey + SLOT_H < listY - 10 || ey > listY + BODY_H + 10) continue;
+
+            boolean sel = (i == questSelectedIndex);
+            drawRectInternal(shader, listX, ey, LIST_W, SLOT_H,
+                    sel ? new Vector4f(0.10f, 0.30f, 0.58f, 0.95f)
+                        : new Vector4f(0.04f, 0.04f, 0.08f, 0.85f));
+            drawRectInternal(shader, listX, ey, 3f, SLOT_H, questStateColour(q.state));
+
+            boolean locked = q.state == minicraft.quest.Quest.State.LOCKED;
+            drawText(shader, questStateIcon(q.state) + " " + q.title,
+                    listX + 8, ey + 8, 0.52f,
+                    locked ? new Vector4f(0.40f, 0.40f, 0.40f, 1f) : textColor);
+
+            if (q.state == minicraft.quest.Quest.State.IN_PROGRESS) {
+                float pf = q.totalProgress();
+                drawRectInternal(shader, listX + 8, ey + SLOT_H - 8, LIST_W - 16, 4f,
+                        new Vector4f(0f, 0f, 0f, 0.5f));
+                drawRectInternal(shader, listX + 8, ey + SLOT_H - 8, (LIST_W - 16) * pf, 4f,
+                        tactOrange);
+            }
+        }
+        glDisable(GL_SCISSOR_TEST);
+
+        // Right detail
+        if (!phaseQuests.isEmpty()) {
+            minicraft.quest.Quest sel = phaseQuests.get(questSelectedIndex);
+            float dy = BODY_Y;
+
+            drawText(shader, sel.title.toUpperCase(), DX, dy, 1.05f, tactBlue);
+            dy += 28;
+            drawRectInternal(shader, DX, dy, DW, 1f, glassBorderColor);
+            dy += 8;
+
+            drawText(shader, sel.description, DX, dy, 0.48f,
+                    new Vector4f(0.70f, 0.70f, 0.75f, 1f));
+            dy += 32;
+
+            drawText(shader, "PHASE " + sel.phase.numeral + " — " + sel.phase.displayName.toUpperCase(),
+                    DX, dy, 0.40f, tactOrange);
+            dy += 24;
+            drawRectInternal(shader, DX, dy, DW, 1f, glassBorderColor);
+            dy += 12;
+
+            drawText(shader, "OBJECTIVES", DX, dy, 0.48f, textColor);
+            dy += 20;
+
+            for (minicraft.quest.QuestObjective o : sel.objectives) {
+                boolean done  = o.isDone();
+                String  tick  = done ? "[X]" : "[ ]";
+                Vector4f oCol = done ? new Vector4f(0f, 0.88f, 0.36f, 1f) : textColor;
+                drawText(shader, tick + "  " + o.description, DX + 4, dy, 0.50f, oCol);
+                dy += 15;
+                if (!done) {
+                    float pf = o.getProgressFraction();
+                    drawRectInternal(shader, DX + 4, dy, DW - 8, 5f,
+                            new Vector4f(0f, 0f, 0f, 0.5f));
+                    drawRectInternal(shader, DX + 4, dy, (DW - 8) * pf, 5f, tactBlue);
+                    drawText(shader, o.getProgressText(),
+                            DX + DW - 55, dy - 13, 0.38f,
+                            new Vector4f(0.55f, 0.55f, 0.55f, 1f));
+                }
+                dy += 16;
+            }
+
+            dy += 8;
+            drawRectInternal(shader, DX, dy, DW, 1f, glassBorderColor);
+            dy += 12;
+            drawText(shader, "REWARD", DX, dy, 0.50f, tactOrange);
+            dy += 20;
+
+            for (minicraft.item.Item ri : sel.reward.items) {
+                Vector4f qCol = qualityColour(ri.getQuality());
+                String   lbl  = ri.getDisplayName();
+                if (ri.hasQuality()) {
+                    float bw = DW - 8, bh = 30f;
+                    drawRectInternal(shader, DX, dy, bw, bh,
+                            new Vector4f(0.05f, 0.05f, 0.10f, 0.85f));
+                    drawRectInternal(shader, DX, dy,        bw, 2f, qCol);
+                    drawRectInternal(shader, DX, dy + bh - 2, bw, 2f, qCol);
+                    drawText(shader, lbl, DX + 8, dy + 7, 0.55f, qCol);
+                    if (ri.getQuality() == minicraft.item.Item.QualityTier.HEIRLOOM) {
+                        float sh = 0.55f + 0.35f * (float) Math.abs(
+                                Math.sin(System.currentTimeMillis() / 600.0));
+                        drawRectInternal(shader, DX, dy, bw * sh, 2f,
+                                new Vector4f(1f, 0.85f, 0.30f, 0.70f));
+                    }
+                    dy += 34;
+                } else {
+                    drawText(shader, lbl, DX + 4, dy + 4, 0.50f, textColor);
+                    dy += 22;
+                }
+            }
+            if (sel.reward.xp > 0)
+                drawText(shader, "+ " + sel.reward.xp + " XP", DX + 4, dy + 4, 0.50f,
+                        new Vector4f(0.95f, 0.85f, 0.15f, 1f));
+        }
+
+        glDisable(GL_BLEND);
+        glEnable(GL_DEPTH_TEST);
+    }
+
+    // ── Quality colour helper ─────────────────────────────────────────────────
+    private static Vector4f qualityColour(minicraft.item.Item.QualityTier q) {
+        if (q == null) return new Vector4f(1f, 1f, 1f, 1f);
+        int c = q.colour;
+        float r = ((c >> 16) & 0xFF) / 255f;
+        float g = ((c >>  8) & 0xFF) / 255f;
+        float b = ( c        & 0xFF) / 255f;
+        return new Vector4f(r, g, b, 1f);
+    }
+
+    private static Vector4f questStateColour(minicraft.quest.Quest.State state) {
+        switch (state) {
+            case COMPLETED:   return new Vector4f(0f, 0.88f, 0.36f, 1f);
+            case IN_PROGRESS: return new Vector4f(0.95f, 0.48f, 0f, 1f);
+            case AVAILABLE:   return new Vector4f(0.12f, 0.63f, 1f, 1f);
+            default:          return new Vector4f(0.30f, 0.30f, 0.30f, 1f);
+        }
+    }
+
+    private static String questStateIcon(minicraft.quest.Quest.State state) {
+        switch (state) {
+            case COMPLETED:   return "[V]";
+            case IN_PROGRESS: return "[>]";
+            case AVAILABLE:   return "[ ]";
+            default:          return "[L]";
+        }
+    }
 }

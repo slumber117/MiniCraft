@@ -37,6 +37,10 @@ public class Player extends Entity {
     public boolean isGrounded = false;
     private Camera camera;
 
+    // Quest hooks
+    public java.util.function.Consumer<EntityType> onKillCallback = null;
+    public float totalDistanceTravelled = 0f;
+
     public Player(Camera camera) {
         super(EntityType.PLAYER, 100f);
         this.camera = camera;
@@ -152,14 +156,18 @@ public class Player extends Entity {
     private void resolveMovement(float dt, World world) {
         // Try move X
         if (!isColliding(position.x + velocity.x * dt, position.y, position.z, world)) {
-            position.x += velocity.x * dt;
+            float dxMove = velocity.x * dt;
+            position.x += dxMove;
+            totalDistanceTravelled += Math.abs(dxMove);
         } else {
             velocity.x = 0;
         }
     
         // Try move Z
         if (!isColliding(position.x, position.y, position.z + velocity.z * dt, world)) {
-            position.z += velocity.z * dt;
+            float dzMove = velocity.z * dt;
+            position.z += dzMove;
+            totalDistanceTravelled += Math.abs(dzMove);
         } else {
             velocity.z = 0;
         }
@@ -200,11 +208,12 @@ public class Player extends Entity {
             float fz = (float) -Math.cos(Math.toRadians(camera.getRotation().y));
             
             float dot = dx * fx + dz * fz;
-            if (dot > cos45) { 
+            if (dot > cos45) {
                 boolean wasDead = e.isDead();
-                e.damage(20f, this); 
+                e.damage(20f, this);
                 if (!wasDead && e.isDead()) {
                     addXp(e.getType().isHostile() ? 10f : 2f, pm);
+                    if (onKillCallback != null) onKillCallback.accept(e.getType());
                 }
                 e.applyKnockback(dx * 4f, 1.5f, dz * 4f);
             }
