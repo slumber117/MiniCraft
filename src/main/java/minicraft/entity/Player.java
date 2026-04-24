@@ -5,6 +5,7 @@ import minicraft.item.ToolItem;
 import minicraft.math.Vector3f;
 import minicraft.world.World;
 import minicraft.world.Block;
+import minicraft.world.WorldCell;
 
 public class Player extends Entity {
     public float maxHunger = 100f;
@@ -35,6 +36,7 @@ public class Player extends Entity {
     public float xpToNextLevel = 15f;
     
     public boolean isGrounded = false;
+    public boolean isInWater  = false;
     private Camera camera;
 
     // Quest hooks
@@ -74,8 +76,8 @@ public class Player extends Entity {
         hunger = Math.max(0, hunger - 0.05f * dt);
         thirst = Math.max(0, thirst - 0.1f * dt);
         
-        // 2. Physics & Collision (Movement Speed Multiplier)
-        applyGravity(dt);
+        // 2. Physics & Collision
+        applyGravity(dt, world);
         resolveMovement(dt, world);
 
         // --- Plutonium Radiation Pulse ---
@@ -94,7 +96,7 @@ public class Player extends Entity {
         }
 
         // 3. Environment (Temp & Hazards)
-        updateEnvironment(dt);
+        updateEnvironment(dt, world);
         checkBlockHazards(dt, world);
         
         // 4. Effects
@@ -147,48 +149,72 @@ public class Player extends Entity {
         // We can place non-fixed stuff here.
     }
 
-    private void applyGravity(float dt) {
-        if (!isGrounded) {
-             velocity.y -= 25.0f * dt; 
+    private void applyGravity(float dt, World world) {
+        // Detect water at torso level
+        Block torsoBlock = world.getBlock(
+                (int) Math.floor(position.x),
+                (int) Math.floor(position.y + 0.9f),
+                (int) Math.floor(position.z));
+        isInWater = (torsoBlock == Block.WATER);
+
+        if (isInWater) {
+            // Buoyancy: gentle sink, not free-fall
+            velocity.y -= 4.0f * dt;
+            if (velocity.y < -4.0f) velocity.y = -4.0f;
+            // Water drag on all axes
+            float drag = (float) Math.pow(0.85f, dt * 20f);
+            velocity.y *= drag;
+            velocity.x *= (float) Math.pow(0.75f, dt * 20f);
+            velocity.z *= (float) Math.pow(0.75f, dt * 20f);
+        } else if (!isGrounded) {
+            velocity.y -= 16.0f * dt;
+            if (velocity.y < -20.0f) velocity.y = -20.0f;
         }
     }
 
     private void resolveMovement(float dt, World world) {
-        // Try move X
+        // ── Horizontal ───────────────────────────────────────────────────────
         if (!isColliding(position.x + velocity.x * dt, position.y, position.z, world)) {
-            float dxMove = velocity.x * dt;
-            position.x += dxMove;
-            totalDistanceTravelled += Math.abs(dxMove);
+            float dx = velocity.x * dt;
+            position.x += dx;
+            totalDistanceTravelled += Math.abs(dx);
         } else {
             velocity.x = 0;
         }
-    
-        // Try move Z
         if (!isColliding(position.x, position.y, position.z + velocity.z * dt, world)) {
-            float dzMove = velocity.z * dt;
-            position.z += dzMove;
-            totalDistanceTravelled += Math.abs(dzMove);
+            float dz = velocity.z * dt;
+            position.z += dz;
+            totalDistanceTravelled += Math.abs(dz);
         } else {
             velocity.z = 0;
         }
-    
-        // Try move Y
-        float nextY = position.y + velocity.y * dt;
-        if (!isColliding(position.x, nextY, position.z, world)) {
-            position.y = nextY;
-            isGrounded = false;
-        } else {
-            if (velocity.y < 0) {
-                position.y = (float) Math.floor(nextY + 0.001f) + 1.0f;
-                isGrounded = true;
+
+        // ── Vertical with sub-stepping (prevents tunnelling) ─────────────────
+        final float MAX_STEP = 0.4f;
+        float remainingY = velocity.y * dt;
+        isGrounded = false;
+        while (Math.abs(remainingY) > 0.001f) {
+            float step = Math.max(-MAX_STEP, Math.min(MAX_STEP, remainingY));
+            float nextY = position.y + step;
+            if (!isColliding(position.x, nextY, position.z, world)) {
+                position.y = nextY;
+            } else {
+                if (velocity.y < 0) {
+                    position.y = (float) Math.floor(position.y);
+                    isGrounded = true;
+                }
+                velocity.y = 0;
+                break;
             }
-            velocity.y = 0;
+            remainingY -= step;
         }
-        
-        // Apply Friction and Armor Speed Modifiers
-        float speedMod = inventory.getTotalSpeedMod();
-        velocity.x *= 0.8f * speedMod;
-        velocity.z *= 0.8f * speedMod;
+
+        // ── Friction (skip in water — drag handled in applyGravity) ──────────
+        if (!isInWater) {
+            float speedMod = inventory.getTotalSpeedMod();
+            velocity.x *= 0.8f * speedMod;
+            velocity.z *= 0.8f * speedMod;
+        }
     }
 
     public void meleeAttack(EntityManager manager, ParticleManager pm) {
@@ -271,19 +297,25 @@ public class Player extends Entity {
     public Vector3f getPosition() { return position; }
     public void setPosition(float x, float y, float z) { position.set(x, y, z); }
 
-    private void updateEnvironment(float dt) {
+    private void updateEnvironment(float dt, World world) {
+        int gx = (int) Math.floor(position.x);
+        int gz = (int) Math.floor(position.z);
+        WorldCell cell = world.getGenerator().generate(gx, gz); // Use generator for stability outside chunks
+        
+        float worldTemp = (cell != null) ? cell.temperature : 0.5f;
+        // Map 0..1 back to -30C..40C
+        float baseTemp = worldTemp * 70f - 30f;
+        
         float altitude = position.y;
-        float baseTemp = 15.0f; // Sea level "Okay" temperature
         
         // 1. Geothermal Boost (Thermal Gradient for deep layers)
         if (altitude < 80) {
-            // Linear boost from 0 (at Y=80) to +17.0C (at Y=1)
             float depthFactor = Math.max(0, (80 - altitude) / 80f);
             baseTemp += depthFactor * 17.0f; 
         }
 
-        // 2. Altitude Cold Factor (Starts at 120, gets lethal by 200)
-        float altitudeColdFactor = Math.max(0, (altitude - 120) * 0.15f);
+        // 2. Altitude Cold Factor (Starts at 102 sea level)
+        float altitudeColdFactor = Math.max(0, (altitude - 102) * 0.15f);
         
         // 3. Armor Insulation
         float insulation = inventory.getTotalInsulation();

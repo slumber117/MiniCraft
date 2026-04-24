@@ -35,11 +35,17 @@ public class ModelRegistry {
             Mesh diamondPick = OBJLoader.loadModel("/models/pickaxe_diamond.obj", diamondTexture);
             models.put("pickaxe_diamond", diamondPick);
 
-            // 5. Load the high-fidelity zombie
+            // 5. Load the high-fidelity zombie (Humanoid mesh)
             TextureRegion zombieRegion = textureRegistry.get("zombie_hd");
             Texture zombieTexture = zombieRegion != null ? zombieRegion.getTexture() : null;
-            Mesh zombie = OBJLoader.loadModel("/models/zombie.obj", zombieTexture);
+            Mesh zombie = OBJLoader.loadModel("/models/humanoid.obj", zombieTexture);
             models.put("zombie", zombie);
+
+            // 6. Load the player model (Humanoid mesh)
+            TextureRegion playerRegion = textureRegistry.get("char_farmer");
+            Texture playerTexture = playerRegion != null ? playerRegion.getTexture() : null;
+            Mesh playerModel = OBJLoader.loadModel("/models/humanoid.obj", playerTexture);
+            models.put("player_body", playerModel);
 
             // 6. Load the player's custom Stalwart model
             // This is a 54MB high-fidelity asset!

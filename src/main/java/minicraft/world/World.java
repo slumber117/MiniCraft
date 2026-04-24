@@ -252,8 +252,14 @@ public class World {
                     Block b;
                     if (y == BEDROCK_Y)
                         b = Block.BEDROCK;
-                    else if (y == surfaceY)
-                        b = getSurfaceBlock(cell.biome);
+                    else if (y == surfaceY) {
+                        if (y < seaLevelY) {
+                            // Use underwater materials if below sea level: SAND for oceans, STONE/SAND for others
+                            b = (cell.biome == Biome.OCEAN || cell.biome == Biome.FROZEN_OCEAN) ? Block.SAND : (Math.random() < 0.5 ? Block.STONE : Block.SAND);
+                        } else {
+                            b = getSurfaceBlock(cell.biome);
+                        }
+                    }
                     else if (y >= surfaceY - DIRT_LAYERS)
                         b = getFillerBlock(cell.biome);
                     else {
@@ -559,6 +565,30 @@ public class World {
                 return y + 1;
         }
         return (int) (WorldCell.SEA_LEVEL * Chunk.HEIGHT) + 2;
+    }
+
+    /**
+     * Finds the nearest safe spawn position on LAND (not water/ice).
+     */
+    public minicraft.math.Vector3f findSafeSpawn() {
+        int x = 0, z = 0;
+        int dx = 0, dz = -1;
+        for (int i = 0; i < 256; i++) {
+            int sy = getSafeSpawnY(x, z);
+            Block b = getBlock(x, sy - 1, z);
+            if (b.solid && b != Block.WATER && b != Block.ICE) {
+                return new minicraft.math.Vector3f(x + 0.5f, sy + 2, z + 0.5f);
+            }
+            
+            if (x == z || (x < 0 && x == -z) || (x > 0 && x == 1 - z)) {
+                int temp = dx;
+                dx = -dz;
+                dz = temp;
+            }
+            x += dx;
+            z += dz;
+        }
+        return new minicraft.math.Vector3f(0.5f, getSafeSpawnY(0, 0) + 2, 0.5f);
     }
 
     public void render(ShaderProgram shader, minicraft.math.Vector3f playerPos, float timeBrightness) {

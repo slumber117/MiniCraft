@@ -1,5 +1,7 @@
 package com.github.xandergos.terraindiffusionmc.pipeline;
 
+import java.util.PriorityQueue;
+
 /**
  * Port of terrain_diffusion/data/laplacian_encoder.py.
  *
@@ -215,5 +217,162 @@ public final class LaplacianUtils {
             }
         }
         return result;
+    }
+
+    /**
+     * Priority-Flood depression filling algorithm.
+     * Port of postprocessing.fill_depressions_priority_flood.
+     *
+     * @param height   2D elevation grid (H, W)
+     * @param epsilon  Small increment to ensure drainage across flats
+     * @param maxRaise Maximum allowed basin fill depth (null = unlimited)
+     * @return Filled elevation array
+     */
+    public static float[][] fillDepressionsPriorityFlood(float[][] height, float epsilon, Float maxRaise) {
+        int H = height.length, W = height[0].length;
+        float[][] h = new float[H][W];
+        float[][] base = new float[H][W];
+        boolean[][] visited = new boolean[H][W];
+        float[][] basinMin = new float[H][W];
+        
+        for (int r = 0; r < H; r++) {
+            for (int c = 0; c < W; c++) {
+                h[r][c] = height[r][c];
+                base[r][c] = height[r][c];
+                basinMin[r][c] = Float.POSITIVE_INFINITY;
+            }
+        }
+
+        PriorityQueue<GridNode> heap = new PriorityQueue<>();
+
+        // Ocean/Invalid mask: NaN or <= 0
+        boolean[][] invalid = new boolean[H][W];
+        for (int r = 0; r < H; r++) {
+            for (int c = 0; c < W; c++) {
+                if (Float.isNaN(h[r][c]) || h[r][c] <= 0) {
+                    invalid[r][c] = true;
+                }
+            }
+        }
+
+        int[][] nbrs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
+
+        // Seed with valid outer border cells
+        for (int r = 0; r < H; r++) {
+            for (int c : new int[]{0, W - 1}) {
+                if (!invalid[r][c] && !visited[r][c]) {
+                    heap.offer(new GridNode(h[r][c], r, c));
+                    visited[r][c] = true;
+                    basinMin[r][c] = base[r][c];
+                }
+            }
+        }
+        for (int c = 0; c < W; c++) {
+            for (int r : new int[]{0, H - 1}) {
+                if (!invalid[r][c] && !visited[r][c]) {
+                    heap.offer(new GridNode(h[r][c], r, c));
+                    visited[r][c] = true;
+                    basinMin[r][c] = base[r][c];
+                }
+            }
+        }
+
+        // Seed coast-adjacent valid cells
+        for (int r = 0; r < H; r++) {
+            for (int c = 0; c < W; c++) {
+                if (invalid[r][c] || visited[r][c]) continue;
+                boolean coastal = false;
+                for (int[] n : nbrs) {
+                    int nr = r + n[0], nc = c + n[1];
+                    if (nr >= 0 && nr < H && nc >= 0 && nc < W && invalid[nr][nc]) {
+                        coastal = true;
+                        break;
+                    }
+                }
+                if (coastal) {
+                    heap.offer(new GridNode(Math.max(h[r][c], 0.0f), r, c));
+                    visited[r][c] = true;
+                    basinMin[r][c] = base[r][c];
+                }
+            }
+        }
+
+        while (!heap.isEmpty()) {
+            GridNode node = heap.poll();
+            float elev = node.elev;
+            int r = node.r, c = node.c;
+            float bmCur = basinMin[r][c];
+
+            for (int[] n : nbrs) {
+                int nr = r + n[0], nc = c + n[1];
+                if (nr < 0 || nr >= H || nc < 0 || nc >= W || visited[nr][nc] || invalid[nr][nc]) continue;
+
+                float ne = h[nr][nc];
+                float bmNext = Math.min(bmCur, base[nr][nc]);
+                
+                if (ne <= elev) {
+                    if (maxRaise != null && (elev - bmCur >= maxRaise)) {
+                        heap.offer(new GridNode(ne, nr, nc));
+                    } else {
+                        float newE = elev + epsilon;
+                        if (maxRaise != null) {
+                            float maxLevel = bmCur + maxRaise;
+                            if (newE > maxLevel) newE = maxLevel;
+                        }
+                        if (newE > ne) h[nr][nc] = newE;
+                        heap.offer(new GridNode(h[nr][nc], nr, nc));
+                    }
+                } else {
+                    heap.offer(new GridNode(ne, nr, nc));
+                }
+                visited[nr][nc] = true;
+                basinMin[nr][nc] = bmNext;
+            }
+        }
+
+        return h;
+    }
+
+    /**
+     * Port of postprocessing.smooth_river_bumps.
+     * removes small upslope bumps in regions with low slopes.
+     */
+    public static float[][] smoothRiverBumps(float[][] height, float slopeThresh, float strength, int iterations) {
+        int H = height.length, W = height[0].length;
+        float[][] h = new float[H][W];
+        for (int r = 0; r < H; r++) System.arraycopy(height[r], 0, h[r], 0, W);
+
+        for (int iter = 0; iter < iterations; iter++) {
+            float[][] hSafe = new float[H][W];
+            for (int r = 0; r < H; r++) {
+                for (int c = 0; c < W; c++) {
+                    hSafe[r][c] = Float.isNaN(h[r][c]) ? 0.0f : h[r][c];
+                }
+            }
+
+            for (int r = 1; r < H - 1; r++) {
+                for (int c = 1; c < W - 1; c++) {
+                    if (Float.isNaN(h[r][c])) continue;
+
+                    float gx = (hSafe[r][c + 1] - hSafe[r][c - 1]) / 2.0f;
+                    float gy = (hSafe[r + 1][c] - hSafe[r - 1][c]) / 2.0f;
+                    float slope = (float) Math.sqrt(gx * gx + gy * gy);
+
+                    float laplace = hSafe[r - 1][c] + hSafe[r + 1][c] + hSafe[r][c - 1] + hSafe[r][c + 1] - 4 * hSafe[r][c];
+                    float w = (float) Math.exp(-(slope / slopeThresh) * (slope / slopeThresh));
+                    
+                    h[r][c] += strength * w * laplace;
+                }
+            }
+        }
+        return h;
+    }
+
+    private static class GridNode implements Comparable<GridNode> {
+        float elev;
+        int r, c;
+        GridNode(float elev, int r, int c) { this.elev = elev; this.r = r; this.c = c; }
+        @Override
+        public int compareTo(GridNode o) { return Float.compare(this.elev, o.elev); }
     }
 }

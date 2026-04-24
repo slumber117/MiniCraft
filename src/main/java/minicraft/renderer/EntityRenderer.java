@@ -83,13 +83,14 @@ public class EntityRenderer {
         entityTextures.put("SPIDER", "char_spider");
     }
 
-    public void render(EntityManager manager, ShaderProgram shader, TextureRegistry textures, Matrix4f viewMatrix, float sunBrightness) {
+    public void render(EntityManager manager, ShaderProgram shader, TextureRegistry textures, Matrix4f viewMatrix, float sunBrightness, minicraft.Main.CameraMode cameraMode) {
         // Sync global lighting to the entity shader
         shader.setUniform("sunBrightness", sunBrightness);
         shader.setUniform("useLighting", 1.0f);
         
         for (Entity e : manager.getAll()) {
-            if (e.isDead() || e.type == minicraft.entity.EntityType.PLAYER) continue;
+            if (e.isDead()) continue;
+            if (e.type == minicraft.entity.EntityType.PLAYER && cameraMode == minicraft.Main.CameraMode.FIRST_PERSON) continue;
 
             String typeName = e.type.name();
             Vector4f color = new Vector4f(1, 1, 1, 1);
@@ -101,6 +102,15 @@ public class EntityRenderer {
                 if (zombieMesh != null) {
                     render3DNPC(e, zombieMesh, shader, color);
                     if (e.getHealth() < e.getMaxHealth() || e.damageFlashTimer > 0) renderHealthBar(e, shader, viewMatrix);
+                    continue;
+                }
+            }
+
+            // --- PLAYER BODY RENDERING ---
+            if (e.type == minicraft.entity.EntityType.PLAYER) {
+                Mesh playerMesh = ModelRegistry.getModel("player_body");
+                if (playerMesh != null) {
+                    render3DNPC(e, playerMesh, shader, color);
                     continue;
                 }
             }

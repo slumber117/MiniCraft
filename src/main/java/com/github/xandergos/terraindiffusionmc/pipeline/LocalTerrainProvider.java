@@ -242,6 +242,10 @@ public final class LocalTerrainProvider {
         float[] elevPadded = pipeline.get(i1 - 1, j1 - 1, i2 + 1, j2 + 1, false)[0];
         float[][] out = pipeline.get(i1, j1, i2, j2, true);
         float[] elevFlat = out[0];
+        float[][] elev2D = to2D(elevFlat, H, W);
+        elev2D = LaplacianUtils.fillDepressionsPriorityFlood(elev2D, 1e-3f, null);
+        for (int r = 0; r < H; r++) System.arraycopy(elev2D[r], 0, elevFlat, r * W, W);
+
         float[] climate  = out[1];
 
         short[] biomeFlat = BiomeClassifier.classify(elevFlat, climate, i1, j1, elevPadded, H, W, NATIVE_RESOLUTION);
@@ -273,6 +277,7 @@ public final class LocalTerrainProvider {
 
         // Bilinear upsample elevation: (nH, nW) → (nH*scale, nW*scale)
         float[][] elevNative2D = to2D(elevNativeFlat, nH, nW);
+        elevNative2D = LaplacianUtils.fillDepressionsPriorityFlood(elevNative2D, 1e-3f, null);
         float[][] elevUp = LaplacianUtils.bilinearResize(elevNative2D, nH * scale, nW * scale);
 
         // Crop offsets in the upsampled array

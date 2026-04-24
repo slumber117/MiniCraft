@@ -32,23 +32,33 @@ public class WorldGenerator {
      * Generates a rectangular grid using ML inference.
      */
     public WorldCell[][] generateRegion(int originX, int originZ, int width, int height) {
-        LocalTerrainProvider provider = LocalTerrainProvider.getInstance();
-        HeightmapData data = provider.fetchHeightmap(originZ, originX, originZ + height, originX + width);
-
         WorldCell[][] cells = new WorldCell[width][height];
+        LocalTerrainProvider provider = LocalTerrainProvider.getInstance();
+
         for (int x = 0; x < width; x++) {
             for (int z = 0; z < height; z++) {
-                float meters = data.heightmap[z][x];
+                int absX = originX + x;
+                int absZ = originZ + z;
+
+                // Canonical Tiling: Align to 256x256 grid for maximum cache hits
+                int tileX = Math.floorDiv(absX, 256) * 256;
+                int tileZ = Math.floorDiv(absZ, 256) * 256;
+
+                HeightmapData data = provider.fetchHeightmap(tileZ, tileX, tileZ + 256, tileX + 256);
+
+                int lx = absX - tileX;
+                int lz = absZ - tileZ;
+
+                float meters = data.heightmap[lz][lx];
                 int targetY = com.github.xandergos.terraindiffusionmc.world.HeightConverter.convertToMinecraftHeight((short)meters);
                 float elev = (float)targetY / minicraft.world.Chunk.HEIGHT;
 
-                short mlBiomeId = data.biomeIds[z][x];
+                short mlBiomeId = data.biomeIds[lz][lx];
                 Biome biome = mapMlBiome(mlBiomeId);
 
-                // Climate values from real AI inference
-                float temp = data.temperature[z][x];
-                float humid = data.humidity[z][x];
-                float continental = elev / 100f; // Scale it down for the engine's internal checks
+                float temp = data.temperature[lz][lx];
+                float humid = data.humidity[lz][lx];
+                float continental = elev / 100f;
 
                 cells[x][z] = new WorldCell(elev, temp, humid, continental, biome);
             }

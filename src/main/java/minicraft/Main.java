@@ -105,6 +105,9 @@ public class Main {
     // ── Player / input ────────────────────────────────────────────────────
     private Player player;
     private Camera camera;
+    public enum CameraMode { FIRST_PERSON, THIRD_PERSON_BACK, THIRD_PERSON_FRONT }
+    public CameraMode cameraMode = CameraMode.FIRST_PERSON;
+    private boolean prevF5 = false;
     private static final float FOV = (float) Math.toRadians(70.0);
     private static final float Z_NEAR = 0.05f;
     private static final float Z_FAR = 2000.0f;
@@ -395,7 +398,7 @@ public class Main {
 
                 loadingStatus = "Finding optimal landing site...";
                 loadingProgress = 0.7f;
-                minicraft.math.Vector3f spawnPos = world.findSafeGrassSpawn(8, 8);
+                minicraft.math.Vector3f spawnPos = world.findSafeSpawn();
                 
                 int scx = Math.floorDiv((int)spawnPos.x, minicraft.world.Chunk.WIDTH);
                 int scz = Math.floorDiv((int)spawnPos.z, minicraft.world.Chunk.DEPTH);
@@ -641,7 +644,19 @@ public class Main {
                         ship.position.z + cos * distance);
                 camera.setRotation(camera.getRotation().x, ship.yaw, 0); // Preserve user pitch, follow ship yaw
             } else {
-                camera.setPosition(player.position.x, player.position.y + 1.6f, player.position.z);
+                if (cameraMode == CameraMode.FIRST_PERSON) {
+                    camera.setPosition(player.position.x, player.position.y + 1.6f, player.position.z);
+                } else {
+                    float dist = 4.0f;
+                    float pitch = (float) Math.toRadians(camera.getRotation().x);
+                    float yaw = (float) Math.toRadians(camera.getRotation().y + (cameraMode == CameraMode.THIRD_PERSON_FRONT ? 180 : 0));
+                    
+                    float ox = (float)(Math.sin(yaw) * Math.cos(pitch)) * dist;
+                    float oy = (float)Math.sin(pitch) * dist;
+                    float oz = (float)(Math.cos(yaw) * Math.cos(pitch)) * dist;
+                    
+                    camera.setPosition(player.position.x + ox, player.position.y + 1.6f - oy, player.position.z + oz);
+                }
             }
 
             // ── 5. Chunk streaming ────────────────────────────────────────
@@ -688,7 +703,7 @@ public class Main {
             shaderProgram.setUniform("useLighting", 1.0f); // IMPORTANT: Enable Lighting Engine
 
             float sun = world.getWeatherManager().getSunBrightness();
-            entityRenderer.render(entityManager, shaderProgram, textures, viewMatrix, sun);
+            entityRenderer.render(entityManager, shaderProgram, textures, viewMatrix, sun, cameraMode);
             particleManager.render(shaderProgram, textures, viewMatrix, projectionMatrix);
 
             glEnable(GL_BLEND);
@@ -924,9 +939,14 @@ public class Main {
             player.velocity.z = dz;
         }
 
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && player.isGrounded) {
-            player.velocity.y = 8.2f;
-            player.isGrounded = false;
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            if (player.isGrounded) {
+                player.velocity.y = 8.2f;
+                player.isGrounded = false;
+            } else if (player.isInWater) {
+                // Gentle upward thrust in water
+                player.velocity.y = 4.5f;
+            }
         }
 
         // Mouse look (polled here as well as via callback for reliability)
@@ -978,6 +998,16 @@ public class Main {
             }
         }
         prevQ = isQ;
+        
+        // F5 — Toggle Camera Mode
+        boolean isF5 = glfwGetKey(window, GLFW_KEY_F5) == GLFW_PRESS;
+        if (isF5 && !prevF5) {
+            if (cameraMode == CameraMode.FIRST_PERSON) cameraMode = CameraMode.THIRD_PERSON_BACK;
+            else if (cameraMode == CameraMode.THIRD_PERSON_BACK) cameraMode = CameraMode.THIRD_PERSON_FRONT;
+            else cameraMode = CameraMode.FIRST_PERSON;
+            System.out.println("Camera Mode: " + cameraMode);
+        }
+        prevF5 = isF5;
 
         if (questLogOpen) return; // consume input while journal is open
 

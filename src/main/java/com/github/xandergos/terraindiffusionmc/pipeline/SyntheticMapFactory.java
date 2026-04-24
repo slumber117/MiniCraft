@@ -178,6 +178,9 @@ public final class SyntheticMapFactory {
                 float precip = ch2d[3][idx];
                 float precipStd = ch2d[4][idx];
 
+                // Elevation refinement: flatten oceans to encourage islands
+                if (elev < 0.0f) elev *= 0.1f;
+
                 // Temp: correct for lapse rate based on elevation
                 float lapseRate = -6.5f + 0.0015f * precip;
                 lapseRate = Math.max(-9.8f, Math.min(-4.0f, lapseRate)) / 1000.0f;
