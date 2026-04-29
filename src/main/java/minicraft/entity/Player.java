@@ -72,8 +72,31 @@ public class Player extends Entity {
     private float radiationDamageTimer = 0f;
     private float geigerClickTimer = 0f;
 
+    private void respawn() {
+        this.dead = false;
+        this.health = this.maxHealth;
+        this.hunger = this.maxHunger;
+        this.thirst = this.maxThirst;
+        
+        // Find safe surface Y at current location
+        // We'll be moved to the surface of where we died
+        // Access to world is needed, we'll handle this in tick or pass it
+        this.needsRespawn = true;
+    }
+
+    private boolean needsRespawn = false;
+    public float attackTimer = 0f;
+
     @Override
     public void tick(EntityManager manager, World world, ParticleManager particleManager, float dt) {
+        if (needsRespawn) {
+            int surfaceY = world.getSafeSpawnY((int)position.x, (int)position.z);
+            position.y = (float)surfaceY + 2.0f;
+            velocity.set(0,0,0);
+            needsRespawn = false;
+            System.out.println("[PLAYER] Respawned at Y=" + surfaceY);
+        }
+
         super.tick(manager, world, particleManager, dt);
         if (dead) return;
 
@@ -89,8 +112,8 @@ public class Player extends Entity {
         applyGravity(dt, world);
         resolveMovement(dt, world);
 
-        // --- Radiation Logic ---
-        updateRadiation(dt);
+        // --- Radiation Logic (Environmental) ---
+        updateRadiation(dt, world);
 
         // --- Plutonium Radiation Pulse ---
         if (inventory.hasFullSet("Plutonium")) {
@@ -246,7 +269,14 @@ public class Player extends Entity {
                 percentDmg = tool.getPercentDamage();
                 instaKill = tool.isInstaKill();
                 bossPercent = tool.getBossPercentDamage();
+                
+                // Set cooldown based on attack speed
+                attackTimer = 0.4f / tool.attackSpeedMultiplier;
+            } else {
+                attackTimer = 0.5f; // Default swing speed for tools
             }
+        } else {
+            attackTimer = 0.6f; // Hand speed
         }
 
         for (Entity e : manager.getNearby(position.x, position.y, position.z, range)) {
@@ -316,6 +346,11 @@ public class Player extends Entity {
         }
         
         System.out.println("Player took damage! Health: " + health);
+
+        // Custom Respawn Logic: Don't stay dead, just respawn
+        if (dead) {
+            respawn();
+        }
     }
 
     private boolean isColliding(float x, float y, float z, World world) {
@@ -457,51 +492,69 @@ public class Player extends Entity {
         }
     }
 
-    private void updateRadiation(float dt) {
+    private void updateRadiation(float dt, World world) {
         float ambientRad = 0f;
         
-        // Check inventory for radioactive materials
-        for (minicraft.item.ItemStack stack : inventory.getHotbar()) {
-            if (stack == null || stack.isEmpty()) continue;
-            String name = stack.getItem().getName();
-            if (name.contains("URANIUM")) ambientRad += 0.05f * stack.getCount();
-            if (name.contains("PLUTONIUM")) ambientRad += 0.15f * stack.getCount();
-        }
-        for (minicraft.item.ItemStack stack : inventory.getMainInventory()) {
-            if (stack == null || stack.isEmpty()) continue;
-            String name = stack.getItem().getName();
-            if (name.contains("URANIUM")) ambientRad += 0.05f * stack.getCount();
-            if (name.contains("PLUTONIUM")) ambientRad += 0.15f * stack.getCount();
+        // Scan 5-block radius for radioactive ores
+        int px = (int)Math.floor(position.x);
+        int py = (int)Math.floor(position.y);
+        int pz = (int)Math.floor(position.z);
+        int radius = 5;
+
+        for (int x = px - radius; x <= px + radius; x++) {
+            for (int y = py - radius; y <= py + radius; y++) {
+                for (int z = pz - radius; z <= pz + radius; z++) {
+                    Block b = world.getBlock(x, y, z);
+                    if (b == Block.URANIUM_ORE || b == Block.PLUTONIUM_ORE) {
+                        float dist = (float) Math.sqrt((x-px)*(x-px) + (y-py)*(y-py) + (z-pz)*(z-pz));
+                        if (dist <= radius) {
+                            // Fluctuating strength based on proximity and time
+                            float flicker = 0.8f + 0.4f * (float)Math.random();
+                            float strength = b == Block.PLUTONIUM_ORE ? 2.5f : 1.0f;
+                            ambientRad += (strength * flicker) / (dist + 1f);
+                        }
+                    }
+                }
+            }
         }
 
-        // Shielding logic
+        // Shielding logic (Armor protects from environmental radiation)
         boolean isProtected = inventory.hasFullSet("Plutonium") || inventory.hasFullSet("Mithril");
-        if (isProtected) ambientRad *= 0.05f; // 95% reduction
+        if (isProtected) ambientRad = 0f; // Complete protection for industrial tier
 
-        // Smoothly adjust player radiation level
+        // Smoothly adjust player radiation level based on ambient intensity
         if (ambientRad > radiationLevel) {
-            radiationLevel += dt * 0.5f;
+            float rate = Math.max(2.0f, (ambientRad - radiationLevel) * 0.5f);
+            radiationLevel = Math.min(ambientRad, radiationLevel + dt * rate);
         } else {
-            radiationLevel = Math.max(0, radiationLevel - dt * 0.1f);
+            radiationLevel = Math.max(0, radiationLevel - dt * 2.5f); // Natural decay
         }
 
         // Apply damage
-        if (radiationLevel > 1.0f) {
+        if (radiationLevel >= 100f) {
             radiationDamageTimer += dt;
-            if (radiationDamageTimer >= 1.0f) {
+            if (radiationDamageTimer >= 0.5f) {
+                damage(10f, null);
                 radiationDamageTimer = 0f;
-                damage(radiationLevel * 2f, null);
-                System.out.println("RADIATION CRITICAL: " + (int)radiationLevel + "%");
-            }
-
-            // --- Geiger Counter Clicks ---
-            geigerClickTimer += dt;
-            float clickInterval = Math.max(0.05f, 1.5f - (radiationLevel / 50f)); // Clicks faster as level rises
-            if (geigerClickTimer >= clickInterval) {
-                geigerClickTimer = 0f;
-                // Since we have no audio engine yet, we print to console as a tactile feedback
-                System.out.println("[GEIGER] CLICK");
             }
         }
+        
+        // --- Geiger Counter Clicks ---
+        geigerClickTimer += dt;
+        float clickInterval = Math.max(0.05f, 1.5f - (radiationLevel / 50f));
+        if (geigerClickTimer >= clickInterval && radiationLevel > 0) {
+            geigerClickTimer = 0f;
+            System.out.println("[GEIGER] CLICK");
+        }
+    }
+
+    @Override public boolean isPlayer() { return true; }
+
+    public minicraft.math.Vector3f getAuraColor() {
+        minicraft.item.Item held = inventory.getSelectedItem();
+        if (held instanceof ToolItem) {
+            return ((ToolItem) held).auraColor;
+        }
+        return null;
     }
 }

@@ -16,17 +16,27 @@ public class ToolItem extends Item {
     private final float percentDamage;
     private final boolean isInstaKill;
     private final float bossPercentDamage;
+    
+    public minicraft.math.Vector3f auraColor = null;
+    public float radioactiveBonus = 1.0f;
+    public float attackSpeedMultiplier = 1.0f;
 
     public ToolItem(String name, ToolType type, int level, float efficiency, String textureName) {
-        this(name, type, level, efficiency, textureName, null, 0.0f, false, 0.0f);
+        this(name, type, level, efficiency, textureName, null, 0.0f, false, 0.0f, null, 1.0f, 1.0f);
     }
 
     public ToolItem(String name, ToolType type, int level, float efficiency, String textureName, QualityTier quality) {
-        this(name, type, level, efficiency, textureName, quality, 0.0f, false, 0.0f);
+        this(name, type, level, efficiency, textureName, quality, 0.0f, false, 0.0f, null, 1.0f, 1.0f);
     }
 
     public ToolItem(String name, ToolType type, int level, float efficiency, String textureName, QualityTier quality,
                     float percentDamage, boolean isInstaKill, float bossPercentDamage) {
+        this(name, type, level, efficiency, textureName, quality, percentDamage, isInstaKill, bossPercentDamage, null, 1.0f, 1.0f);
+    }
+
+    public ToolItem(String name, ToolType type, int level, float efficiency, String textureName, QualityTier quality,
+                    float percentDamage, boolean isInstaKill, float bossPercentDamage,
+                    minicraft.math.Vector3f auraColor, float radioactiveBonus, float attackSpeedMultiplier) {
         super(name, null, textureName, 1, quality);
         this.toolType = type;
         this.harvestLevel = level;
@@ -35,6 +45,9 @@ public class ToolItem extends Item {
         this.percentDamage = percentDamage;
         this.isInstaKill = isInstaKill;
         this.bossPercentDamage = bossPercentDamage;
+        this.auraColor = auraColor;
+        this.radioactiveBonus = radioactiveBonus;
+        this.attackSpeedMultiplier = attackSpeedMultiplier;
     }
 
     public ToolType getToolType() { return toolType; }
@@ -50,4 +63,9 @@ public class ToolItem extends Item {
     }
 
     public String getTextureName() { return textureName; }
+    
+    @Override
+    public String getTierInfo() {
+        return "Tier: " + harvestLevel;
+    }
 }

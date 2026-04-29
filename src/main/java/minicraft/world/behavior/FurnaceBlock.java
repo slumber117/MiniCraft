@@ -165,15 +165,17 @@ public class FurnaceBlock implements BlockInteraction {
                         float fuelVal = pm.getFuelTime(fuel.getItem().getName(), isCooker);
                         if (fuelVal > 0) {
                             fac.maxFuelTime = fac.remainingFuelTime = fuelVal;
+                            fac.fuelEfficiency = pm.getFuelEfficiency(fuel.getItem().getName()); // Set efficiency
                             fuel.add(-1);
                             if (fuel.getCount() <= 0) fac.setSlot(1, null);
-                            System.out.println("LOG: Facility (" + fx + "," + fy + "," + fz + ") consumed fuel. Total: " + fuelVal + "s");
+                            System.out.println("LOG: Facility (" + fx + "," + fy + "," + fz + ") consumed fuel. Efficiency: " + fac.fuelEfficiency);
                         }
                     }
 
                     if (fac.remainingFuelTime > 0) {
                         fac.isActive = true;
-                        fac.processProgress += dt / pm.getProcessTime(inputName);
+                        // Apply fuel efficiency to process speed
+                        fac.processProgress += (dt * fac.fuelEfficiency) / pm.getProcessTime(inputName);
 
                         if (fac.processProgress >= 1.0f) {
                             System.out.println("LOG: Processing complete at (" + fx + "," + fy + "," + fz + "): " + inputName);

@@ -7,6 +7,7 @@ import minicraft.math.Vector4f;
 import minicraft.Main;
 import minicraft.item.ItemStack;
 import minicraft.item.ArmorItem;
+import minicraft.item.Item;
 import minicraft.renderer.ModelRegistry;
 import minicraft.renderer.Mesh;
 import minicraft.math.Matrix4f;
@@ -158,6 +159,64 @@ public class InventoryUI {
             ui.drawSlot(shader, sx2, hotbarRowY, SLOT, hotbar[i], hover);
             if (sel) {
                 ui.drawRectInternal(shader, sx2, hotbarRowY, SLOT, 3f, new Vector4f(1.0f, 0.95f, 0.0f, 1.0f));
+            }
+        }
+
+        // ── 6. Tooltip Pass (Draws on top of everything) ─────────────────────
+        ItemStack hoveredStack = null;
+        // Check main inventory
+        for (int i = 0; i < 81; i++) {
+            int col = i % 9, row = i / 9;
+            float sx2 = gridStartX + col * (SLOT + GAP);
+            float sy2 = mainGridY + row * (SLOT + GAP) - main.inventoryScroll;
+            if (sy2 + SLOT > mainGridY && sy2 < mainGridY + gridViewH) {
+                if (ui.isHovered(mouseX, mouseY, sx2, sy2, SLOT, SLOT)) {
+                    hoveredStack = mainInv[i];
+                    break;
+                }
+            }
+        }
+        // Check hotbar
+        if (hoveredStack == null) {
+            for (int i = 0; i < 9; i++) {
+                float sx2 = gridStartX + i * (SLOT + GAP);
+                if (ui.isHovered(mouseX, mouseY, sx2, hotbarRowY, SLOT, SLOT)) {
+                    hoveredStack = hotbar[i];
+                    break;
+                }
+            }
+        }
+        // Check Armor
+        if (hoveredStack == null) {
+            ArmorItem[] pieces = { player.inventory.getHelmet(), player.inventory.getChestplate(), player.inventory.getLeggings(), player.inventory.getBoots() };
+            for (int i = 0; i < 4; i++) {
+                if (ui.isHovered(mouseX, mouseY, armorX, armorY + i * (SLOT + GAP), SLOT, SLOT)) {
+                    if (pieces[i] != null) hoveredStack = new ItemStack(pieces[i], 1);
+                    break;
+                }
+            }
+        }
+
+        if (hoveredStack != null && !hoveredStack.isEmpty()) {
+            Item item = hoveredStack.getItem();
+            String name = item.getDisplayName();
+            String tier = item.getTierInfo();
+            
+            float tw = Math.max(name.length() * 12f, (tier != null ? tier.length() * 10f : 0));
+            float th = tier != null ? 50f : 32f;
+            float tx = mouseX + 16, ty = mouseY + 16;
+            
+            // Bounds check
+            if (tx + tw > width) tx = mouseX - tw - 16;
+            if (ty + th > height) ty = mouseY - th - 16;
+            
+            ui.drawRectInternal(shader, tx, ty, tw + 20, th, new Vector4f(0,0,0,0.9f));
+            ui.drawRectInternal(shader, tx, ty, tw + 20, 1, UIPalette.RUSTIC_BORDER);
+            ui.drawRectInternal(shader, tx, ty + th, tw + 20, 1, UIPalette.RUSTIC_BORDER);
+            
+            ui.drawText(shader, name, tx + 10, ty + 8, 0.55f, UIPalette.TEXT_COLOR);
+            if (tier != null) {
+                ui.drawText(shader, tier, tx + 10, ty + 26, 0.40f, UIPalette.TACT_ORANGE);
             }
         }
     }

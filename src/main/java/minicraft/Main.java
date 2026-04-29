@@ -384,6 +384,7 @@ public class Main {
 
         // ── World — created ONCE ──────────────────────────────────────────
         world = new World(SEED, textures, RENDER_DISTANCE);
+        world.setEntityManager(entityManager);
         camera = new Camera();
         player = new Player(camera);
 
@@ -490,7 +491,7 @@ public class Main {
 
             entityManager.update(dt, world, particleManager);
             world.update(dt, player, particleManager, entityManager);
-            world.tick(dt, processingManager);
+            world.tick(dt, player, processingManager);
             particleManager.update(dt);
 
             // Quest tick — checks depth/level objectives, auto-completes
@@ -695,7 +696,7 @@ public class Main {
             // ── 5. Chunk streaming ────────────────────────────────────────
             int cx = (int) Math.floor(player.position.x / 16.0);
             int cz = (int) Math.floor(player.position.z / 16.0);
-            world.update(cx, cz, dt);
+            world.update(cx, cz, dt, player);
 
             // ── 6. Render Pass — Geometry (G-Buffer) ──────────────────────
             gtBuffer.bind();
@@ -803,7 +804,14 @@ public class Main {
             compositeShader.setUniform("texNormal", 2);
             compositeShader.setUniform("texDepth", 3);
             compositeShader.setUniform("torchPos", player.position);
-            compositeShader.setUniform("torchStrength", (player.inventory.hasTorchEquipped() ? 1.0f : 0.0f));
+            minicraft.math.Vector3f aura = player.getAuraColor();
+            float torchPower = player.inventory.hasTorchEquipped() ? 1.0f : (aura != null ? 0.8f : 0.0f);
+            compositeShader.setUniform("torchStrength", torchPower);
+            if (aura != null) {
+                compositeShader.setUniform("torchColor", aura);
+            } else {
+                compositeShader.setUniform("torchColor", new minicraft.math.Vector3f(1.0f, 0.8f, 0.4f)); // Warm default
+            }
             compositeShader.setUniform("invProjection", invProj);
             compositeShader.setUniform("invView", invView);
 
@@ -1310,7 +1318,7 @@ public class Main {
             float x = mouse[0], y = mouse[1];
 
             // Tab clicks
-            Recipe.Category[] cats = Recipe.Category.values();
+            Recipe.Category[] cats = Recipe.Category.GENERAL;
             float tabW = GRID_AREA_W / cats.length;
             float tabY = SY + 48f;
             if (y >= tabY && y <= tabY + 28f) {
@@ -1488,8 +1496,10 @@ public class Main {
     }
 
     private void handlePlayerAttack(float dt) {
-        if (!prevMouseLeftDown)
+        boolean mouseLeftDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        if (mouseLeftDown && player.attackTimer <= 0) {
             player.meleeAttack(entityManager, particleManager);
+        }
 
         Vector3f pos = camera.getPosition();
         float pitch = (float) Math.toRadians(camera.getRotation().x);
@@ -1524,6 +1534,10 @@ public class Main {
             if (held instanceof ToolItem) {
                 ToolItem t = (ToolItem) held;
                 baseEfficiency = t.getEfficiency();
+                // Radioactive ores are mined much faster by specialized tools
+                if (b == Block.URANIUM_ORE || b == Block.PLUTONIUM_ORE) {
+                    baseEfficiency *= t.radioactiveBonus;
+                }
                 toolLevel = t.getHarvestLevel();
                 toolType = t.getToolType();
             }
@@ -1553,8 +1567,15 @@ public class Main {
             if (toolLevel < b.requiredHarvestLevel) {
                 miningProgress = 0f;
             } else {
+                float bonus = 1.0f;
+                if (held instanceof ToolItem) {
+                    ToolItem ti = (ToolItem) held;
+                    if (b == Block.URANIUM_ORE || b == Block.PLUTONIUM_ORE) {
+                        bonus = ti.radioactiveBonus;
+                    }
+                }
                 float armorMiningMod = player.inventory.hasFullSet("Plutonium") ? 1.5f : 1.0f;
-                miningProgress += (dt * finalEfficiency * armorMiningMod) / b.hardness;
+                miningProgress += (dt * finalEfficiency * armorMiningMod * bonus) / b.hardness;
             }
 
             player.miningProgress = miningProgress;

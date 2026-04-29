@@ -6,7 +6,7 @@ import minicraft.math.Vector3f;
  * Base class for every living thing in MiniCraft.
  * Handles position, velocity, health and a tick-based update loop.
  */
-public abstract class Entity {
+public abstract class Entity implements minicraft.world.IWeatherEntity {
 
     // ── Identity ──────────────────────────────────────────────────────────
     public final String id;
@@ -147,6 +147,21 @@ public abstract class Entity {
         float dx = position.x - x, dy = position.y - y, dz = position.z - z;
         return dx*dx + dy*dy + dz*dz;
     }
+
+    // ── IWeatherEntity ───────────────────────────────────────────────────
+    @Override public float getX() { return position.x; }
+    @Override public float getY() { return position.y; }
+    @Override public float getZ() { return position.z; }
+    @Override public float getVX() { return velocity.x; }
+    @Override public float getVY() { return velocity.y; }
+    @Override public float getVZ() { return velocity.z; }
+    @Override public void applyWeatherDamage(float amount, String type) { damage(amount, (Entity)null); }
+    @Override public void addVelocity(float dx, float dy, float dz) { applyKnockback(dx, dy, dz); }
+    @Override public void scaleVelocity(float sx, float sy, float sz) { 
+        velocity.x *= sx; velocity.y *= sy; velocity.z *= sz; 
+    }
+    @Override public void applySlow(float duration, float multiplier) { /* TODO: Slow effect logic */ }
+    @Override public boolean isPlayer() { return false; }
 
     // ── Getters ───────────────────────────────────────────────────────────
 

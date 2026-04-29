@@ -32,7 +32,7 @@ public class CraftingUI {
         ui.drawText(shader, title, sx + 18, sy + 12, 0.75f, UIPalette.RUSTIC_PARCHMENT);
 
         // Category tabs (Hide if Blacksmith)
-        Recipe.Category[] cats = Recipe.Category.values();
+        Recipe.Category[] cats = Recipe.Category.GENERAL;
         float gridAreaW = COLS * ICON_SIZE + (COLS - 1) * ICON_GAP;
         if (!main.blacksmithOpen) {
             float tabW = gridAreaW / cats.length;

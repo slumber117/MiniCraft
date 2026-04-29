@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Procedural world system (400 Height optimized).
  */
-public class World {
+public class World implements IWeatherWorld {
 
     private static final int SEA_LEVEL = 102;
     private static final int MOUNTAIN_START = 256;
@@ -60,15 +60,120 @@ public class World {
     private final StructureGenerator structGen = new StructureGenerator();
     private final CaveCarver caveCarver;
     private final int renderDistance;
-    private final WeatherManager weatherManager = new WeatherManager();
+    private final WeatherManager weatherManager;
     private int tickCounter = 0;
     private final Random random = new Random();
+    private minicraft.entity.EntityManager entityManager;
 
     public World(long seed, TextureRegistry textures, int renderDistance) {
         this.textures = textures;
         this.generator = new WorldGenerator(seed);
         this.caveCarver = new CaveCarver(seed);
         this.renderDistance = renderDistance;
+        this.weatherManager = new WeatherManager(seed);
+    }
+
+    public void setEntityManager(minicraft.entity.EntityManager em) {
+        this.entityManager = em;
+    }
+
+    @Override
+    public long getSeed() { return generator.getSeed(); }
+
+    @Override
+    public List<minicraft.entity.Entity> getEntitiesInBox(float x1, float y1, float z1, float x2, float y2, float z2) {
+        if (entityManager == null) return new ArrayList<>();
+        return entityManager.getEntitiesInBox(x1, y1, z1, x2, y2, z2);
+    }
+
+    @Override
+    public void damageEntity(minicraft.entity.Entity e, float damage) {
+        if (e != null) e.damage(damage, null);
+    }
+
+    @Override
+    public int getSurfaceY(int x, int z) {
+        // Simple surface lookup: find first non-air block from top
+        for (int y = minicraft.world.Chunk.HEIGHT - 1; y >= 0; y--) {
+            if (getBlock(x, y, z) != Block.AIR) return y;
+        }
+        return 0;
+    }
+
+    @Override
+    public List<minicraft.world.IWeatherEntity> getEntitiesInRadius(float x, float y, float z, float radius) {
+        if (entityManager == null) return new ArrayList<>();
+        List<minicraft.world.IWeatherEntity> out = new ArrayList<>();
+        for (minicraft.entity.Entity e : entityManager.getNearby(x, y, z, radius)) {
+            out.add(e);
+        }
+        return out;
+    }
+
+    @Override
+    public boolean isFlammable(int x, int y, int z) {
+        Block b = getBlock(x, y, z);
+        return b != null && (b == Block.WOOD || b == Block.OAK_WOOD || b == Block.LEAVES || b == Block.GRASS);
+    }
+
+    @Override
+    public boolean isAir(int x, int y, int z) {
+        return getBlock(x, y, z) == Block.AIR;
+    }
+
+    @Override
+    public void setFire(int x, int y, int z) {
+        setBlock(x, y, z, Block.FIRE);
+    }
+
+    @Override
+    public boolean isWater(int x, int y, int z) {
+        return getBlock(x, y, z) == Block.WATER;
+    }
+
+    @Override
+    public boolean setIce(int x, int y, int z) {
+        if (getBlock(x, y, z) == Block.WATER) {
+            setBlock(x, y, z, Block.ICE);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void meltIce(int x, int y, int z) {
+        if (getBlock(x, y, z) == Block.ICE) {
+            setBlock(x, y, z, Block.WATER);
+        }
+    }
+
+    @Override
+    public int getMaxY() {
+        return minicraft.world.Chunk.HEIGHT;
+    }
+
+    @Override
+    public boolean isWindDestructible(int x, int y, int z) {
+        Block b = getBlock(x, y, z);
+        if (b == null) return false;
+        // Small things easily blown away
+        return b == Block.TALL_GRASS || b == Block.FLOWER_RED || b == Block.FLOWER_BLUE || b == Block.MUSHROOM || b == Block.LEAVES;
+    }
+
+    @Override
+    public void destroyBlock(int x, int y, int z, boolean dropItems) {
+        // Logic for destroying a block via weather (usually replaces with air)
+        setBlock(x, y, z, Block.AIR);
+    }
+
+    @Override
+    public List<minicraft.world.IWeatherEntity> getAllEntities() {
+        if (entityManager == null) return new ArrayList<>();
+        List<minicraft.world.IWeatherEntity> out = new ArrayList<>();
+        for (minicraft.entity.Entity e : entityManager.getAll()) {
+            out.add(e);
+        }
+        return out;
     }
 
     public WorldGenerator getGenerator() {
@@ -549,8 +654,8 @@ public class World {
         }
     }
 
-    public void update(int cx, int cz, float dt) {
-        weatherManager.update(dt);
+    public void update(int cx, int cz, float dt, minicraft.entity.Player player) {
+        weatherManager.update(dt, this, player.position.x, player.position.z, 64f);
         for (int dx = -renderDistance; dx <= renderDistance; dx++) {
             for (int dz = -renderDistance; dz <= renderDistance; dz++) {
                 Chunk chunk = requestChunk(cx + dx, cz + dz);
@@ -660,8 +765,8 @@ public class World {
         return worldFacilities.computeIfAbsent(packPos(x, y, z), k -> new minicraft.entity.ProcessingFacility());
     }
 
-    public void tick(float dt, minicraft.item.ProcessingManager pm) {
-        weatherManager.update(dt);
+    public void tick(float dt, minicraft.entity.Player player, minicraft.item.ProcessingManager pm) {
+        weatherManager.update(dt, this, player.position.x, player.position.z, 64f);
         tickCounter++;
         if (tickCounter % 300 == 0) {
             System.out.println("WORLD: Ticking " + worldFacilities.size() + " registered facilities.");

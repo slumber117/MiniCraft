@@ -27,26 +27,33 @@ public class CraftingManager {
         torchIng.put(new Item("WOOD", Block.WOOD), 1);
         recipes.add(new Recipe("Primitive Torch", Recipe.Category.SURVIVAL, torchIng,
                 new Item("TORCH", Block.TORCH), 2));
-        
-        recipes.add(new Recipe("Tin Torch", Recipe.Category.SURVIVAL, Map.of(new Item("TIN_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
+
+        recipes.add(new Recipe("Tin Torch", Recipe.Category.SURVIVAL,
+                Map.of(new Item("TIN_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
                 new Item("TIN_TORCH", Block.TIN_TORCH), 4));
 
-        recipes.add(new Recipe("Iron Torch", Recipe.Category.SURVIVAL, Map.of(new Item("IRON_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
+        recipes.add(new Recipe("Iron Torch", Recipe.Category.SURVIVAL,
+                Map.of(new Item("IRON_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
                 new Item("IRON_TORCH", Block.IRON_TORCH), 4));
 
-        recipes.add(new Recipe("Gold Torch", Recipe.Category.SURVIVAL, Map.of(new Item("GOLD_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
+        recipes.add(new Recipe("Gold Torch", Recipe.Category.SURVIVAL,
+                Map.of(new Item("GOLD_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
                 new Item("GOLD_TORCH", Block.GOLD_TORCH), 8));
 
-        recipes.add(new Recipe("Copper Torch", Recipe.Category.SURVIVAL, Map.of(new Item("COPPER_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
+        recipes.add(new Recipe("Copper Torch", Recipe.Category.SURVIVAL,
+                Map.of(new Item("COPPER_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
                 new Item("COPPER_TORCH", Block.COPPER_TORCH), 4));
 
-        recipes.add(new Recipe("Nickel Torch", Recipe.Category.SURVIVAL, Map.of(new Item("NICKEL_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
+        recipes.add(new Recipe("Nickel Torch", Recipe.Category.SURVIVAL,
+                Map.of(new Item("NICKEL_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
                 new Item("NICKEL_TORCH", Block.NICKEL_TORCH), 4));
 
-        recipes.add(new Recipe("Uranium Torch", Recipe.Category.SURVIVAL, Map.of(new Item("URANIUM_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
+        recipes.add(new Recipe("Uranium Torch", Recipe.Category.SURVIVAL,
+                Map.of(new Item("URANIUM_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
                 new Item("URANIUM_TORCH", Block.URANIUM_TORCH), 4));
 
-        recipes.add(new Recipe("Plutonium Torch", Recipe.Category.SURVIVAL, Map.of(new Item("PLUTONIUM_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
+        recipes.add(new Recipe("Plutonium Torch", Recipe.Category.SURVIVAL,
+                Map.of(new Item("PLUTONIUM_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
                 new Item("PLUTONIUM_TORCH", Block.PLUTONIUM_TORCH), 4));
 
         // --- 2. STONE TIER ---
@@ -141,14 +148,48 @@ public class CraftingManager {
         addArmorSet("Grandidierite", "GRANDIDIERITE_ORE", 0.48f, 7, 8.0f, 1.1f, 0.9f, null);
         addToolSet("Grandidierite", "GRANDIDIERITE_ORE", 8, 45.0f);
 
-        addArmorSet("Serendibite", "SERENDIBITE_ORE", 0.55f, 8, 10.0f, 1.2f, 1.0f, 
+        addArmorSet("Serendibite", "SERENDIBITE_ORE", 0.55f, 8, 10.0f, 1.2f, 1.0f,
                 new minicraft.math.Vector3f(0.1f, 0.1f, 0.5f)); // Cosmic Glow
         addToolSet("Serendibite", "SERENDIBITE_ORE", 9, 60.0f);
 
-        // --- 10. ULTIMATE MITHRIL TIER (God-like Industry) ---
+        // --- 10. ULTIMATE MITHRIL TIER (Dominus Industry) ---
         addArmorSet("Mithril", "MITHRIL_ORE", 0.75f, 12, 25.0f, 1.5f, 2.0f,
                 new minicraft.math.Vector3f(0.6f, 0.8f, 1.0f)); // Celestial Blue Glow
         addToolSet("Mithril", "MITHRIL_ORE", 10, 100.0f);
+
+        // --- 11. MasterCraft Tier ---
+        
+        // Rogue Armor (Silver + Leather)
+        Map<Item, Integer> rogueArmorIng = new HashMap<>();
+        rogueArmorIng.put(new Item("SILVER_ORE", null), 5); 
+        rogueArmorIng.put(new Item("LEATHER", null), 5);
+        
+        recipes.add(new Recipe("Rogue Helmet", Recipe.Category.ARMOR, rogueArmorIng,
+                new ArmorItem("Rogue Helmet", ArmorItem.ArmorSlot.HELMET, 0.05f, "armor_helm_rogue", "Rogue", 1.0f, 1.25f, 2.0f, null), 1));
+        recipes.add(new Recipe("Rogue Chestplate", Recipe.Category.ARMOR, rogueArmorIng,
+                new ArmorItem("Rogue Chestplate", ArmorItem.ArmorSlot.CHESTPLATE, 0.10f, "armor_chest_rogue", "Rogue", 2.0f, 1.25f, 4.0f, null), 1));
+        recipes.add(new Recipe("Rogue Leggings", Recipe.Category.ARMOR, rogueArmorIng,
+                new ArmorItem("Rogue Leggings", ArmorItem.ArmorSlot.LEGGINGS, 0.08f, "armor_legs_rogue", "Rogue", 1.5f, 1.25f, 3.0f, null), 1));
+        recipes.add(new Recipe("Rogue Boots", Recipe.Category.ARMOR, rogueArmorIng,
+                new ArmorItem("Rogue Boots", ArmorItem.ArmorSlot.BOOTS, 0.05f, "armor_boots_rogue", "Rogue", 1.0f, 1.30f, 2.0f, null), 1));
+
+        // MasterCraft Pickaxe (10 Uranium + 5 Plutonium)
+        Map<Item, Integer> mcPickIng = new HashMap<>();
+        mcPickIng.put(new Item("URANIUM_ORE", null), 10);
+        mcPickIng.put(new Item("PLUTONIUM_ORE", null), 5);
+        
+        // Tier 11, efficiency 40, light-blue aura, 5x radioactive speed
+        ToolItem mcPick = new ToolItem("MasterCraft Pickaxe", ToolItem.ToolType.PICKAXE, 11, 40.0f, "item_pick_mastercraft", null, 0f, false, 0f, 
+                new minicraft.math.Vector3f(0.4f, 0.8f, 1.0f), 5.0f, 1.0f);
+        recipes.add(new Recipe("MasterCraft Pickaxe", Recipe.Category.TOOLS, mcPickIng, mcPick, 1));
+
+        // Rogue Dagger (Silver)
+        Map<Item, Integer> daggerIng = new HashMap<>();
+        daggerIng.put(new Item("SILVER_ORE", null), 4);
+        // Tier 8, 1.8x attack speed multiplier
+        ToolItem dagger = new ToolItem("Rogue Dagger", ToolItem.ToolType.SWORD, 8, 20.0f, "item_sword_rogue", null, 0f, false, 0f, 
+                null, 1.0f, 1.8f); 
+        recipes.add(new Recipe("Rogue Dagger", Recipe.Category.TOOLS, daggerIng, dagger, 1));
 
         // --- 7. ADVANCED TECHNOLOGY ---
         Map<Item, Integer> consoleIng = new HashMap<>();
@@ -170,7 +211,9 @@ public class CraftingManager {
         cotdIng.put(new Item("RUBY_ORE", null), 2);
         cotdIng.put(new Item("URANIUM_ORE", null), 5);
         recipes.add(new Recipe("Call of the Depths", Recipe.Category.BLACKSMITH, cotdIng,
-                new ToolItem("Call of the Depths", ToolItem.ToolType.SWORD, 10, 50.0f, "item_sword_call_of_the_depths", null, 0.8f, false, 0.8f), 1));
+                new ToolItem("Call of the Depths", ToolItem.ToolType.SWORD, 10, 50.0f, "item_sword_call_of_the_depths",
+                        null, 0.8f, false, 0.8f),
+                1));
 
         Map<Item, Integer> eorIng = new HashMap<>();
         eorIng.put(new Item("TITANIUM_INGOT", null), 8);
@@ -180,7 +223,10 @@ public class CraftingManager {
         eorIng.put(new Item("PLUTONIUM_ORE", null), 5);
         eorIng.put(new Item("MITHRIL_ORE", null), 5);
         recipes.add(new Recipe("Echo of Regret", Recipe.Category.BLACKSMITH, eorIng,
-                new ToolItem("Echo of Regret", ToolItem.ToolType.SWORD, 15, 100.0f, "item_sword_echo_of_regret", null, 1.0f, true, 0.5f), 1));
+                new ToolItem("Echo of Regret", ToolItem.ToolType.SWORD, 15, 100.0f, "item_sword_echo_of_regret", null,
+                        1.0f, true, 0.5f),
+                1));
+
     }
 
     private Item createMaterialItem(String mat) {
@@ -212,13 +258,25 @@ public class CraftingManager {
 
         // Atomic/Special
         else if (mat.equals("URANIUM_INGOT") || mat.equals("URANIUM_ORE"))
-            tex = "item_pick_uranium"; 
+            tex = "item_ingot_uranium";
         else if (mat.equals("PLUTONIUM_INGOT") || mat.equals("PLUTONIUM_ORE"))
             tex = "item_ingot_plutonium";
+        else if (mat.equals("SILVER_INGOT") || mat.equals("SILVER_ORE"))
+            tex = "item_ingot_silver";
+        else if (mat.equals("OPAL_ORE"))
+            tex = "item_gem_opal";
+        else if (mat.equals("ALEXANDRITE_ORE"))
+            tex = "item_gem_alexandrite";
+        else if (mat.equals("MUSGRAVITE_ORE"))
+            tex = "item_gem_musgravite";
         else if (mat.equals("MITHRIL_INGOT") || mat.equals("MITHRIL_ORE"))
             tex = "item_ingot_mithril";
         else if (mat.equals("TAAFFEITE_ORE"))
             tex = "item_gem_taaffeite";
+        else if (mat.equals("ONYX_ORE"))
+            tex = "item_gem_onyx";
+        else if (mat.equals("SERENDIBITE_ORE"))
+            tex = "item_gem_serendibite";
         else if (mat.equals("BLACKSMITH"))
             tex = "blacksmith_top";
         else if (mat.equals("COPPER_INGOT"))
@@ -231,16 +289,23 @@ public class CraftingManager {
             tex = "item_leather";
         else if (mat.equals("OBSIDIAN"))
             tex = "block_obsidian";
-        
+
         // Food
-        else if (mat.contains("MEAT")) tex = "item_meat_cooked";
-        else if (mat.contains("FISH")) tex = "item_fish_cooked";
-        else if (mat.contains("CHICKEN")) tex = "item_chicken_cooked";
-        else if (mat.contains("APPLE")) tex = "item_apple";
-        else if (mat.contains("MANGO")) tex = "item_mango";
-        else if (mat.contains("PEAR")) tex = "item_pear";
-        else if (mat.contains("BREAD")) tex = "item_bread";
-        
+        else if (mat.contains("MEAT"))
+            tex = "item_meat_cooked";
+        else if (mat.contains("FISH"))
+            tex = "item_fish_cooked";
+        else if (mat.contains("CHICKEN"))
+            tex = "item_chicken_cooked";
+        else if (mat.contains("APPLE"))
+            tex = "item_apple";
+        else if (mat.contains("MANGO"))
+            tex = "item_mango";
+        else if (mat.contains("PEAR"))
+            tex = "item_pear";
+        else if (mat.contains("BREAD"))
+            tex = "item_bread";
+
         // Legendary Fallbacks (using ore textures until standalone gems are generated)
         else if (mat.endsWith("_ORE"))
             tex = mat.toLowerCase();
@@ -282,13 +347,15 @@ public class CraftingManager {
 
         // Weighted Distribution: Helmet 20%, Chest 40%, Legs 25%, Boots 15%
         recipes.add(new Recipe(tierName + " Helmet", Recipe.Category.ARMOR, Map.of(mat, cost),
-                new ArmorItem(tierName + " Helmet", ArmorItem.ArmorSlot.HELMET, prot * 0.20f, "armor_helm_" + low, tierName,
+                new ArmorItem(tierName + " Helmet", ArmorItem.ArmorSlot.HELMET, prot * 0.20f, "armor_helm_" + low,
+                        tierName,
                         healthBonus * 0.20f, 1.0f + (speedMod - 1.0f) * 0.20f, insulation * 0.20f, glow),
                 1));
 
         recipes.add(new Recipe(tierName + " Chestplate", Recipe.Category.ARMOR, Map.of(mat, cost + 2),
                 new ArmorItem(tierName + " Chestplate", ArmorItem.ArmorSlot.CHESTPLATE, prot * 0.40f,
-                        "armor_chest_" + low, tierName, healthBonus * 0.40f, 1.0f + (speedMod - 1.0f) * 0.40f, insulation * 0.40f, glow),
+                        "armor_chest_" + low, tierName, healthBonus * 0.40f, 1.0f + (speedMod - 1.0f) * 0.40f,
+                        insulation * 0.40f, glow),
                 1));
 
         recipes.add(new Recipe(tierName + " Leggings", Recipe.Category.ARMOR, Map.of(mat, cost + 1),
@@ -297,7 +364,8 @@ public class CraftingManager {
                 1));
 
         recipes.add(new Recipe(tierName + " Boots", Recipe.Category.ARMOR, Map.of(mat, cost),
-                new ArmorItem(tierName + " Boots", ArmorItem.ArmorSlot.BOOTS, prot * 0.15f, "armor_boots_" + low, tierName,
+                new ArmorItem(tierName + " Boots", ArmorItem.ArmorSlot.BOOTS, prot * 0.15f, "armor_boots_" + low,
+                        tierName,
                         healthBonus * 0.15f, 1.0f + (speedMod - 1.0f) * 0.15f, insulation * 0.15f, glow),
                 1));
     }

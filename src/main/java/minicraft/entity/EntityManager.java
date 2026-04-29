@@ -160,6 +160,18 @@ public class EntityManager {
         return out;
     }
 
+    public List<Entity> getEntitiesInBox(float x1, float y1, float z1, float x2, float y2, float z2) {
+        List<Entity> out = new ArrayList<>();
+        for (Entity e : entities) {
+            if (!e.isDead() && e.position.x >= x1 && e.position.x <= x2 &&
+                e.position.y >= y1 && e.position.y <= y2 &&
+                e.position.z >= z1 && e.position.z <= z2) {
+                out.add(e);
+            }
+        }
+        return out;
+    }
+
     public List<Entity> getAll() { return entities; }
     public int count()            { return entities.size(); }
 }

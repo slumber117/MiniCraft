@@ -43,4 +43,9 @@ public class ArmorItem extends Item {
     public boolean isBlock() {
         return false;
     }
+
+    @Override
+    public String getTierInfo() {
+        return tierName + " Tier (" + (int)(protection * 100) + "% Prot)";
+    }
 }

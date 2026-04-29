@@ -12,28 +12,32 @@ import minicraft.item.Item;
 public class HUD {
     public void renderPlayHUD(UIRenderer ui, Player player, ShaderProgram shader, int width, int height, Main main) {
         float hotbarTop = height - 14f - 42f;
-        float xpBarTop = hotbarTop - 10f - 34f;
+        float xpBarTop = hotbarTop - 10f - 38f; // Lifted 20px higher
         float xpLabelTop = xpBarTop - 13f;
-        float statTop = xpLabelTop - 36f - (12f * 2 + 10f + 8f * 2 + 6f);
+        
+        float panelH = 12f * 2 + 10f + 16f + 6f;
+        // Lower stats panel: just above the XP bar
+        float statTop = xpBarTop - panelH - 12f; 
         float marginLeft = 22f;
 
         renderHotbar(ui, player, shader, width, height, hotbarTop);
         renderXPBar(ui, player, shader, width, xpBarTop, xpLabelTop);
 
-        float panelX = marginLeft - 8f, panelW = 210f + 40f + 16f, panelH = 12f * 2 + 10f + 16f + 6f;
+        float panelX = marginLeft - 8f, panelW = 210f + 40f + 16f;
+        
+        // --- Radiation Bar (Above Health/Hunger) ---
+        if (player.radiationLevel > 0) {
+            float radY = statTop - 36f;
+            ui.drawTacticalFrame(shader, panelX, radY, panelW, 32f);
+            float pulse = 0.8f + 0.2f * (float) Math.abs(Math.sin(System.currentTimeMillis() / 200.0));
+            Vector4f radCol = new Vector4f(0.2f, 1.0f, 0.1f, pulse);
+            ui.drawPremiumBar(shader, marginLeft + 32f, radY + 8f, 210f, 10f, Math.min(1.0f, player.radiationLevel / 100f), radCol, new Vector4f(0.05f, 0.3f, 0.05f, 1.0f), "R");
+            ui.drawText(shader, "RADS", marginLeft + 4, radY + 8, 0.45f, radCol);
+        }
+
         ui.drawTacticalFrame(shader, panelX, statTop, panelW, panelH);
 
         float barX = marginLeft + 32f, hungBarY = statTop + 8f + 4f;
-        
-        // --- Radiation Bar ---
-        if (player.radiationLevel > 0) {
-            float radY = statTop - 32f;
-            ui.drawTacticalFrame(shader, panelX, radY, panelW, 30f);
-            float pulse = 0.8f + 0.2f * (float) Math.abs(Math.sin(System.currentTimeMillis() / 200.0));
-            Vector4f radCol = new Vector4f(0.2f, 1.0f, 0.1f, pulse);
-            ui.drawPremiumBar(shader, barX, radY + 8f, 210f, 10f, Math.min(1.0f, player.radiationLevel / 100f), radCol, new Vector4f(0.05f, 0.3f, 0.05f, 1.0f), "R");
-            ui.drawText(shader, "RADS", barX - 28, radY + 8, 0.45f, radCol);
-        }
 
         ui.drawPremiumBar(shader, barX, hungBarY, 210f, 12f, player.hunger / player.maxHunger, UIPalette.HUNGER_COLOR, UIPalette.HUNGER_COLOR_DARK, "F");
         ui.drawPremiumBar(shader, barX, hungBarY + 12f + 10f, 210f, 12f, player.getHealth() / player.getMaxHealth(), UIPalette.HEALTH_COLOR, UIPalette.HEALTH_COLOR_DARK, "V");
@@ -93,8 +97,13 @@ public class HUD {
         }
         Item selected = player.inventory.getSelectedItem();
         if (selected != null) {
-            String name = selected.getName();
+            String name = selected.getDisplayName();
             ui.drawText(shader, name, (width - name.length() * 7.5f) / 2f, topY - 16f, 0.6f, UIPalette.TEXT_COLOR);
+            
+            String tier = selected.getTierInfo();
+            if (tier != null) {
+                ui.drawText(shader, tier, (width - tier.length() * 5.0f) / 2f, topY - 26f, 0.4f, UIPalette.TACT_ORANGE);
+            }
         }
         if (player.miningProgress > 0) {
             float pbW = 90f, pbH = 5f, px = (width-pbW)/2f, py = height/2f+22f;

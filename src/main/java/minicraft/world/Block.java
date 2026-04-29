@@ -67,19 +67,17 @@ public enum Block {
     SAPPHIRE_ORE(true, 3, 15.0f, 15.0f, "sapphire_ore"),
     AMETHYST_ORE(true, 2, 12.0f, 12.0f, "amethyst_ore"),
     JADE_ORE(true, 2, 10.0f, 10.0f, "jade_ore"),
-    OPAL_ORE(true, 3, 25.0f, 20.0f, "opal_ore"),
+    ONYX_ORE(true, 5, 60.0f, 55.0f, "onyx_ore"), // Stronger than Adamantine
     GARNET_ORE(true, 3, 25.0f, 20.0f, "garnet_ore"),
     TOURMALINE_ORE(true, 3, 25.0f, 20.0f, "tourmaline_ore"),
     AGATE_ORE(true, 3, 20.0f, 15.0f, "agate_ore"),
-    ALEXANDRITE_ORE(true, 4, 35.0f, 30.0f, "alexandrite_ore"),
-    ONYX_ORE(true, 5, 60.0f, 55.0f, "onyx_ore"), // Stronger than Adamantine
-
-    // Deepest Rarest Minerals (Tier 6)
     PAINITE_ORE(true, 6, 80.0f, 100.0f, "painite_ore"),
-    MUSGRAVITE_ORE(true, 6, 85.0f, 120.0f, "musgravite_ore"),
     TAAFFEITE_ORE(true, 6, 90.0f, 150.0f, "taaffeite_ore"),
     GRANDIDIERITE_ORE(true, 6, 95.0f, 200.0f, "grandidierite_ore"),
     SERENDIBITE_ORE(true, 6, 100.0f, 300.0f, "serendibite_ore"),
+    ALEXANDRITE_ORE(true, 5, 80.0f, 150.0f, "alexandrite_ore"),
+    MUSGRAVITE_ORE(true, 6, 110.0f, 400.0f, "musgravite_ore"),
+    OPAL_ORE(true, 3, 15.0f, 25.0f, "opal_ore"),
 
     QUARTZ_ORE(true, 1, 4.0f, 3.0f, "quartz_ore"),
     PYRITE_ORE(true, 1, 4.0f, 4.0f, "pyrite_ore"),
@@ -97,10 +95,14 @@ public enum Block {
     DRAGON_SCALE_ORE(false, 1, 3, 100.0f, "dragon_scale_ore"),
 
     BRONZE_BLOCK(true, 0, 5.0f, 2.0f, "bronze_block"),
-    CRAFTING_TABLE(true, 0, 2.5f, 5.0f, "crafting_table", Block.MeshType.CUBE, new minicraft.world.behavior.CraftingTableBlock()),
-    BLACKSMITH(true, 0, 4.0f, 10.0f, "blacksmith_top", "stone", "blacksmith_side", new minicraft.world.behavior.BlacksmithBlock()),
-    FURNACE(true, 0, 3.5f, 10.0f, "furnace", Block.MeshType.CUBE, new minicraft.world.behavior.FurnaceBlock("INDUSTRIAL SMELTER", "FURNACE")),
-    ALLOY_FORGE(true, 0, 4.0f, 15.0f, "alloy_forge", Block.MeshType.CUBE, new minicraft.world.behavior.FurnaceBlock("FUSION FORGE", "ALLOY_FORGE")),
+    CRAFTING_TABLE(true, 0, 2.5f, 5.0f, "blacksmith_top", "stone", "blacksmith_side",
+            new minicraft.world.behavior.CraftingTableBlock()),
+    BLACKSMITH(true, 0, 4.0f, 10.0f, "blacksmith_top", "stone", "blacksmith_side",
+            new minicraft.world.behavior.BlacksmithBlock()),
+    FURNACE(true, 0, 3.5f, 10.0f, "furnace", Block.MeshType.CUBE,
+            new minicraft.world.behavior.FurnaceBlock("INDUSTRIAL SMELTER", "FURNACE")),
+    ALLOY_FORGE(true, 0, 4.0f, 15.0f, "alloy_forge", Block.MeshType.CUBE,
+            new minicraft.world.behavior.FurnaceBlock("FUSION FORGE", "ALLOY_FORGE")),
     CHEST(true, 0, 2.5f, 5.0f, "chest", Block.MeshType.CUBE, new minicraft.world.behavior.ChestBlock()),
 
     // ── Vegetation & Undersea ─────────────────────────────────────────────
@@ -123,11 +125,15 @@ public enum Block {
     // ── Advanced Scientific blocks ───────────────────────────────────────
     ALLOY_PLATE(true, 1, 10.0f, 2.0f, "alloy_plate"),
     TRANSMAT_PAD(true, 1, 10.0f, 5.0f, "transmat_pad"),
-    SHIP_CONSOLE(true, 0, 2.5f, 10.0f, "ship_console", Block.MeshType.CUBE, new minicraft.world.behavior.ConsoleBlock()),
-    COOKER(true, 0, 3.0f, 10.0f, "cooker_top", "stone", "cooker_side", new minicraft.world.behavior.FurnaceBlock("COOKING UNIT", "COOKER")), // High-efficiency food preparation unit
+    SHIP_CONSOLE(true, 0, 2.5f, 10.0f, "ship_console", Block.MeshType.CUBE,
+            new minicraft.world.behavior.ConsoleBlock()),
+    COOKER(true, 0, 3.0f, 10.0f, "cooker_top", "stone", "cooker_side",
+            new minicraft.world.behavior.FurnaceBlock("COOKING UNIT", "COOKER")), // High-efficiency food preparation
+                                                                                  // unit
     STONE_DARK(true, 0, 5.0f, 1.0f, "stone_dark"), // Deep layer industrial stone
     LAVA(false, 0, 0f, 0f, "lava"), // High-intensity surface liquid hazard
-    MAGMA(true, 0, 1.0f, 5.0f, "magma"); // Glowing underground solid hazard
+    MAGMA(true, 0, 1.0f, 5.0f, "magma"), // Glowing underground solid hazard
+    FIRE(false, 0, 0f, 0.5f, "fire", MeshType.CROSS);
 
     // ── Mesh Types ──
     public enum MeshType {
@@ -145,16 +151,18 @@ public enum Block {
     public final float xpValue;
     public final MeshType meshType;
     public final BlockInteraction interaction;
-    
+
     Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String textureName) {
         this(solid, requiredHarvestLevel, hardness, xpValue, textureName, MeshType.CUBE);
     }
 
-    Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String textureName, MeshType meshType) {
+    Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String textureName,
+            MeshType meshType) {
         this(solid, requiredHarvestLevel, hardness, xpValue, textureName, meshType, null);
     }
 
-    Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String textureName, MeshType meshType, BlockInteraction interaction) {
+    Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String textureName, MeshType meshType,
+            BlockInteraction interaction) {
         this.solid = solid;
         this.requiredHarvestLevel = requiredHarvestLevel;
         this.hardness = hardness;
@@ -168,11 +176,13 @@ public enum Block {
         this.interaction = interaction;
     }
 
-    Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String top, String bottom, String side) {
+    Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String top, String bottom,
+            String side) {
         this(solid, requiredHarvestLevel, hardness, xpValue, top, bottom, side, null);
     }
 
-    Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String top, String bottom, String side, BlockInteraction interaction) {
+    Block(boolean solid, int requiredHarvestLevel, float hardness, float xpValue, String top, String bottom,
+            String side, BlockInteraction interaction) {
         this.solid = solid;
         this.requiredHarvestLevel = requiredHarvestLevel;
         this.hardness = hardness;
@@ -185,16 +195,24 @@ public enum Block {
         this.paddingSide = solid ? 1.0f : 0.0f;
         this.interaction = interaction;
     }
+
     public void onInteract(Main main, World world, int x, int y, int z) {
         if (interaction != null) {
             interaction.onInteract(main, world, x, y, z);
         }
     }
+
     public String getInteractionLabel() {
-        if (this == FURNACE) return "INDUSTRIAL SMELTER";
-        if (this == ALLOY_FORGE) return "FUSION FORGE";
-        if (this == COOKER) return "HIGH-EFFICIENCY COOKER";
-        if (this == BLACKSMITH) return "BLACKSMITH STATION";
+        if (this == FURNACE)
+            return "INDUSTRIAL SMELTER";
+        if (this == ALLOY_FORGE)
+            return "FUSION FORGE";
+        if (this == COOKER)
+            return "HIGH-EFFICIENCY COOKER";
+        if (this == CRAFTING_TABLE)
+            return "CRAFTING FORGE";
+        if (this == BLACKSMITH)
+            return "BLACKSMITH STATION";
         return "";
     }
 
@@ -205,12 +223,20 @@ public enum Block {
     public String getTextureForFace(Face face, boolean lit) {
         String base = "";
         switch (face) {
-            case TOP:    base = topTexture; break;
-            case BOTTOM: base = bottomTexture; break;
-            case SIDE:   base = sideTexture; break;
-            default:     base = sideTexture; break;
+            case TOP:
+                base = topTexture;
+                break;
+            case BOTTOM:
+                base = bottomTexture;
+                break;
+            case SIDE:
+                base = sideTexture;
+                break;
+            default:
+                base = sideTexture;
+                break;
         }
-        
+
         if (lit) {
             // Check if a _lit version exists by convention
             if (this == FURNACE || this == COOKER || this == ALLOY_FORGE) {
@@ -251,21 +277,28 @@ public enum Block {
     }
 
     public String getFriendlyName() {
-        if (this == AIR) return "";
+        if (this == AIR)
+            return "";
         String n = name();
         // Special case overrides
-        if (this == FURNACE) return "Industrial Smelter";
-        if (this == ALLOY_FORGE) return "Fusion Forge";
-        if (this == SHIP_CONSOLE) return "Neural Link Console";
-        
+        if (this == FURNACE)
+            return "Industrial Smelter";
+        if (this == ALLOY_FORGE)
+            return "Fusion Forge";
+        if (this == SHIP_CONSOLE)
+            return "Neural Link Console";
+
         // General underscore conversion to title case
         String[] parts = n.replace("_", " ").split(" ");
         StringBuilder sb = new StringBuilder();
         for (String part : parts) {
-            if (part.isEmpty()) continue;
-            if (sb.length() > 0) sb.append(" ");
+            if (part.isEmpty())
+                continue;
+            if (sb.length() > 0)
+                sb.append(" ");
             sb.append(part.substring(0, 1).toUpperCase());
-            if (part.length() > 1) sb.append(part.substring(1).toLowerCase());
+            if (part.length() > 1)
+                sb.append(part.substring(1).toLowerCase());
         }
         return sb.toString();
     }

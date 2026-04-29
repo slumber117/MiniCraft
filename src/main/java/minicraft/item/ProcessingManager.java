@@ -18,10 +18,12 @@ public class ProcessingManager {
 
     private void initialize() {
         // --- 1. Fuel Registry ---
-        fuelValues.put("COAL", 30.0f);        
-        fuelValues.put("COAL_ORE", 30.0f);    
-        fuelValues.put("COAL_BLOCK", 300.0f); 
-        fuelValues.put("CHARCOAL", 25.0f);
+        fuelValues.put("COAL", 40.0f);        
+        fuelValues.put("COAL_ORE", 40.0f);    
+        fuelValues.put("COAL_BLOCK", 400.0f); 
+        fuelValues.put("URANIUM_ORE", 80.0f);
+        fuelValues.put("PLUTONIUM_ORE", 150.0f);
+        fuelValues.put("CHARCOAL", 30.0f);
         fuelValues.put("LOG", 15.0f);
         fuelValues.put("STICK", 5.0f);
         fuelValues.put("WOOD", 15.0f);
@@ -37,15 +39,15 @@ public class ProcessingManager {
 
         // --- 2. Furnace Registry (Ores -> Ingots/Gems) ---
         addFurnaceRecipe("IRON_ORE", "IRON_INGOT", 5.0f);
-        addFurnaceRecipe("IRON_BLOCK", "IRON_INGOT", 5.0f); // Alias
+        addFurnaceRecipe("IRON_BLOCK", "IRON_INGOT", 5.0f); 
         addFurnaceRecipe("COPPER_ORE", "COPPER_INGOT", 4.0f);
         addFurnaceRecipe("TIN_ORE", "TIN_INGOT", 4.0f);
         addFurnaceRecipe("GOLD_ORE", "GOLD_INGOT", 6.0f);
         addFurnaceRecipe("SILVER_ORE", "SILVER_INGOT", 6.0f);
         addFurnaceRecipe("NICKEL_ORE", "NICKEL_INGOT", 6.0f);
         addFurnaceRecipe("PLATINUM_ORE", "PLATINUM_INGOT", 12.0f);
-        addFurnaceRecipe("TITANIUM_ORE", "TITANIUM_INGOT", 10.0f);
-        addFurnaceRecipe("TUNGSTEN_ORE", "TUNGSTEN_INGOT", 12.0f);
+        addFurnaceRecipe("TITANIUM_ORE", "TITANIUM_INGOT", 10.0f); // Slower
+        addFurnaceRecipe("TUNGSTEN_ORE", "TUNGSTEN_INGOT", 12.0f); // Slower
         
         // Gems & Crystals
         addFurnaceRecipe("DIAMOND_ORE", "DIAMOND", 12.0f);
@@ -60,26 +62,18 @@ public class ProcessingManager {
         addFurnaceRecipe("TANZANITE_ORE", "TANZANITE", 10.0f);
         
         // Advanced/Atomic/Legendary
-        addFurnaceRecipe("URANIUM_ORE", "URANIUM_INGOT", 15.0f);
-        addFurnaceRecipe("PLUTONIUM_ORE", "PLUTONIUM_INGOT", 20.0f);
-        addFurnaceRecipe("ADAMANTINE_ORE", "ADAMANTINE_INGOT", 30.0f);
-        addFurnaceRecipe("MITHRIL_ORE", "MITHRIL_INGOT", 25.0f);
-        addFurnaceRecipe("NEPTUNIUM_ORE", "NEPTUNIUM_INGOT", 25.0f);
-
-        // Legendary Gems (Industrial Refining)
-        addFurnaceRecipe("AGATE_ORE", "AGATE", 15.0f);
-        addFurnaceRecipe("GARNET_ORE", "GARNET", 15.0f);
-        addFurnaceRecipe("TOURMALINE_ORE", "TOURMALINE", 18.0f);
-        addFurnaceRecipe("OPAL_ORE", "OPAL", 20.0f);
-        addFurnaceRecipe("ALEXANDRITE_ORE", "ALEXANDRITE", 25.0f);
-        addFurnaceRecipe("ONYX_ORE", "ONYX", 35.0f);
+        addFurnaceRecipe("URANIUM_ORE", "URANIUM_INGOT", 18.0f);
+        addFurnaceRecipe("PLUTONIUM_ORE", "PLUTONIUM_INGOT", 25.0f);
+        addFurnaceRecipe("ADAMANTINE_ORE", "ADAMANTINE_INGOT", 35.0f);
+        addFurnaceRecipe("MITHRIL_ORE", "MITHRIL_INGOT", 40.0f); // Much slower
+        addFurnaceRecipe("NEPTUNIUM_ORE", "NEPTUNIUM_INGOT", 45.0f);
 
         // Absolute Rare Minerals (Fusion Level Refining)
-        addFurnaceRecipe("PAINITE_ORE", "PAINITE", 50.0f);
-        addFurnaceRecipe("MUSGRAVITE_ORE", "MUSGRAVITE", 60.0f);
-        addFurnaceRecipe("TAAFFEITE_ORE", "TAAFFEITE", 70.0f);
-        addFurnaceRecipe("GRANDIDIERITE_ORE", "GRANDIDIERITE", 80.0f);
-        addFurnaceRecipe("SERENDIBITE_ORE", "SERENDIBITE", 100.0f);
+        addFurnaceRecipe("PAINITE_ORE", "PAINITE", 60.0f);
+        addFurnaceRecipe("MUSGRAVITE_ORE", "MUSGRAVITE", 75.0f);
+        addFurnaceRecipe("TAAFFEITE_ORE", "TAAFFEITE", 90.0f);
+        addFurnaceRecipe("GRANDIDIERITE_ORE", "GRANDIDIERITE", 110.0f);
+        addFurnaceRecipe("SERENDIBITE_ORE", "SERENDIBITE", 150.0f); // Extremely slow
 
         // --- 3. Cooker Registry (Raw -> Cooked) ---
         addCookerRecipe("RAW_MEAT", "COOKED_MEAT", 4.0f);
@@ -169,6 +163,16 @@ public class ProcessingManager {
         
         // Efficiency: Cooker gets 2x duration from fuel sources
         return isCooker ? val * 2.0f : val;
+    }
+
+    public float getFuelEfficiency(String name) {
+        String normalizedName = normalize(name);
+        if (normalizedName == null) return 1.0f;
+        
+        if (normalizedName.equals("URANIUM_ORE")) return 1.25f;
+        if (normalizedName.equals("PLUTONIUM_ORE")) return 1.875f;
+        
+        return 1.0f; // Standard efficiency
     }
 
     public float getProcessTime(String inputName) {

@@ -83,6 +83,14 @@ public class Item {
         return sb.toString();
     }
 
+    /**
+     * Returns extra information about the item's power level (Tier, Level, etc.)
+     * Returns null if no tier information is applicable.
+     */
+    public String getTierInfo() {
+        return null;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

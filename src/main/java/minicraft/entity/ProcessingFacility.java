@@ -17,6 +17,7 @@ public class ProcessingFacility implements Serializable {
     
     public float remainingFuelTime = 0f;
     public float maxFuelTime = 1f;
+    public float fuelEfficiency = 1.0f;
     public float processProgress = 0f;
     public boolean isActive = false;
 

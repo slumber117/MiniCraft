@@ -11,6 +11,7 @@ uniform int rtgiEnabled;
 
 uniform vec3 torchPos;
 uniform float torchStrength;
+uniform vec3 torchColor;
 
 uniform mat4 invProjection;
 uniform mat4 invView;
@@ -90,8 +91,8 @@ void main() {
             float diff = max(0.0, dot(normal, L));
             float atten = torchStrength / (1.0 + 0.1 * dist + 0.04 * dist * dist);
             
-            // Apply warm color tint (1.0, 0.8, 0.5) to torchlight
-            result += albedo * diff * atten * vec3(1.0, 0.8, 0.5);
+            // Apply torch color tint
+            result += albedo * diff * atten * torchColor;
         }
     }
 

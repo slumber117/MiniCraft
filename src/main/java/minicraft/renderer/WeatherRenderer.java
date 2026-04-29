@@ -60,10 +60,33 @@ public class WeatherRenderer {
         shader.setUniform("useLighting", 0.0f); // Particles don't receive lighting usually
 
         for (int i = 0; i < count; i++) {
+            float px = particlePositions[i*3];
+            float py = particlePositions[i*3 + 1];
+            float pz = particlePositions[i*3 + 2];
+
+            // Apply Wind Physics
+            float vx = 0, vz = 0;
+            if (type == WeatherManager.WeatherType.BLIZZARD) {
+                vx = 12.0f; // Driving wind
+                vz = 4.0f;
+            } else if (type == WeatherManager.WeatherType.CYCLONE || type == WeatherManager.WeatherType.HURRICANE) {
+                // Orbital swirling around the player
+                float dist = (float)Math.sqrt(px*px + pz*pz);
+                if (dist > 0.1f) {
+                    vx = -pz / dist * 15.0f;
+                    vz =  px / dist * 15.0f;
+                    // Add slight inward pull
+                    vx -= px / dist * 2.0f;
+                    vz -= pz / dist * 2.0f;
+                }
+            }
+
+            particlePositions[i*3]     += vx * dt;
             particlePositions[i*3 + 1] -= fallSpeed * dt;
+            particlePositions[i*3 + 2] += vz * dt;
             
-            // If it falls below "ground" relative to player, reset it
-            if (particlePositions[i*3 + 1] < -10.0f) {
+            // If it leaves the 40x40 volume, reset it
+            if (particlePositions[i*3 + 1] < -10.0f || Math.abs(particlePositions[i*3]) > 25.0f || Math.abs(particlePositions[i*3 + 2]) > 25.0f) {
                 resetParticle(i);
             }
 
@@ -71,11 +94,10 @@ public class WeatherRenderer {
                 .identity()
                 .translate(playerPos.x + particlePositions[i*3], 
                            playerPos.y + particlePositions[i*3 + 1], 
-                           playerPos.z + particlePositions[i*3 + 2])
-                .scale(1.0f, 1.0f, 1.0f);
+                           playerPos.z + particlePositions[i*3 + 2]);
             
             shader.setUniform("modelMatrix", model);
-            particleMesh.render((Texture)null); // Render as white/colored quad
+            particleMesh.render((Texture)null);
         }
         
         shader.setUniform("useLighting", 1.0f);
