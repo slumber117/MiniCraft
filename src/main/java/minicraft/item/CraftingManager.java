@@ -28,11 +28,26 @@ public class CraftingManager {
         recipes.add(new Recipe("Primitive Torch", Recipe.Category.SURVIVAL, torchIng,
                 new Item("TORCH", Block.TORCH), 2));
         
-        Map<Item, Integer> tinTorchIng = new HashMap<>();
-        tinTorchIng.put(new Item("TIN_ORE", Block.TIN_ORE), 1);
-        tinTorchIng.put(new Item("WOOD", Block.WOOD), 1);
-        recipes.add(new Recipe("Tin Torch", Recipe.Category.SURVIVAL, tinTorchIng,
+        recipes.add(new Recipe("Tin Torch", Recipe.Category.SURVIVAL, Map.of(new Item("TIN_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
                 new Item("TIN_TORCH", Block.TIN_TORCH), 4));
+
+        recipes.add(new Recipe("Iron Torch", Recipe.Category.SURVIVAL, Map.of(new Item("IRON_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
+                new Item("IRON_TORCH", Block.IRON_TORCH), 4));
+
+        recipes.add(new Recipe("Gold Torch", Recipe.Category.SURVIVAL, Map.of(new Item("GOLD_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
+                new Item("GOLD_TORCH", Block.GOLD_TORCH), 8));
+
+        recipes.add(new Recipe("Copper Torch", Recipe.Category.SURVIVAL, Map.of(new Item("COPPER_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
+                new Item("COPPER_TORCH", Block.COPPER_TORCH), 4));
+
+        recipes.add(new Recipe("Nickel Torch", Recipe.Category.SURVIVAL, Map.of(new Item("NICKEL_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
+                new Item("NICKEL_TORCH", Block.NICKEL_TORCH), 4));
+
+        recipes.add(new Recipe("Uranium Torch", Recipe.Category.SURVIVAL, Map.of(new Item("URANIUM_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
+                new Item("URANIUM_TORCH", Block.URANIUM_TORCH), 4));
+
+        recipes.add(new Recipe("Plutonium Torch", Recipe.Category.SURVIVAL, Map.of(new Item("PLUTONIUM_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
+                new Item("PLUTONIUM_TORCH", Block.PLUTONIUM_TORCH), 4));
 
         // --- 2. STONE TIER ---
         addToolSet("Stone", "STONE", 1, 4.0f);
@@ -67,6 +82,7 @@ public class CraftingManager {
         addToolSet("Quartz", "QUARTZ_ORE", 3, 11.0f); // Tier 3 Mining Capability
 
         addArmorSet("Tanzanite", "TANZANITE_ORE", 0.24f, 4, 0.8f, 1.0f, 0.3f, null); // Thorns Set
+        addToolSet("Tanzanite", "TANZANITE_ORE", 4, 16.0f);
 
         addArmorSet("Sapphire", "SAPPHIRE_ORE", 0.22f, 3, 2.0f, 1.0f, 0.4f, null);
         addToolSet("Sapphire", "SAPPHIRE_ORE", 5, 22.0f);
@@ -129,12 +145,42 @@ public class CraftingManager {
                 new minicraft.math.Vector3f(0.1f, 0.1f, 0.5f)); // Cosmic Glow
         addToolSet("Serendibite", "SERENDIBITE_ORE", 9, 60.0f);
 
+        // --- 10. ULTIMATE MITHRIL TIER (God-like Industry) ---
+        addArmorSet("Mithril", "MITHRIL_ORE", 0.75f, 12, 25.0f, 1.5f, 2.0f,
+                new minicraft.math.Vector3f(0.6f, 0.8f, 1.0f)); // Celestial Blue Glow
+        addToolSet("Mithril", "MITHRIL_ORE", 10, 100.0f);
+
         // --- 7. ADVANCED TECHNOLOGY ---
         Map<Item, Integer> consoleIng = new HashMap<>();
         consoleIng.put(new Item("IRON_INGOT", null), 10);
         consoleIng.put(new Item("GOLD_INGOT", null), 2);
         recipes.add(new Recipe("Ship Console", Recipe.Category.BLOCKS, consoleIng,
                 new Item("SHIP_CONSOLE", Block.SHIP_CONSOLE), 1));
+
+        Map<Item, Integer> blacksmithIng = new HashMap<>();
+        blacksmithIng.put(new Item("STONE", Block.STONE), 10);
+        blacksmithIng.put(new Item("IRON_INGOT", null), 5);
+        recipes.add(new Recipe("Blacksmith Station", Recipe.Category.BLOCKS, blacksmithIng,
+                new Item("BLACKSMITH", Block.BLACKSMITH), 1));
+
+        // --- SPECIALISED WEAPONS (Blacksmith Station) ---
+        Map<Item, Integer> cotdIng = new HashMap<>();
+        cotdIng.put(new Item("IRON_INGOT", null), 5);
+        cotdIng.put(new Item("DIAMOND_ORE", null), 3);
+        cotdIng.put(new Item("RUBY_ORE", null), 2);
+        cotdIng.put(new Item("URANIUM_ORE", null), 5);
+        recipes.add(new Recipe("Call of the Depths", Recipe.Category.BLACKSMITH, cotdIng,
+                new ToolItem("Call of the Depths", ToolItem.ToolType.SWORD, 10, 50.0f, "item_sword_call_of_the_depths", null, 0.8f, false, 0.8f), 1));
+
+        Map<Item, Integer> eorIng = new HashMap<>();
+        eorIng.put(new Item("TITANIUM_INGOT", null), 8);
+        eorIng.put(new Item("DIAMOND_ORE", null), 5);
+        eorIng.put(new Item("RUBY_ORE", null), 5);
+        eorIng.put(new Item("URANIUM_ORE", null), 5);
+        eorIng.put(new Item("PLUTONIUM_ORE", null), 5);
+        eorIng.put(new Item("MITHRIL_ORE", null), 5);
+        recipes.add(new Recipe("Echo of Regret", Recipe.Category.BLACKSMITH, eorIng,
+                new ToolItem("Echo of Regret", ToolItem.ToolType.SWORD, 15, 100.0f, "item_sword_echo_of_regret", null, 1.0f, true, 0.5f), 1));
     }
 
     private Item createMaterialItem(String mat) {
@@ -165,14 +211,35 @@ public class CraftingManager {
             tex = "item_gem_aquamarine_standalone";
 
         // Atomic/Special
-        else if (mat.equals("URANIUM_ORE"))
-            tex = "item_ingot_uranium"; // New texture
-        else if (mat.equals("PLUTONIUM_ORE"))
+        else if (mat.equals("URANIUM_INGOT") || mat.equals("URANIUM_ORE"))
+            tex = "item_pick_uranium"; 
+        else if (mat.equals("PLUTONIUM_INGOT") || mat.equals("PLUTONIUM_ORE"))
             tex = "item_ingot_plutonium";
+        else if (mat.equals("MITHRIL_INGOT") || mat.equals("MITHRIL_ORE"))
+            tex = "item_ingot_mithril";
+        else if (mat.equals("TAAFFEITE_ORE"))
+            tex = "item_gem_taaffeite";
+        else if (mat.equals("BLACKSMITH"))
+            tex = "blacksmith_top";
+        else if (mat.equals("COPPER_INGOT"))
+            tex = "item_ingot_gold_standalone";
+        else if (mat.equals("NICKEL_INGOT"))
+            tex = "item_ingot_iron_standalone";
+        else if (mat.equals("TIN_INGOT"))
+            tex = "item_ingot_titanium_standalone";
         else if (mat.equals("LEATHER"))
             tex = "item_leather";
         else if (mat.equals("OBSIDIAN"))
             tex = "block_obsidian";
+        
+        // Food
+        else if (mat.contains("MEAT")) tex = "item_meat_cooked";
+        else if (mat.contains("FISH")) tex = "item_fish_cooked";
+        else if (mat.contains("CHICKEN")) tex = "item_chicken_cooked";
+        else if (mat.contains("APPLE")) tex = "item_apple";
+        else if (mat.contains("MANGO")) tex = "item_mango";
+        else if (mat.contains("PEAR")) tex = "item_pear";
+        else if (mat.contains("BREAD")) tex = "item_bread";
         
         // Legendary Fallbacks (using ore textures until standalone gems are generated)
         else if (mat.endsWith("_ORE"))

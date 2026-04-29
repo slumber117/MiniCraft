@@ -104,7 +104,8 @@ public class ProcessingManager {
         else if (output.contains("COPPER")) tex = "item_ingot_gold_standalone"; // Shared icon for now
         else if (output.contains("SILVER")) tex = "item_ingot_iron_standalone"; // Shared icon for now
         else if (output.contains("URANIUM")) tex = "item_pick_uranium"; 
-        else if (output.contains("PLUTONIUM")) tex = "item_pick_uranium";
+        else if (output.contains("PLUTONIUM")) tex = "item_ingot_plutonium";
+        else if (output.contains("TAAFFEITE")) tex = "item_gem_taaffeite";
         else if (output.contains("DIAMOND")) tex = "item_gem_diamond_standalone_v2";
         else if (output.contains("RUBY")) tex = "item_gem_ruby_standalone_v2";
         else if (output.contains("SAPPHIRE")) tex = "item_ingot_sapphire_standalone";
@@ -114,7 +115,7 @@ public class ProcessingManager {
         else if (output.contains("AQUAMARINE")) tex = "item_gem_aquamarine_standalone";
         else if (output.contains("TANZANITE")) tex = "item_gem_amethyst_standalone";
         else if (output.contains("QUARTZ")) tex = "item_quartz_shard";
-        else if (output.contains("MITHRIL")) tex = "item_ingot_sapphire_standalone";
+        else if (output.contains("MITHRIL")) tex = "item_ingot_mithril";
         else if (output.contains("ADAMANTINE")) tex = "item_ingot_titanium_standalone";
         
         // Rare Gem Fallbacks
@@ -124,13 +125,31 @@ public class ProcessingManager {
         else if (output.contains("PAINITE") || output.contains("GARNET")) tex = "item_gem_ruby_standalone_v2";
         else if (output.contains("TOURMALINE")) tex = "item_gem_emerald_standalone_v2";
         else if (output.contains("SERENDIBITE")) tex = "item_ingot_sapphire_standalone";
+
+        // Food Fallbacks
+        else if (output.contains("MEAT")) tex = "item_meat_cooked";
+        else if (output.contains("FISH")) tex = "item_fish_cooked";
+        else if (output.contains("CHICKEN")) tex = "item_chicken_cooked";
+        else if (output.contains("APPLE")) tex = "item_apple";
+        else if (output.contains("MANGO")) tex = "item_mango";
+        else if (output.contains("PEAR")) tex = "item_pear";
+        else if (output.contains("BREAD")) tex = "item_bread";
         else tex = "item_gem_topaz_standalone"; // Default legendary fallback
 
         furnaceRecipes.put(normalizedInput, new Recipe(output, Recipe.Category.BLOCKS, null, new Item(output, null, tex, 64), 1, time));
     }
 
     private void addCookerRecipe(String input, String output, float time) {
-        cookerRecipes.put(normalize(input), new Recipe(output, Recipe.Category.SURVIVAL, null, new Item(output, null, "item_food_cooked", 64), 1, time));
+        String tex = "item_food_cooked";
+        float heal = 20f;
+        float hunger = 30f;
+
+        if (output.contains("MEAT")) { tex = "item_meat_cooked"; heal = 25f; hunger = 40f; }
+        else if (output.contains("FISH")) { tex = "item_fish_cooked"; heal = 15f; hunger = 25f; }
+        else if (output.contains("CHICKEN")) { tex = "item_chicken_cooked"; heal = 20f; hunger = 35f; }
+        else if (output.contains("BREAD")) { tex = "item_bread"; heal = 10f; hunger = 20f; }
+
+        cookerRecipes.put(normalize(input), new Recipe(output, Recipe.Category.SURVIVAL, null, new FoodItem(output, tex, heal, hunger), 1, time));
     }
 
     public Recipe getFurnaceResult(String inputName) {

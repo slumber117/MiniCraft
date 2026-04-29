@@ -104,4 +104,38 @@ public abstract class Predator extends Entity {
             velocity.z += wanderDirZ * (moveSpeed * 0.5f) * dt;
         }
     }
+
+    @Override
+    public void onDeath(EntityManager manager) {
+        minicraft.item.Item dropItem = null;
+        int count = 1 + PassiveAnimal.RNG.nextInt(2);
+
+        switch (type) {
+            case BEAR:
+            case TIGER:
+            case LION:
+            case WOLF:
+                dropItem = new minicraft.item.FoodItem("Raw Meat", "item_meat_raw", 5f, 10f);
+                count = 2 + PassiveAnimal.RNG.nextInt(2);
+                break;
+            case EAGLE:
+                dropItem = new minicraft.item.FoodItem("Raw Chicken", "item_chicken_raw", 4f, 8f);
+                break;
+            default:
+                break;
+        }
+
+        if (dropItem != null) {
+            for (int i = 0; i < count; i++) {
+                ItemEntity drop = new ItemEntity(dropItem);
+                drop.setPosition(position.x, position.y + 0.5f, position.z);
+                drop.velocity.set(
+                    (PassiveAnimal.RNG.nextFloat() - 0.5f) * 2f,
+                    3.0f,
+                    (PassiveAnimal.RNG.nextFloat() - 0.5f) * 2f
+                );
+                manager.spawn(drop);
+            }
+        }
+    }
 }

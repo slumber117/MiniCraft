@@ -87,4 +87,41 @@ public abstract class PassiveAnimal extends Entity {
             velocity.z += wanderDirZ * WANDER_SPEED * dt;
         }
     }
+
+    @Override
+    public void onDeath(EntityManager manager) {
+        minicraft.item.Item dropItem = null;
+        int count = 1 + RNG.nextInt(2);
+
+        switch (type) {
+            case COW:
+                dropItem = new minicraft.item.FoodItem("Raw Beef", "item_meat_raw", 5f, 15f);
+                break;
+            case SHEEP:
+            case RAM:
+                dropItem = new minicraft.item.FoodItem("Raw Mutton", "item_mutton_raw", 4f, 12f);
+                break;
+            case WHALE:
+                dropItem = new minicraft.item.FoodItem("Raw Fish", "item_fish_raw", 6f, 20f);
+                count = 8 + RNG.nextInt(12);
+                break;
+            default:
+                // Dogs/Cats don't drop food for morale reasons
+                break;
+        }
+
+        if (dropItem != null) {
+            for (int i = 0; i < count; i++) {
+                ItemEntity drop = new ItemEntity(dropItem);
+                drop.setPosition(position.x, position.y + 0.5f, position.z);
+                // Give it a little pop-out velocity
+                drop.velocity.set(
+                    (RNG.nextFloat() - 0.5f) * 2f,
+                    3.0f,
+                    (RNG.nextFloat() - 0.5f) * 2f
+                );
+                manager.spawn(drop);
+            }
+        }
+    }
 }

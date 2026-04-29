@@ -21,6 +21,9 @@ public class FurnaceBlock implements BlockInteraction {
     @Override
     public void onInteract(Main main, World world, int gx, int gy, int gz) {
         main.activeFacility = world.getFacility(gx, gy, gz);
+        main.activeFacX = gx;
+        main.activeFacY = gy;
+        main.activeFacZ = gz;
         
         switch (facilityType) {
             case "FURNACE":
@@ -164,7 +167,7 @@ public class FurnaceBlock implements BlockInteraction {
                             fac.maxFuelTime = fac.remainingFuelTime = fuelVal;
                             fuel.add(-1);
                             if (fuel.getCount() <= 0) fac.setSlot(1, null);
-                            System.out.println("Processing facility consumed fuel. Added " + fuelVal + "s");
+                            System.out.println("LOG: Facility (" + fx + "," + fy + "," + fz + ") consumed fuel. Total: " + fuelVal + "s");
                         }
                     }
 
@@ -173,7 +176,7 @@ public class FurnaceBlock implements BlockInteraction {
                         fac.processProgress += dt / pm.getProcessTime(inputName);
 
                         if (fac.processProgress >= 1.0f) {
-                            System.out.println("Processing complete: " + inputName + " -> " + res.getResult().getName());
+                            System.out.println("LOG: Processing complete at (" + fx + "," + fy + "," + fz + "): " + inputName);
                             // Add result
                             minicraft.item.ItemStack currentOutput = fac.getSlot(2);
                             if (currentOutput == null) {
@@ -191,15 +194,18 @@ public class FurnaceBlock implements BlockInteraction {
                         fac.isActive = false;
                     }
                 } else {
-                    fac.isActive = false; // Output slot full/incompatible
+                    // Output slot full/incompatible - don't reset progress, just stop
+                    fac.isActive = false; 
                 }
             } else {
-                fac.isActive = false; // No recipe for this input
+                // No recipe for this input - RESET progress
+                fac.isActive = false; 
                 fac.processProgress = 0;
             }
         } else {
+            // No input - RESET progress and drain fuel slowly
             fac.isActive = false;
-            if (fac.remainingFuelTime > 0) fac.remainingFuelTime -= dt * 0.1f;
+            if (fac.remainingFuelTime > 0) fac.remainingFuelTime -= dt * 0.15f; // Faster drain when idling
             fac.processProgress = 0;
         }
 

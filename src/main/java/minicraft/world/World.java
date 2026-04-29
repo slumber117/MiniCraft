@@ -512,17 +512,36 @@ public class World {
                 }
     }
 
-    public void update(float dt, minicraft.entity.Player player, minicraft.entity.ParticleManager pm) {
+    public void update(float dt, minicraft.entity.Player player, minicraft.entity.ParticleManager pm, minicraft.entity.EntityManager em) {
         int px = (int) player.position.x;
         int py = (int) player.position.y;
         int pz = (int) player.position.z;
-        int r = 10;
-        if (new java.util.Random().nextInt(5) == 0) {
+        int r = 12;
+        if (new java.util.Random().nextInt(4) == 0) {
             for (int dx = -r; dx <= r; dx++) {
-                for (int dy = -5; dy <= 5; dy++) {
+                for (int dy = -6; dy <= 6; dy++) {
                     for (int dz = -r; dz <= r; dz++) {
-                        if (getBlock(px + dx, py + dy, pz + dz) == Block.TORCH) {
-                            pm.spawnSmoke(px + dx + 0.5f, py + dy, pz + dz + 0.5f);
+                        Block b = getBlock(px + dx, py + dy, pz + dz);
+                        if (b != null && (b == Block.TORCH || b.name().endsWith("_TORCH"))) {
+                            pm.spawnSmoke(px + dx + 0.5f, py + dy + 0.6f, pz + dz + 0.5f);
+                            
+                            // Radiation logic
+                            if (b == Block.URANIUM_TORCH || b == Block.PLUTONIUM_TORCH) {
+                                float damage = (b == Block.PLUTONIUM_TORCH) ? 1.5f : 0.5f;
+                                float radRadius = (b == Block.PLUTONIUM_TORCH) ? 6.0f : 4.0f;
+                                
+                                List<minicraft.entity.Entity> nearby = em.getNearby(px + dx + 0.5f, py + dy + 0.5f, pz + dz + 0.5f, radRadius);
+                                for (minicraft.entity.Entity e : nearby) {
+                                    if (e instanceof minicraft.entity.Player) continue;
+                                    e.damage(damage, null);
+                                }
+                                
+                                // Spawn green/orange sparks for radiation
+                                if (Math.random() < 0.3) {
+                                    pm.spawnRadiationSpark(px + dx + 0.5f, py + dy + 0.8f, pz + dz + 0.5f, 
+                                        b == Block.URANIUM_TORCH ? new minicraft.math.Vector3f(0.2f, 1.0f, 0.2f) : new minicraft.math.Vector3f(1.0f, 0.5f, 0.1f));
+                                }
+                            }
                         }
                     }
                 }
@@ -571,29 +590,47 @@ public class World {
      * Finds the nearest safe spawn position on LAND (not water/ice).
      */
     public minicraft.math.Vector3f findSafeSpawn() {
-        int x = 0, z = 0;
-        int dx = 0, dz = -1;
-        for (int i = 0; i < 256; i++) {
-            int sy = getSafeSpawnY(x, z);
-            Block b = getBlock(x, sy - 1, z);
-            if (b.solid && b != Block.WATER && b != Block.ICE) {
-                return new minicraft.math.Vector3f(x + 0.5f, sy + 2, z + 0.5f);
-            }
+        Random rand = new Random();
+        
+        // Pick a single random tile to prevent hammering the ML inference pipeline
+        int tileX = (rand.nextInt(20) - 10) * 256;
+        int tileZ = (rand.nextInt(20) - 10) * 256;
+        
+        // Extended search within the cached tile to ensure a land-locked start
+        for (int i = 0; i < 2000; i++) {
+            int rx = tileX + rand.nextInt(256);
+            int rz = tileZ + rand.nextInt(256);
             
-            if (x == z || (x < 0 && x == -z) || (x > 0 && x == 1 - z)) {
-                int temp = dx;
-                dx = -dz;
-                dz = temp;
-            }
-            x += dx;
-            z += dz;
+            // Skip the origin zone entirely to avoid factory platform interference
+            if (Math.abs(rx) < 150 && Math.abs(rz) < 150) continue;
+            
+            WorldCell cell = generator.generate(rx, rz);
+            
+            // 1. Extreme Land Check: 
+            // - Elevation 0.35 is double the sea level (0.18), roughly 100 blocks above water.
+            // - Continentalness 0.4 ensures we are deep inland, away from coastal instability.
+            if (cell.isWater || cell.elevation < 0.35f || cell.continentalness < 0.4f) continue;
+            
+            // 2. Height Calculation
+            float surfaceY = cell.elevation * Chunk.HEIGHT;
+            
+            // 3. Stability Guard: Avoid very high mountains or platforms
+            if (surfaceY > 380.0f) continue;
+            
+            System.out.println("WORLD: Verified safe interior spawn at (" + rx + ", " + rz + ") Elevation: " + cell.elevation);
+            // Spawn at surface level to prevent being too high to see terrain
+            return new minicraft.math.Vector3f(rx + 0.5f, surfaceY + 1.0f, rz + 0.5f);
         }
-        return new minicraft.math.Vector3f(0.5f, getSafeSpawnY(0, 0) + 2, 0.5f);
+        
+        // Emergency Deep Inland Fallback
+        System.out.println("WORLD: Extreme search failed, using deep interior fallback.");
+        WorldCell fallbackCell = generator.generate(2048, 2048);
+        float fallbackSurfaceY = fallbackCell.elevation * Chunk.HEIGHT;
+        return new minicraft.math.Vector3f(2048.5f, fallbackSurfaceY + 1.0f, 2048.5f);
     }
 
     public void render(ShaderProgram shader, minicraft.math.Vector3f playerPos, float timeBrightness) {
         shader.setUniform("sunBrightness", timeBrightness * weatherManager.getSunBrightness());
-        shader.setUniform("weatherIntensity", weatherManager.getIntensity());
         shader.setUniform("weatherType", weatherManager.getCurrentType().ordinal());
         int pcx = (int) Math.floor(playerPos.x / 16.0);
         int pcz = (int) Math.floor(playerPos.z / 16.0);

@@ -42,6 +42,17 @@ public class ParticleManager {
         particles.add(p);
     }
 
+    public void spawnRadiationSpark(float x, float y, float z, Vector3f color) {
+        Particle p = new Particle();
+        p.pos = new Vector3f(x + (rand.nextFloat() - 0.5f) * 0.2f, y + 0.8f, z + (rand.nextFloat() - 0.5f) * 0.2f);
+        p.vel = new Vector3f((rand.nextFloat() - 0.5f) * 0.2f, 0.2f + rand.nextFloat() * 0.3f, (rand.nextFloat() - 0.5f) * 0.2f);
+        p.maxLife = 0.5f + rand.nextFloat() * 0.5f;
+        p.life = p.maxLife;
+        p.scale = 0.05f + rand.nextFloat() * 0.05f;
+        p.color = new Vector4f(color.x, color.y, color.z, 0.8f);
+        particles.add(p);
+    }
+
     public void spawnExplosion(float x, float y, float z, float intensity) {
         int count = (int) (20 * intensity);
         for (int i = 0; i < count; i++) {

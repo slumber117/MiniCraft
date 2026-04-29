@@ -118,7 +118,9 @@ public class EntityRenderer {
             String texName = entityTextures.getOrDefault(typeName, "stone");
             
             if (e instanceof minicraft.entity.ItemEntity) {
-                texName = ((minicraft.entity.ItemEntity) e).block.sideTexture;
+                minicraft.item.Item it = ((minicraft.entity.ItemEntity) e).item;
+                texName = it.getTextureName();
+                if (texName == null && it.getBlock() != null) texName = it.getBlock().sideTexture;
             }
             
             float yPos = e.position.y;

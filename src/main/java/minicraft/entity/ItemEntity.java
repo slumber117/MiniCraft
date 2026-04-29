@@ -8,15 +8,19 @@ import minicraft.world.World;
  */
 public class ItemEntity extends Entity {
 
-    public final Block block;
+    public final minicraft.item.Item item;
     private float age = 0;
     private float bobbingOffset = 0;
 
-    public ItemEntity(Block block) {
+    public ItemEntity(minicraft.item.Item item) {
         super(EntityType.ITEM, 1f);
-        this.block = block;
+        this.item = item;
         this.width = 0.3f;
         this.height = 0.3f;
+    }
+
+    public ItemEntity(Block block) {
+        this(new minicraft.item.Item(block.name(), block));
     }
 
     @Override
@@ -39,6 +43,6 @@ public class ItemEntity extends Entity {
     }
 
     public Block getBlock() {
-        return block;
+        return item.getBlock();
     }
 }

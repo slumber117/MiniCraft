@@ -165,7 +165,7 @@ public class Chunk {
                     }
 
                     // Block Light sources
-                    if (b == Block.TORCH || b == Block.LAVA || b == Block.MAGMA) {
+                    if (b != null && b.name().endsWith("_TORCH") || b == Block.TORCH || b == Block.LAVA || b == Block.MAGMA) {
                         blockLightMap[i] = 1.0f;
                         blockQueue.add(new int[]{x, y, z, 30});
                     }
@@ -241,7 +241,7 @@ public class Chunk {
         }
 
         boolean lit = false;
-        if (b == Block.FURNACE || b == Block.COOKER) {
+        if (b == Block.FURNACE || b == Block.COOKER || b == Block.ALLOY_FORGE) {
             minicraft.entity.ProcessingFacility fac = world.getFacility(gx, y, gz);
             if (fac != null && fac.isActive) lit = true;
         }

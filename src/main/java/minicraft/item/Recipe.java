@@ -6,7 +6,7 @@ import java.util.Map;
  * Defines a crafting transformation.
  */
 public class Recipe {
-    public enum Category { TOOLS, ARMOR, BLOCKS, SURVIVAL }
+    public enum Category { TOOLS, ARMOR, BLOCKS, SURVIVAL, BLACKSMITH }
 
     private final String name;
     private final Map<Item, Integer> ingredients;

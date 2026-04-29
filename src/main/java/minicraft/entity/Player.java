@@ -2,6 +2,7 @@ package minicraft.entity;
 
 import minicraft.renderer.Camera;
 import minicraft.item.ToolItem;
+import minicraft.item.FoodItem;
 import minicraft.math.Vector3f;
 import minicraft.world.World;
 import minicraft.world.Block;
@@ -29,6 +30,7 @@ public class Player extends Entity {
 
     public final Inventory inventory = new Inventory();
     public float miningProgress = 0f;
+    public float eatingProgress = 0f;
 
     // Leveling
     public int level = 1;
@@ -59,9 +61,16 @@ public class Player extends Entity {
         
         ToolItem sword = new ToolItem("Bronze Sword", ToolItem.ToolType.SWORD, 2, 5.0f, "item_sword_bronze"); // Fast swing
         inventory.add(sword, 1);
+        
+        // Give food to test eating
+        inventory.add(new FoodItem("COOKED_MEAT", "item_meat_cooked", 25f, 40f), 10);
     }
 
     private float plutoniumPulseTimer = 0f;
+
+    public float radiationLevel = 0f;
+    private float radiationDamageTimer = 0f;
+    private float geigerClickTimer = 0f;
 
     @Override
     public void tick(EntityManager manager, World world, ParticleManager particleManager, float dt) {
@@ -79,6 +88,9 @@ public class Player extends Entity {
         // 2. Physics & Collision
         applyGravity(dt, world);
         resolveMovement(dt, world);
+
+        // --- Radiation Logic ---
+        updateRadiation(dt);
 
         // --- Plutonium Radiation Pulse ---
         if (inventory.hasFullSet("Plutonium")) {
@@ -218,11 +230,28 @@ public class Player extends Entity {
     }
 
     public void meleeAttack(EntityManager manager, ParticleManager pm) {
-        float range = 3.0f;
+        float range = 3.5f; // Slightly increased range for epic swords
         float cos45 = (float) Math.cos(Math.toRadians(45));
+
+        minicraft.item.Item held = inventory.getSelectedItem();
+        float baseDmg = 20f;
+        float percentDmg = 0.0f;
+        boolean instaKill = false;
+        float bossPercent = 0.0f;
+
+        if (held instanceof ToolItem) {
+            ToolItem tool = (ToolItem) held;
+            if (tool.getToolType() == ToolItem.ToolType.SWORD) {
+                baseDmg = tool.getEfficiency() * 4f; // Scaled sword damage
+                percentDmg = tool.getPercentDamage();
+                instaKill = tool.isInstaKill();
+                bossPercent = tool.getBossPercentDamage();
+            }
+        }
 
         for (Entity e : manager.getNearby(position.x, position.y, position.z, range)) {
             if (e == this) continue; 
+            if (e.dead) continue;
             
             float dx = e.position.x - position.x;
             float dz = e.position.z - position.z;
@@ -235,8 +264,24 @@ public class Player extends Entity {
             
             float dot = dx * fx + dz * fz;
             if (dot > cos45) {
+                float finalDamage = baseDmg;
+                
+                // --- Specialized Logic ---
+                if (percentDmg > 0) {
+                    finalDamage = e.getHealth() * percentDmg;
+                }
+                
+                if (instaKill) {
+                    // Larger mobs = 80+ health (Whales, Bosses)
+                    if (e.getMaxHealth() >= 80f) {
+                        finalDamage = e.getMaxHealth() * bossPercent;
+                    } else {
+                        finalDamage = e.getHealth() + 100f; // Insta-kill
+                    }
+                }
+
                 boolean wasDead = e.isDead();
-                e.damage(20f, this);
+                e.damage(finalDamage, this);
                 if (!wasDead && e.isDead()) {
                     addXp(e.getType().isHostile() ? 10f : 2f, pm);
                     if (onKillCallback != null) onKillCallback.accept(e.getType());
@@ -409,6 +454,54 @@ public class Player extends Entity {
         this.xpToNextLevel *= 1.15f;
         if (pm != null) {
             pm.spawnLevelUp(position.x, position.y, position.z);
+        }
+    }
+
+    private void updateRadiation(float dt) {
+        float ambientRad = 0f;
+        
+        // Check inventory for radioactive materials
+        for (minicraft.item.ItemStack stack : inventory.getHotbar()) {
+            if (stack == null || stack.isEmpty()) continue;
+            String name = stack.getItem().getName();
+            if (name.contains("URANIUM")) ambientRad += 0.05f * stack.getCount();
+            if (name.contains("PLUTONIUM")) ambientRad += 0.15f * stack.getCount();
+        }
+        for (minicraft.item.ItemStack stack : inventory.getMainInventory()) {
+            if (stack == null || stack.isEmpty()) continue;
+            String name = stack.getItem().getName();
+            if (name.contains("URANIUM")) ambientRad += 0.05f * stack.getCount();
+            if (name.contains("PLUTONIUM")) ambientRad += 0.15f * stack.getCount();
+        }
+
+        // Shielding logic
+        boolean isProtected = inventory.hasFullSet("Plutonium") || inventory.hasFullSet("Mithril");
+        if (isProtected) ambientRad *= 0.05f; // 95% reduction
+
+        // Smoothly adjust player radiation level
+        if (ambientRad > radiationLevel) {
+            radiationLevel += dt * 0.5f;
+        } else {
+            radiationLevel = Math.max(0, radiationLevel - dt * 0.1f);
+        }
+
+        // Apply damage
+        if (radiationLevel > 1.0f) {
+            radiationDamageTimer += dt;
+            if (radiationDamageTimer >= 1.0f) {
+                radiationDamageTimer = 0f;
+                damage(radiationLevel * 2f, null);
+                System.out.println("RADIATION CRITICAL: " + (int)radiationLevel + "%");
+            }
+
+            // --- Geiger Counter Clicks ---
+            geigerClickTimer += dt;
+            float clickInterval = Math.max(0.05f, 1.5f - (radiationLevel / 50f)); // Clicks faster as level rises
+            if (geigerClickTimer >= clickInterval) {
+                geigerClickTimer = 0f;
+                // Since we have no audio engine yet, we print to console as a tactile feedback
+                System.out.println("[GEIGER] CLICK");
+            }
         }
     }
 }

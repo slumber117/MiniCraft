@@ -83,7 +83,7 @@ public enum Block {
 
     QUARTZ_ORE(true, 1, 4.0f, 3.0f, "quartz_ore"),
     PYRITE_ORE(true, 1, 4.0f, 4.0f, "pyrite_ore"),
-    MITHRIL_ORE(true, 4, 30.0f, 25.0f, "mithril_ore"),
+    MITHRIL_ORE(true, 10, 150.0f, 500.0f, "mithril_ore"),
     ADAMANTINE_ORE(true, 5, 50.0f, 40.0f, "adamantine_ore"),
     ORICHALCUM_ORE(true, 4, 35.0f, 35.0f, "orichalcum_ore"),
     PLUTONIUM_ORE(true, 4, 50.0f, 50.0f, "plutonium_ore"),
@@ -98,6 +98,7 @@ public enum Block {
 
     BRONZE_BLOCK(true, 0, 5.0f, 2.0f, "bronze_block"),
     CRAFTING_TABLE(true, 0, 2.5f, 5.0f, "crafting_table", Block.MeshType.CUBE, new minicraft.world.behavior.CraftingTableBlock()),
+    BLACKSMITH(true, 0, 4.0f, 10.0f, "blacksmith_top", "stone", "blacksmith_side", new minicraft.world.behavior.BlacksmithBlock()),
     FURNACE(true, 0, 3.5f, 10.0f, "furnace", Block.MeshType.CUBE, new minicraft.world.behavior.FurnaceBlock("INDUSTRIAL SMELTER", "FURNACE")),
     ALLOY_FORGE(true, 0, 4.0f, 15.0f, "alloy_forge", Block.MeshType.CUBE, new minicraft.world.behavior.FurnaceBlock("FUSION FORGE", "ALLOY_FORGE")),
     CHEST(true, 0, 2.5f, 5.0f, "chest", Block.MeshType.CUBE, new minicraft.world.behavior.ChestBlock()),
@@ -109,6 +110,12 @@ public enum Block {
     MUSHROOM(false, 0, 0f, 0f, "mushroom", MeshType.CROSS),
     TORCH(false, 0, 0f, 1.0f, "torch", MeshType.CROSS),
     TIN_TORCH(false, 0, 0f, 1.1f, "tin_torch", MeshType.CROSS),
+    IRON_TORCH(false, 0, 0f, 1.2f, "iron_torch", MeshType.CROSS),
+    GOLD_TORCH(false, 0, 0f, 1.5f, "gold_torch", MeshType.CROSS),
+    COPPER_TORCH(false, 0, 0f, 1.1f, "copper_torch", MeshType.CROSS),
+    NICKEL_TORCH(false, 0, 0f, 1.2f, "nickel_torch", MeshType.CROSS),
+    URANIUM_TORCH(false, 0, 0f, 1.3f, "uranium_torch", MeshType.CROSS),
+    PLUTONIUM_TORCH(false, 0, 0f, 1.6f, "plutonium_torch", MeshType.CROSS),
     CACTUS(true, 0, 0.5f, 0.5f, "cactus"),
     SEA_WEED(false, 0, 0f, 0f, "sea_weed", MeshType.CROSS),
     CORAL(true, 0, 0.3f, 1.0f, "coral"),
@@ -183,6 +190,14 @@ public enum Block {
             interaction.onInteract(main, world, x, y, z);
         }
     }
+    public String getInteractionLabel() {
+        if (this == FURNACE) return "INDUSTRIAL SMELTER";
+        if (this == ALLOY_FORGE) return "FUSION FORGE";
+        if (this == COOKER) return "HIGH-EFFICIENCY COOKER";
+        if (this == BLACKSMITH) return "BLACKSMITH STATION";
+        return "";
+    }
+
     public String getTextureForFace(Face face) {
         return getTextureForFace(face, false);
     }
@@ -198,7 +213,7 @@ public enum Block {
         
         if (lit) {
             // Check if a _lit version exists by convention
-            if (this == FURNACE || this == COOKER) {
+            if (this == FURNACE || this == COOKER || this == ALLOY_FORGE) {
                 return base + "_lit";
             }
         }

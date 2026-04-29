@@ -39,7 +39,11 @@ public class EntityManager {
         // Remove dead entities
         Iterator<Entity> it = entities.iterator();
         while (it.hasNext()) {
-            if (it.next().isDead()) it.remove();
+            Entity e = it.next();
+            if (e.isDead()) {
+                e.onDeath(this);
+                it.remove();
+            }
         }
     }
     private void spawnHostilesInDarkness(minicraft.world.World world) {

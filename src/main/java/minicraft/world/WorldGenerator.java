@@ -35,16 +35,22 @@ public class WorldGenerator {
         WorldCell[][] cells = new WorldCell[width][height];
         LocalTerrainProvider provider = LocalTerrainProvider.getInstance();
 
+        int lastTileX = -999999, lastTileZ = -999999;
+        HeightmapData data = null;
+
         for (int x = 0; x < width; x++) {
             for (int z = 0; z < height; z++) {
                 int absX = originX + x;
                 int absZ = originZ + z;
 
-                // Canonical Tiling: Align to 256x256 grid for maximum cache hits
                 int tileX = Math.floorDiv(absX, 256) * 256;
                 int tileZ = Math.floorDiv(absZ, 256) * 256;
 
-                HeightmapData data = provider.fetchHeightmap(tileZ, tileX, tileZ + 256, tileX + 256);
+                if (tileX != lastTileX || tileZ != lastTileZ || data == null) {
+                    data = provider.fetchHeightmap(tileZ, tileX, tileZ + 256, tileX + 256);
+                    lastTileX = tileX;
+                    lastTileZ = tileZ;
+                }
 
                 int lx = absX - tileX;
                 int lz = absZ - tileZ;

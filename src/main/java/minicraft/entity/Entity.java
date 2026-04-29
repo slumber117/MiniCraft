@@ -54,6 +54,10 @@ public abstract class Entity {
 
     // ── Update helpers ────────────────────────────────────────────────────
 
+    public void onDeath(EntityManager manager) {
+        // Override to implement drops, etc.
+    }
+
     /** Apply velocity to position with basic terrain collision. */
     protected void applyVelocity(minicraft.world.World world, float dt) {
         // Apply gravity if not flying/swimming
@@ -112,6 +116,8 @@ public abstract class Entity {
         if (health <= 0) {
             health = 0;
             dead = true;
+            // No direct manager access here, will handle via EntityManager if needed
+            // or just rely on subclasses having state.
         }
     }
 

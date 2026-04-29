@@ -72,6 +72,9 @@ public class Main {
     private ShaderProgram compositeShader;
     private int giTexture;
     private Mesh screenQuad;
+    
+    // Dedicated UI Shader
+    private ShaderProgram uiShader;
     private boolean rtgiEnabled = true;
 
     // ── World ─────────────────────────────────────────────────────────────
@@ -129,6 +132,7 @@ public class Main {
     public boolean craftingOpen = false;
     public boolean inventoryOpen = false, chestOpen = false;
     public boolean shipConsoleOpen = false, furnaceOpen = false, cookerOpen = false;
+    public boolean blacksmithOpen = false;
     public boolean questLogOpen = false;
 
     // --- Loading State ---
@@ -138,6 +142,7 @@ public class Main {
     public long gameStartedTime = 0;
     public minicraft.entity.Inventory activeChest = null;
     public minicraft.entity.ProcessingFacility activeFacility = null;
+    public int activeFacX, activeFacY, activeFacZ;
     public String activeStatusMessage = "";
     public float statusMessageTimer = 0f;
 
@@ -252,6 +257,7 @@ public class Main {
                     chestOpen = false;
                     furnaceOpen = false;
                     cookerOpen = false;
+                    blacksmithOpen = false;
                     shipConsoleOpen = false;
                     glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
                     firstMouse = true;
@@ -275,6 +281,8 @@ public class Main {
                     handleInventoryClick();
                 else if (shipConsoleOpen)
                     handleShipConsoleClick();
+                else if (blacksmithOpen)
+                    handleBlacksmithClick();
             }
         });
 
@@ -304,21 +312,23 @@ public class Main {
                 // Max scroll is (9-3) * 66 = 396
                 inventoryScroll = Math.max(0, Math.min(inventoryScroll, 396));
             } else if (craftingOpen) {
-                final int VISIBLE = 11;
                 List<Recipe> filtered = new ArrayList<>();
                 for (Recipe r : craftingManager.getRecipes())
                     if (r.getCategory() == activeCategory)
                         filtered.add(r);
-                if (filtered.isEmpty())
-                    return;
+                if (filtered.isEmpty()) return;
 
-                if (yoff > 0)
-                    recipeScrollOffset--;
-                else if (yoff < 0)
-                    recipeScrollOffset++;
+                if (yoff > 0) recipeScrollOffset -= 45;
+                else if (yoff < 0) recipeScrollOffset += 45;
 
-                int maxOff = Math.max(0, filtered.size() - VISIBLE);
-                recipeScrollOffset = (int) Math.max(0, Math.min(recipeScrollOffset, maxOff));
+                float totalH = (float) Math.ceil(filtered.size() / 7f) * 64f; // 64 = ICON_SIZE + ICON_GAP
+                float gridAreaH = 540f - 90f - 20f; // MENU_H - GRID_OFF_Y - 20
+                recipeScrollOffset = Math.max(0, (int)Math.min(recipeScrollOffset, totalH - gridAreaH));
+            } else if (blacksmithOpen) {
+                // Same as crafting scroll
+                if (yoff > 0) recipeScrollOffset -= 45;
+                else if (yoff < 0) recipeScrollOffset += 45;
+                recipeScrollOffset = Math.max(0, recipeScrollOffset); 
             } else {
                 // Default: Change hotbar selection
                 player.inventory.changeSelection((int) -yoff);
@@ -397,21 +407,31 @@ public class Main {
                 }
 
                 loadingStatus = "Finding optimal landing site...";
-                loadingProgress = 0.7f;
                 minicraft.math.Vector3f spawnPos = world.findSafeSpawn();
-                
+                loadingStatus = "Scanning for safe interior (" + (int)spawnPos.x + ", " + (int)spawnPos.z + ")...";
+                loadingProgress = 0.7f;
                 int scx = Math.floorDiv((int)spawnPos.x, minicraft.world.Chunk.WIDTH);
                 int scz = Math.floorDiv((int)spawnPos.z, minicraft.world.Chunk.DEPTH);
                 
-                loadingStatus = "Synthesizing landing zone...";
-                world.getOrGenerate(scx, scz); // Ensure it's requested
+                for (int x = scx - 1; x <= scx + 1; x++) {
+                    for (int z = scz - 1; z <= scz + 1; z++) {
+                        loadingStatus = "Materializing chunk " + x + ", " + z + "...";
+                        world.getOrGenerate(x, z);
+                    }
+                }
                 
-                // Safety Gate: Wait for actual chunk arrival
-                while(world.getChunk(scx, scz) == null) {
-                    Thread.sleep(100);
+                loadingStatus = "Constructing landing zone...";
+                // Safety: Force a solid landing platform at spawn to prevent falling through void/water
+                for (int dx = -2; dx <= 2; dx++) {
+                    for (int dz = -2; dz <= 2; dz++) {
+                        world.setBlock((int)spawnPos.x + dx, (int)spawnPos.y - 1, (int)spawnPos.z + dz, Block.ALLOY_PLATE);
+                        // Ensure head clearance
+                        world.setBlock((int)spawnPos.x + dx, (int)spawnPos.y, (int)spawnPos.z + dz, Block.AIR);
+                        world.setBlock((int)spawnPos.x + dx, (int)spawnPos.y + 1, (int)spawnPos.z + dz, Block.AIR);
+                    }
                 }
 
-                player.setPosition(spawnPos.x, spawnPos.y + 1.2f, spawnPos.z);
+                player.setPosition(spawnPos.x, spawnPos.y + 0.5f, spawnPos.z);
                 camera.setPosition(spawnPos.x, spawnPos.y + 1.2f + 1.6f, spawnPos.z);
                 
                 // Starting Tools - Removed duplicates and Stone Pickaxe
@@ -469,6 +489,7 @@ public class Main {
             updateFocusedBlock();
 
             entityManager.update(dt, world, particleManager);
+            world.update(dt, player, particleManager, entityManager);
             world.tick(dt, processingManager);
             particleManager.update(dt);
 
@@ -490,6 +511,18 @@ public class Main {
                 "sunBrightness", "weatherIntensity", "weatherType" }) {
             shaderProgram.createUniform(u);
         }
+
+        uiShader = new ShaderProgram();
+        uiShader.createVertexShader(Utils.loadResource("/shaders/ui_vertex.glsl"));
+        uiShader.createFragmentShader(Utils.loadResource("/shaders/ui_fragment.glsl"));
+        uiShader.link();
+        uiShader.createUniform("projectionMatrix");
+        uiShader.createUniform("viewMatrix");
+        uiShader.createUniform("modelMatrix");
+        uiShader.createUniform("texture_sampler");
+        uiShader.createUniform("colorTint");
+        uiShader.createUniform("useTexture");
+        uiShader.createUniform("useLighting");
 
         uiRenderer = new UIRenderer(textures);
         entityRenderer = new EntityRenderer(textures);
@@ -566,14 +599,14 @@ public class Main {
 
             if (isLoading) {
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                uiRenderer.renderLoadingScreen(shaderProgram, framebufferW, framebufferH, this);
+                uiRenderer.renderLoadingScreen(uiShader, framebufferW, framebufferH, this);
                 glfwSwapBuffers(window);
                 glfwPollEvents();
                 continue;
             }
 
             // ── Cursor mode ───────────────────────────────────────────────
-            if (inventoryOpen || craftingOpen || shipConsoleOpen || chestOpen || furnaceOpen || cookerOpen) {
+            if (inventoryOpen || craftingOpen || shipConsoleOpen || chestOpen || furnaceOpen || cookerOpen || blacksmithOpen) {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
             } else {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -685,8 +718,6 @@ public class Main {
             shaderProgram.setUniform("texture_sampler", 0);
             shaderProgram.setUniform("colorTint", whiteTint);
             shaderProgram.setUniform("sunBrightness", world.getWeatherManager().getSunBrightness());
-            shaderProgram.setUniform("torchPos", player.position);
-            shaderProgram.setUniform("torchStrength", (player.inventory.hasTorchEquipped() ? 1.0f : 0.0f));
 
             minicraft.math.Vector3f totalGlow = player.inventory.getTotalGlow();
             shaderProgram.setUniform("glowColor", totalGlow);
@@ -791,12 +822,12 @@ public class Main {
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             
-            shaderProgram.bind();
-            uiRenderer.render(player, shaderProgram, currentW, currentH, this);
+            uiShader.bind();
+            uiRenderer.render(player, uiShader, currentW, currentH, this);
             if (questLogOpen) {
-                uiRenderer.renderQuestLog(player, shaderProgram, currentW, currentH, this);
+                uiRenderer.getQuestLogUI().render(uiRenderer, player, uiShader, currentW, currentH, this);
             }
-            shaderProgram.unbind();
+            uiShader.unbind();
 
             glEnable(GL_DEPTH_TEST);
 
@@ -806,7 +837,7 @@ public class Main {
                         camera.getPosition().x, camera.getPosition().y, camera.getPosition().z,
                         2.0f, minicraft.entity.EntityType.ITEM);
                 if (item instanceof minicraft.entity.ItemEntity) {
-                    player.inventory.add(((minicraft.entity.ItemEntity) item).block, 1);
+                    player.inventory.add(((minicraft.entity.ItemEntity) item).item, 1);
                     item.damage(100f, null);
                 }
             }
@@ -1039,10 +1070,28 @@ public class Main {
         boolean mouseRightDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 
         if (mouseLeftDown) {
-            handlePlayerAttack(dt);
+            minicraft.item.Item held = player.inventory.getSelectedItem();
+            if (held instanceof minicraft.item.FoodItem) {
+                minicraft.item.FoodItem food = (minicraft.item.FoodItem) held;
+                player.eatingProgress += dt * 0.8f; // ~1.25 seconds to eat
+                miningProgress = 0f; // Can't mine while eating
+                
+                if (player.eatingProgress >= 1.0f) {
+                    player.heal(food.getHealthRestored());
+                    player.hunger = Math.min(player.maxHunger, player.hunger + food.getHungerRestored());
+                    player.inventory.remove(held, 1);
+                    player.eatingProgress = 0f;
+                    System.out.println("CONSUMED: " + food.getName() + ". Health restored.");
+                    particleManager.spawnSmoke(player.position.x, player.position.y + 1.2f, player.position.z);
+                }
+            } else {
+                player.eatingProgress = 0f;
+                handlePlayerAttack(dt);
+            }
         } else {
             miningProgress = 0f;
             miningX = -1;
+            player.eatingProgress = 0f;
         }
 
         if (mouseRightDown && !prevMouseRightDown)
@@ -1242,7 +1291,7 @@ public class Main {
         final int COLS = 7;
         final float MENU_W = 700f, MENU_H = 540f;
         final float ICON_SIZE = 56f, ICON_GAP = 8f;
-        final float GRID_OFF_X = 14f, GRID_OFF_Y = 60f;
+        final float GRID_OFF_X = 14f, GRID_OFF_Y = 90f;
         final float DETAIL_W = 182f;
         final float SX = (framebufferW - MENU_W) / 2f;
         final float SY = (framebufferH - MENU_H) / 2f;
@@ -1263,8 +1312,8 @@ public class Main {
             // Tab clicks
             Recipe.Category[] cats = Recipe.Category.values();
             float tabW = GRID_AREA_W / cats.length;
-            float tabY = SY + 34f;
-            if (y >= tabY && y <= tabY + 24f) {
+            float tabY = SY + 48f;
+            if (y >= tabY && y <= tabY + 28f) {
                 for (int i = 0; i < cats.length; i++) {
                     float tx = SX + GRID_OFF_X + i * (tabW + 2f);
                     if (x >= tx && x <= tx + tabW - 2f) {
@@ -1331,7 +1380,7 @@ public class Main {
             int selRow = recipeIndex / COLS;
             float selYMin = GY + selRow * (ICON_SIZE + ICON_GAP) - recipeScrollOffset;
             float selYMax = selYMin + ICON_SIZE;
-            float viewMax = SY + MENU_H - 30f;
+            float viewMax = SY + MENU_H - 20f;
 
             if (selYMin < GY) {
                 recipeScrollOffset = (int) (selRow * (ICON_SIZE + ICON_GAP));
@@ -1348,6 +1397,58 @@ public class Main {
         prevRight = isRight;
         prevEnter = isEnter;
         prevMouseLeftDown = mouseLeftDown;
+    }
+
+    private void handleBlacksmithClick() {
+        // --- Similar to Crafting Input but filtered to BLACKSMITH category ---
+        final int COLS = 7;
+        final float MENU_W = 700f, MENU_H = 540f;
+        final float ICON_SIZE = 56f, ICON_GAP = 8f;
+        final float GRID_OFF_X = 14f, GRID_OFF_Y = 90f;
+        final float DETAIL_W = 182f;
+        final float SX = (framebufferW - MENU_W) / 2f;
+        final float SY = (framebufferH - MENU_H) / 2f;
+        final float GX = SX + GRID_OFF_X;
+        final float GY = SY + GRID_OFF_Y;
+        final float GRID_AREA_W = COLS * ICON_SIZE + (COLS - 1) * ICON_GAP;
+
+        List<Recipe> filtered = new ArrayList<>();
+        for (Recipe r : craftingManager.getRecipes())
+            if (r.getCategory() == Recipe.Category.BLACKSMITH)
+                filtered.add(r);
+
+        boolean mouseLeftDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        if (mouseLeftDown && !prevMouseLeftDown) {
+            float[] mouse = getScaledMouse();
+            float x = mouse[0], y = mouse[1];
+
+            // Icon grid clicks
+            for (int i = 0; i < filtered.size(); i++) {
+                int col = i % COLS, row = i / COLS;
+                float ix = GX + col * (ICON_SIZE + ICON_GAP);
+                float iy = GY + row * (ICON_SIZE + ICON_GAP) - recipeScrollOffset;
+                if (x >= ix && x <= ix + ICON_SIZE && y >= iy && y <= iy + ICON_SIZE) {
+                    recipeIndex = i;
+                    break;
+                }
+            }
+
+            // Forge button click
+            if (recipeIndex >= 0 && recipeIndex < filtered.size()) {
+                float bbx = SX + GRID_OFF_X + GRID_AREA_W + 18f + 8f;
+                float bby = SY + MENU_H - 52f;
+                float bbw = DETAIL_W - 16f;
+                if (x >= bbx && x <= bbx + bbw && y >= bby && y <= bby + 38f)
+                    craftingManager.craft(filtered.get(recipeIndex), player.inventory);
+            }
+        }
+        
+        // Simple navigation
+        if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS && !prevEnter && recipeIndex < filtered.size())
+            craftingManager.craft(filtered.get(recipeIndex), player.inventory);
+
+        prevMouseLeftDown = mouseLeftDown;
+        prevEnter = glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS;
     }
 
     // ─────────────────────────────────────────────────────────────────────
