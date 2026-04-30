@@ -1048,7 +1048,10 @@ public class Main {
         }
         prevF5 = isF5;
 
-        if (questLogOpen) return; // consume input while journal is open
+        if (questLogOpen) {
+            handleQuestLogInput();
+            return; // consume input while journal is open
+        }
 
         if (inventoryOpen) {
             handleInventoryInput();
@@ -1406,6 +1409,25 @@ public class Main {
         prevEnter = isEnter;
         prevMouseLeftDown = mouseLeftDown;
     }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Quest Log input
+    // ─────────────────────────────────────────────────────────────────────
+
+    private void handleQuestLogInput() {
+        boolean mouseLeftDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        boolean clicked = mouseLeftDown && !prevMouseLeftDown;
+        
+        float[] mouse = getScaledMouse();
+        float x = mouse[0], y = mouse[1];
+
+        if (clicked) {
+            boolean handled = uiRenderer.getQuestLogUI().handleInput(x, y, true, framebufferW, framebufferH, this);
+        }
+
+        prevMouseLeftDown = mouseLeftDown;
+    }
+
 
     private void handleBlacksmithClick() {
         // --- Similar to Crafting Input but filtered to BLACKSMITH category ---

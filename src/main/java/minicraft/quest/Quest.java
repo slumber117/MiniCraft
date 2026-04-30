@@ -72,4 +72,11 @@ public class Quest {
         for (QuestObjective o : objectives) sum += o.getProgressFraction();
         return sum / objectives.size();
     }
+
+    /** Explicitly accept the quest if it's available. */
+    public void accept() {
+        if (state == State.AVAILABLE) {
+            state = State.IN_PROGRESS;
+        }
+    }
 }

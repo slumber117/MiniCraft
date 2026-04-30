@@ -260,11 +260,10 @@ public class QuestManager {
     public void onBlockMined(Block block) {
         String id = block.name();
         for (Quest q : quests.values()) {
-            if (q.state == Quest.State.LOCKED || q.state == Quest.State.COMPLETED) continue;
+            if (q.state != Quest.State.IN_PROGRESS) continue;
             for (QuestObjective o : q.objectives) {
                 if (o.type == QuestObjective.Type.MINE_BLOCK && o.targetId.equals(id) && !o.isDone()) {
                     o.advance(1);
-                    if (q.state == Quest.State.AVAILABLE) q.state = Quest.State.IN_PROGRESS;
                 }
             }
         }
@@ -273,13 +272,12 @@ public class QuestManager {
     public void onEntityKilled(EntityType type) {
         String id = type.name();
         for (Quest q : quests.values()) {
-            if (q.state == Quest.State.LOCKED || q.state == Quest.State.COMPLETED) continue;
+            if (q.state != Quest.State.IN_PROGRESS) continue;
             for (QuestObjective o : q.objectives) {
                 if (o.type == QuestObjective.Type.KILL_ENTITY
                         && (o.targetId.equals("*") || o.targetId.equalsIgnoreCase(id))
                         && !o.isDone()) {
                     o.advance(1);
-                    if (q.state == Quest.State.AVAILABLE) q.state = Quest.State.IN_PROGRESS;
                 }
             }
         }
@@ -288,12 +286,11 @@ public class QuestManager {
     public void onItemCrafted(Item item) {
         String name = item.getName();
         for (Quest q : quests.values()) {
-            if (q.state == Quest.State.LOCKED || q.state == Quest.State.COMPLETED) continue;
+            if (q.state != Quest.State.IN_PROGRESS) continue;
             for (QuestObjective o : q.objectives) {
                 if (o.type == QuestObjective.Type.CRAFT_ITEM
                         && o.targetId.equalsIgnoreCase(name) && !o.isDone()) {
                     o.advance(1);
-                    if (q.state == Quest.State.AVAILABLE) q.state = Quest.State.IN_PROGRESS;
                 }
             }
         }
@@ -309,7 +306,7 @@ public class QuestManager {
         List<Quest> newlyCompleted = new ArrayList<>();
 
         for (Quest q : quests.values()) {
-            if (q.state == Quest.State.LOCKED || q.state == Quest.State.COMPLETED) continue;
+            if (q.state != Quest.State.IN_PROGRESS) continue;
 
             // REACH_DEPTH and REACH_LEVEL checks
             for (QuestObjective o : q.objectives) {
@@ -319,12 +316,10 @@ public class QuestManager {
                     int threshold = Integer.parseInt(o.targetId);
                     if (playerY <= threshold) {
                         o.set(1);
-                        if (q.state == Quest.State.AVAILABLE) q.state = Quest.State.IN_PROGRESS;
                     }
                 } else if (o.type == QuestObjective.Type.REACH_LEVEL) {
                     int lvlTarget = Integer.parseInt(o.targetId);
                     o.set(playerLvl >= lvlTarget ? 1 : 0);
-                    if (o.isDone() && q.state == Quest.State.AVAILABLE) q.state = Quest.State.IN_PROGRESS;
                 }
             }
 

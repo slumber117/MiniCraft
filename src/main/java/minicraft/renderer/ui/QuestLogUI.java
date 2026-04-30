@@ -18,6 +18,12 @@ public class QuestLogUI {
     private Quest.Phase questPhaseTab = Quest.Phase.NOVICE;
     private int questSelectedIndex = 0;
     private float questListScroll = 0f;
+    
+    private float acceptBtnX = 0f;
+    private float acceptBtnY = 0f;
+    private float acceptBtnW = 160f;
+    private float acceptBtnH = 36f;
+    private boolean acceptBtnVisible = false;
 
     public void render(UIRenderer ui, Player player, ShaderProgram shader, int width, int height, Main main) {
         glDisable(GL_DEPTH_TEST);
@@ -121,7 +127,23 @@ public class QuestLogUI {
                     dy += 22;
                 }
             }
-            if (sel.reward.xp > 0) ui.drawText(shader, "+ " + sel.reward.xp + " XP", DX + 4, dy + 4, 0.50f, new Vector4f(0.95f, 0.85f, 0.15f, 1f));
+            if (sel.reward.xp > 0) {
+                ui.drawText(shader, "+ " + sel.reward.xp + " XP", DX + 4, dy + 4, 0.50f, new Vector4f(0.95f, 0.85f, 0.15f, 1f));
+                dy += 26;
+            }
+            
+            acceptBtnVisible = false;
+            if (sel.state == Quest.State.AVAILABLE) {
+                dy += 10f;
+                acceptBtnX = DX + (DW - acceptBtnW) / 2f;
+                acceptBtnY = dy;
+                acceptBtnVisible = true;
+                
+                ui.drawRectInternal(shader, acceptBtnX, acceptBtnY, acceptBtnW, acceptBtnH, new Vector4f(0.12f, 0.63f, 1f, 0.8f));
+                ui.drawRectInternal(shader, acceptBtnX, acceptBtnY, acceptBtnW, 2f, UIPalette.TACT_BLUE);
+                ui.drawRectInternal(shader, acceptBtnX, acceptBtnY + acceptBtnH - 2f, acceptBtnW, 2f, UIPalette.TACT_BLUE);
+                ui.drawText(shader, "ACCEPT QUEST", acceptBtnX + 22, acceptBtnY + 10, 0.55f, new Vector4f(1f, 1f, 1f, 1f));
+            }
         }
         glDisable(GL_BLEND); glEnable(GL_DEPTH_TEST);
     }
@@ -155,5 +177,50 @@ public class QuestLogUI {
     public void select(int delta, int size) { 
         if (size == 0) return;
         questSelectedIndex = (questSelectedIndex + delta + size) % size;
+    }
+
+    public boolean handleInput(float x, float y, boolean clicked, int width, int height, Main main) {
+        if (!clicked) return false;
+        
+        final float PW = Math.min(980f, width - 60), PH = Math.min(660f, height - 60);
+        final float PX = (width - PW) / 2f, PY = (height - PH) / 2f;
+        final float TAB_H = 32f, LPAD = 16f, LIST_W = 230f;
+        final float BODY_Y = PY + TAB_H + 40f, BODY_H = PH - TAB_H - 50f;
+        final float SLOT_H = 42f, SLOT_G = 4f;
+
+        // Check tabs
+        Quest.Phase[] phases = Quest.Phase.values();
+        float tabW = (PW - LPAD * 2) / phases.length;
+        for (int i = 0; i < phases.length; i++) {
+            float tx = PX + LPAD + i * tabW, ty = PY + 48f;
+            if (x >= tx && x <= tx + tabW - 3f && y >= ty && y <= ty + TAB_H) {
+                questPhaseTab = phases[i];
+                questSelectedIndex = 0;
+                questListScroll = 0f;
+                return true;
+            }
+        }
+
+        // Check list items
+        List<Quest> phaseQuests = main.questManager.getByPhase(questPhaseTab);
+        float listX = PX + LPAD, listY = BODY_Y;
+        for (int i = 0; i < phaseQuests.size(); i++) {
+            float ey = listY + i * (SLOT_H + SLOT_G) - questListScroll;
+            if (ey + SLOT_H < listY - 10 || ey > listY + BODY_H + 10) continue;
+            if (x >= listX && x <= listX + LIST_W && y >= ey && y <= ey + SLOT_H) {
+                questSelectedIndex = i;
+                return true;
+            }
+        }
+
+        // Check Accept button
+        if (acceptBtnVisible && !phaseQuests.isEmpty() && questSelectedIndex >= 0 && questSelectedIndex < phaseQuests.size()) {
+            if (x >= acceptBtnX && x <= acceptBtnX + acceptBtnW && y >= acceptBtnY && y <= acceptBtnY + acceptBtnH) {
+                phaseQuests.get(questSelectedIndex).accept();
+                return true;
+            }
+        }
+
+        return false;
     }
 }
