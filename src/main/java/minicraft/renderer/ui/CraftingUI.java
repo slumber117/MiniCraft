@@ -143,8 +143,15 @@ public class CraftingUI {
             float ns = name.length() > 14 ? 0.52f : 0.60f;
             ui.drawText(shader, name, dx + DETAIL_W / 2f - name.length() * ns * 5.2f, py + prev + 8f, ns, UIPalette.TEXT_COLOR);
 
-            ui.drawRectInternal(shader, dx + 8, py + prev + 26f, DETAIL_W - 16, 1f, UIPalette.RUSTIC_BORDER);
-            ui.drawText(shader, "REQUIRES:", dx + 10, py + prev + 32f, 0.50f, UIPalette.TACT_ORANGE);
+            String tierInfo = sel.getResult().getTierInfo();
+            float tierOff = 0;
+            if (tierInfo != null) {
+                ui.drawText(shader, tierInfo, dx + DETAIL_W / 2f - tierInfo.length() * 0.45f * 5.2f, py + prev + 24f, 0.45f, UIPalette.TACT_BLUE);
+                tierOff = 18f;
+            }
+
+            ui.drawRectInternal(shader, dx + 8, py + prev + 26f + tierOff, DETAIL_W - 16, 1f, UIPalette.RUSTIC_BORDER);
+            ui.drawText(shader, "REQUIRES:", dx + 10, py + prev + 32f + tierOff, 0.50f, UIPalette.TACT_ORANGE);
 
             boolean canCraft = true;
             int k = 0;
@@ -153,7 +160,7 @@ public class CraftingUI {
                 boolean ok = owned >= e.getValue();
                 if (!ok) canCraft = false;
                 Vector4f col = ok ? UIPalette.TACT_GREEN : new Vector4f(1f, 0.35f, 0.35f, 1f);
-                float iy2 = py + prev + 46f + k * 36f;
+                float iy2 = py + prev + 46f + tierOff + k * 36f;
                 ui.drawItemIcon(shader, e.getKey(), dx + 10, iy2, 20f);
                 ui.drawText(shader, e.getKey().getName(), dx + 34, iy2 + 1, 0.48f, col);
                 ui.drawText(shader, owned + " / " + e.getValue(), dx + 34, iy2 + 14, 0.56f, col);

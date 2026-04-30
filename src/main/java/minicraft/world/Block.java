@@ -91,6 +91,28 @@ public enum Block {
     TUNGSTEN_ORE(true, 2, 10.0f, 12.0f, "tungsten_ore"),
     TITANIUM_ORE(true, 2, 10.0f, 12.0f, "titanium_ore"),
 
+    // ── Rare Earth Ores (Tier 1, 12-30) ──────────────────────────────────
+    XANTHIOSITE_ORE(true, 1, 4.0f, 5.0f, "xanthiosite_ore"),
+    MONAZITE_ORE(true, 12, 180.0f, 600.0f, "monazite_ore"),
+    BASTNAESITE_ORE(true, 13, 200.0f, 650.0f, "bastnaesite_ore"),
+    XENOTIME_ORE(true, 14, 220.0f, 700.0f, "xenotime_ore"),
+    LOPARITE_ORE(true, 15, 240.0f, 750.0f, "loparite_ore"),
+    TANTALITE_ORE(true, 16, 260.0f, 800.0f, "tantalite_ore"),
+    VANADINITE_ORE(true, 17, 280.0f, 850.0f, "vanadinite_ore"),
+    GADOLINIUM_ORE(true, 18, 300.0f, 900.0f, "gadolinium_ore"),
+    TERBIUM_ORE(true, 19, 320.0f, 950.0f, "terbium_ore"),
+    DYSPROSIUM_ORE(true, 20, 340.0f, 1000.0f, "dysprosium_ore"),
+    HOLMIUM_ORE(true, 21, 360.0f, 1100.0f, "holmium_ore"),
+    ERBIUM_ORE(true, 22, 380.0f, 1200.0f, "erbium_ore"),
+    YTTRIUM_ORE(true, 23, 400.0f, 1300.0f, "yttrium_ore"),
+    LUTETIUM_ORE(true, 24, 420.0f, 1400.0f, "lutetium_ore"),
+    SAMARIUM_ORE(true, 25, 440.0f, 1500.0f, "samarium_ore"),
+    NEODYMIUM_ORE(true, 26, 460.0f, 1600.0f, "neodymium_ore"),
+    PRASEODYMIUM_ORE(true, 27, 480.0f, 1700.0f, "praseodymium_ore"),
+    CERIUM_ORE(true, 28, 500.0f, 1800.0f, "cerium_ore"),
+    LANTHANUM_ORE(true, 29, 520.0f, 1900.0f, "lanthanum_ore"),
+    PROMETHIUM_ORE(true, 30, 600.0f, 2500.0f, "promethium_ore"),
+
     // Ores dropped from bosses
     DRAGON_SCALE_ORE(false, 1, 3, 100.0f, "dragon_scale_ore"),
 

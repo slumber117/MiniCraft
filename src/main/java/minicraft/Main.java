@@ -607,8 +607,8 @@ public class Main {
             }
 
             // ── Cursor mode ───────────────────────────────────────────────
-            if (inventoryOpen || craftingOpen || shipConsoleOpen || chestOpen || furnaceOpen || cookerOpen || blacksmithOpen) {
-                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+            if (inventoryOpen || craftingOpen || shipConsoleOpen || chestOpen || furnaceOpen || cookerOpen || blacksmithOpen || questLogOpen) {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             } else {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             }
@@ -832,9 +832,6 @@ public class Main {
             
             uiShader.bind();
             uiRenderer.render(player, uiShader, currentW, currentH, this);
-            if (questLogOpen) {
-                uiRenderer.getQuestLogUI().render(uiRenderer, player, uiShader, currentW, currentH, this);
-            }
             uiShader.unbind();
 
             glEnable(GL_DEPTH_TEST);
@@ -916,7 +913,7 @@ public class Main {
     }
 
     private void handleMovementInput(float dt) {
-        if (craftingOpen) {
+        if (craftingOpen || inventoryOpen || questLogOpen) {
             player.velocity.x = 0;
             player.velocity.z = 0;
             return;
@@ -1036,8 +1033,6 @@ public class Main {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             }
         }
-        prevQ = isQ;
-        
         // F5 — Toggle Camera Mode
         boolean isF5 = glfwGetKey(window, GLFW_KEY_F5) == GLFW_PRESS;
         if (isF5 && !prevF5) {
@@ -1047,6 +1042,7 @@ public class Main {
             System.out.println("Camera Mode: " + cameraMode);
         }
         prevF5 = isF5;
+        prevQ = isQ;
 
         if (questLogOpen) {
             handleQuestLogInput();
@@ -1586,7 +1582,7 @@ public class Main {
 
             float finalEfficiency = baseEfficiency * efficiencyMultiplier;
 
-            if (toolLevel < b.requiredHarvestLevel) {
+            if (toolLevel < b.requiredHarvestLevel - 1) {
                 miningProgress = 0f;
             } else {
                 float bonus = 1.0f;

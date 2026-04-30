@@ -87,13 +87,13 @@ public class QuestLogUI {
         if (!phaseQuests.isEmpty()) {
             Quest sel = phaseQuests.get(questSelectedIndex);
             float dy = BODY_Y;
-            ui.drawText(shader, sel.title.toUpperCase(), DX, dy, 1.05f, UIPalette.TACT_BLUE);
-            dy += 28; ui.drawRectInternal(shader, DX, dy, DW, 1f, UIPalette.RUSTIC_BORDER);
-            dy += 8; ui.drawText(shader, sel.description, DX, dy, 0.48f, new Vector4f(0.70f, 0.70f, 0.75f, 1f));
-            dy += 32; ui.drawText(shader, "PHASE " + sel.phase.numeral + " — " + sel.phase.displayName.toUpperCase(), DX, dy, 0.40f, UIPalette.TACT_ORANGE);
-            dy += 24; ui.drawRectInternal(shader, DX, dy, DW, 1f, UIPalette.RUSTIC_BORDER);
-            dy += 12; ui.drawText(shader, "OBJECTIVES", DX, dy, 0.48f, UIPalette.TEXT_COLOR);
-            dy += 20;
+            ui.drawText(shader, sel.title.toUpperCase(), DX + 4, dy, 1.05f, UIPalette.TACT_BLUE);
+            dy += 34; ui.drawRectInternal(shader, DX, dy, DW, 1f, UIPalette.RUSTIC_BORDER);
+            dy += 14; ui.drawText(shader, sel.description, DX + 4, dy, 0.48f, new Vector4f(0.70f, 0.70f, 0.75f, 1f));
+            dy += 40; ui.drawText(shader, "PHASE " + sel.phase.numeral + " — " + sel.phase.displayName.toUpperCase(), DX + 4, dy, 0.40f, UIPalette.TACT_ORANGE);
+            dy += 30; ui.drawRectInternal(shader, DX, dy, DW, 1f, UIPalette.RUSTIC_BORDER);
+            dy += 18; ui.drawText(shader, "OBJECTIVES", DX + 4, dy, 0.48f, UIPalette.TEXT_COLOR);
+            dy += 26;
             for (QuestObjective o : sel.objectives) {
                 boolean done = o.isDone();
                 ui.drawText(shader, (done ? "[X]" : "[ ]") + "  " + o.description, DX + 4, dy, 0.50f, done ? new Vector4f(0f, 0.88f, 0.36f, 1f) : UIPalette.TEXT_COLOR);
@@ -106,9 +106,9 @@ public class QuestLogUI {
                 }
                 dy += 16;
             }
-            dy += 8; ui.drawRectInternal(shader, DX, dy, DW, 1f, UIPalette.RUSTIC_BORDER);
-            dy += 12; ui.drawText(shader, "REWARD", DX, dy, 0.50f, UIPalette.TACT_ORANGE);
-            dy += 20;
+            dy += 12; ui.drawRectInternal(shader, DX, dy, DW, 1f, UIPalette.RUSTIC_BORDER);
+            dy += 18; ui.drawText(shader, "REWARD", DX + 4, dy, 0.50f, UIPalette.TACT_ORANGE);
+            dy += 26;
             for (Item ri : sel.reward.items) {
                 Vector4f qCol = qualityColour(ri.getQuality());
                 if (ri.hasQuality()) {

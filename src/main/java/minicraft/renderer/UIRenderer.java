@@ -96,6 +96,7 @@ public class UIRenderer {
         shader.setUniform("projectionMatrix", ortho);
         shader.setUniform("viewMatrix", new Matrix4f().identity());
         shader.setUniform("useLighting", 0.0f);
+        shader.setUniform("useTexture", 1.0f);
 
         // Exactly one branch executes — screens are mutually exclusive
         if (main.inventoryOpen) {
@@ -110,6 +111,8 @@ public class UIRenderer {
             facilityUI.render(this, player, shader, width, height, main);
         } else if (player.isRiding()) {
             pilotHUD.render(this, player, shader, width, height);
+        } else if (main.questLogOpen) {
+            questLogUI.render(this, player, shader, width, height, main);
         } else {
             // Pure gameplay HUD
             drawCrosshair(shader, width / 2f, height / 2f);

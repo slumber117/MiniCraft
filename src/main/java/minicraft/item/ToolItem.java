@@ -66,6 +66,6 @@ public class ToolItem extends Item {
     
     @Override
     public String getTierInfo() {
-        return "Tier: " + harvestLevel;
+        return "TIER " + harvestLevel;
     }
 }

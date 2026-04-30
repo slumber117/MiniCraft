@@ -548,6 +548,36 @@ public class World implements IWeatherWorld {
         spawnOreGrip(chunk, Block.TAAFFEITE_ORE, ClusterSize.TINY, 1, 1, 7);
         spawnOreGrip(chunk, Block.MUSGRAVITE_ORE, ClusterSize.TINY, 1, 2, 8);
         spawnOreGrip(chunk, Block.PAINITE_ORE, ClusterSize.TINY, 1, 2, 10);
+
+        // Tier 7: Rare Earth & Exotic Metals (Y: 0 - 150)
+        spawnOreGrip(chunk, Block.XANTHIOSITE_ORE, ClusterSize.MEDIUM, 12, 40, 150);
+        
+        // Deep Rare Earths (T12-T16)
+        spawnOreGrip(chunk, Block.MONAZITE_ORE, ClusterSize.SMALL, 4, 5, 40);
+        spawnOreGrip(chunk, Block.BASTNAESITE_ORE, ClusterSize.SMALL, 3, 5, 35);
+        spawnOreGrip(chunk, Block.XENOTIME_ORE, ClusterSize.SMALL, 3, 5, 30);
+        spawnOreGrip(chunk, Block.LOPARITE_ORE, ClusterSize.SMALL, 2, 5, 25);
+        spawnOreGrip(chunk, Block.TANTALITE_ORE, ClusterSize.SMALL, 2, 5, 25);
+
+        // Deepest Rare Earths (T17-T21)
+        spawnOreGrip(chunk, Block.VANADINITE_ORE, ClusterSize.SMALL, 2, 2, 20);
+        spawnOreGrip(chunk, Block.GADOLINIUM_ORE, ClusterSize.SMALL, 2, 2, 18);
+        spawnOreGrip(chunk, Block.TERBIUM_ORE, ClusterSize.SMALL, 1, 2, 16);
+        spawnOreGrip(chunk, Block.DYSPROSIUM_ORE, ClusterSize.SMALL, 1, 2, 14);
+        spawnOreGrip(chunk, Block.HOLMIUM_ORE, ClusterSize.SMALL, 1, 2, 12);
+
+        // Bedrock Layer Rare Earths (T22-T26)
+        spawnOreGrip(chunk, Block.ERBIUM_ORE, ClusterSize.TINY, 1, 1, 10);
+        spawnOreGrip(chunk, Block.YTTRIUM_ORE, ClusterSize.TINY, 1, 1, 10);
+        spawnOreGrip(chunk, Block.LUTETIUM_ORE, ClusterSize.TINY, 1, 1, 8);
+        spawnOreGrip(chunk, Block.SAMARIUM_ORE, ClusterSize.TINY, 1, 1, 8);
+        spawnOreGrip(chunk, Block.NEODYMIUM_ORE, ClusterSize.TINY, 1, 1, 6);
+
+        // Legendary Core Metals (T27-T30)
+        spawnOreGrip(chunk, Block.PRASEODYMIUM_ORE, ClusterSize.TINY, 1, 0, 5);
+        spawnOreGrip(chunk, Block.CERIUM_ORE, ClusterSize.TINY, 1, 0, 4);
+        spawnOreGrip(chunk, Block.LANTHANUM_ORE, ClusterSize.TINY, 1, 0, 3);
+        spawnOreGrip(chunk, Block.PROMETHIUM_ORE, ClusterSize.TINY, 1, 0, 3);
     }
 
     private enum ClusterSize { TINY(2), SMALL(4), MEDIUM(8), LARGE(12); int count; ClusterSize(int c) { count = c; } }

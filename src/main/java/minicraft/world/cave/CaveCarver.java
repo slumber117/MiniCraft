@@ -1,5 +1,6 @@
 package minicraft.world.cave;
 
+import minicraft.world.CaveGenerator;
 import minicraft.world.WorldCell;
 import minicraft.world.cave.geode.*;
 
@@ -12,26 +13,10 @@ import minicraft.world.cave.geode.*;
  *
  * ── Priority order (first match wins) ────────────────────────────────────
  *
- *   1. RavineCarver       — dramatic surface cracks (rarest)
- *   2. CavernCarver       — large noise-intersection chambers
+ *   1. GemGeode           — constructive crystal structures
+ *   2. CaveGenerator      — 3D noise (Tunnels, Ravines, Caverns)
  *   3. UnderwaterCaveCarver — flooded systems under ocean/lake floor
- *   4. WormCarver         — tunnels, noodles, spaghetti passages (most common)
  *
- * ── Usage ─────────────────────────────────────────────────────────────────
- *
- * <pre>
- *   CaveCarver carver = new CaveCarver(worldSeed);
- *
- *   // Called once per chunk before querying voxels in that chunk:
- *   carver.prepareChunk(chunkX, chunkZ, surfaceHeightAtCentre, worldMaxY);
- *
- *   // Per-voxel query:
- *   CaveCell cell = carver.query(worldX, worldY, worldZ, surfaceY, isUnderwater);
- * </pre>
- *
- * Thread safety: CaveCarver is NOT thread-safe — chunk-loading threads should
- * each create their own instance. All sub-carver noise fields are read-only
- * after construction; only the worm and ravine chunk state is mutable.
  */
 public class CaveCarver {
 
@@ -46,9 +31,7 @@ public class CaveCarver {
 
     // ── Sub-carvers ───────────────────────────────────────────────────────
 
-    private final CavernCarver       cavernCarver;
-    private final WormCarver         wormCarver;
-    private final RavineCarver       ravineCarver;
+    private final CaveGenerator      caveGen;
     private final UnderwaterCaveCarver underwaterCarver;
     private final GemGeode           gemGeode;
 
@@ -64,9 +47,7 @@ public class CaveCarver {
      */
     public CaveCarver(long worldSeed) {
         this.worldSeed       = worldSeed;
-        this.cavernCarver    = new CavernCarver(worldSeed);
-        this.wormCarver      = new WormCarver(worldSeed);
-        this.ravineCarver    = new RavineCarver(worldSeed);
+        this.caveGen         = new CaveGenerator(worldSeed);
         this.underwaterCarver = new UnderwaterCaveCarver(worldSeed);
         this.gemGeode        = new GemGeode(worldSeed);
     }
@@ -74,11 +55,7 @@ public class CaveCarver {
     // ── Chunk preparation ─────────────────────────────────────────────────
 
     /**
-     * Prepares all chunk-local state (worm paths, ravine segments) for the
-     * given chunk. Must be called before querying any voxel in this chunk.
-     *
-     * For chunk-based engines: call this at the start of chunk generation.
-     * For voxel-streaming engines: call this whenever the active chunk changes.
+     * Prepares all chunk-local state for the given chunk. 
      *
      * @param chunkX    Chunk grid X (= worldX / 16)
      * @param chunkZ    Chunk grid Z (= worldZ / 16)
@@ -86,8 +63,7 @@ public class CaveCarver {
      * @param worldMaxY Maximum Y extent of the world
      */
     public void prepareChunk(int chunkX, int chunkZ, int surfaceY, int worldMaxY) {
-        wormCarver.generateForChunk(chunkX, chunkZ, worldSeed, surfaceY, CHUNK_W, CHUNK_D, worldMaxY);
-        ravineCarver.generateForChunk(chunkX, chunkZ, worldSeed, surfaceY, CHUNK_W, CHUNK_D);
+        // CaveGenerator is query-based; no per-chunk preparation needed
     }
 
     // ── Voxel query ───────────────────────────────────────────────────────
@@ -112,7 +88,7 @@ public class CaveCarver {
 
         float depthFraction = 1.0f - ((float) y / (float) Math.max(1, surfaceY));
 
-        // ── 0. Gem Geodes (Constructive) ───────────────────────────────────
+        // ── 1. Gem Geodes (Constructive) ───────────────────────────────────
         GeodeCell geode = gemGeode.query(x, y, z, surfaceY, isUnderwater);
         if (geode.layer != GeodeCell.Layer.OUTSIDE) {
             if (geode.layer == GeodeCell.Layer.SHELL)
@@ -123,15 +99,10 @@ public class CaveCarver {
                 return new CaveCell(true, CaveType.GEODE_HOLLOW, geode.depth);
         }
 
-        // ── 1. Ravine (surface crack) ──────────────────────────────────────
-        if (ravineCarver.isCarved(x, y, z)) {
-            return new CaveCell(true, CaveType.RAVINE, depthFraction);
-        }
-
-        // ── 2. Large cavern (noise intersection) ───────────────────────────
-        CaveType cavernType = cavernCarver.query(x, y, z, surfaceY, surfaceY);
-        if (cavernType != CaveType.NONE) {
-            return new CaveCell(true, cavernType, depthFraction);
+        // ── 2. Master Cave Generator (3D Noise) ────────────────────────────
+        CaveType type = caveGen.getCaveType(x, y, z, surfaceY);
+        if (type != CaveType.NONE) {
+            return new CaveCell(true, type, depthFraction);
         }
 
         // ── 3. Underwater cave ─────────────────────────────────────────────
@@ -140,12 +111,6 @@ public class CaveCarver {
             if (uwType != CaveType.NONE) {
                 return new CaveCell(true, uwType, depthFraction);
             }
-        }
-
-        // ── 4. Worm tunnels (most common) ──────────────────────────────────
-        if (wormCarver.isCarved(x, y, z)) {
-            CaveType wormType = wormCarver.getType(x, y, z);
-            return new CaveCell(true, wormType, depthFraction);
         }
 
         return CaveCell.SOLID;

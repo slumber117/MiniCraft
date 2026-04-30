@@ -106,6 +106,9 @@ public class CraftingManager {
         addArmorSet("Aquamarine", "AQUAMARINE_ORE", 0.18f, 3, 0.4f, 1.05f, 0.2f, null);
         addToolSet("Aquamarine", "AQUAMARINE_ORE", 3, 11.0f);
 
+        addArmorSet("Adamantine", "ADAMANTINE", 0.26f, 3, 1.8f, 1.0f, 0.4f, null);
+        addToolSet("Adamantine", "ADAMANTINE", 5, 20.0f);
+
         addArmorSet("Obsidian", "OBSIDIAN", 0.30f, 3, 0.8f, 0.85f, 0.6f, null);
 
         // Atomic Tiers
@@ -157,7 +160,69 @@ public class CraftingManager {
                 new minicraft.math.Vector3f(0.6f, 0.8f, 1.0f)); // Celestial Blue Glow
         addToolSet("Mithril", "MITHRIL_ORE", 10, 100.0f);
 
-        // --- 11. MasterCraft Tier ---
+        // --- 11. RARE EARTH & EXOTIC TIERS (Tier 12 - 30) ---
+        addToolSet("Xanthiosite", "XANTHIOSITE", 1, 3.5f);
+        addToolSet("Platinum", "PLATINUM", 3, 10.5f);
+        addArmorSet("Platinum", "PLATINUM", 0.22f, 4, 1.2f, 1.1f, 0.3f, null);
+
+        addToolSet("Monazite", "MONAZITE", 12, 120.0f);
+        addArmorSet("Monazite", "MONAZITE", 0.80f, 14, 30.0f, 1.6f, 2.2f, new minicraft.math.Vector3f(0.8f, 0.4f, 0.1f));
+
+        addToolSet("Bastnaesite", "BASTNAESITE", 13, 135.0f);
+        addArmorSet("Bastnaesite", "BASTNAESITE", 0.85f, 15, 35.0f, 1.7f, 2.4f, new minicraft.math.Vector3f(0.9f, 0.5f, 0.2f));
+
+        addToolSet("Xenotime", "XENOTIME", 14, 150.0f);
+        addArmorSet("Xenotime", "XENOTIME", 0.90f, 16, 40.0f, 1.8f, 2.6f, new minicraft.math.Vector3f(0.1f, 0.9f, 0.4f));
+
+        addToolSet("Loparite", "LOPARITE", 15, 165.0f);
+        addArmorSet("Loparite", "LOPARITE", 0.95f, 17, 45.0f, 1.9f, 2.8f, new minicraft.math.Vector3f(0.3f, 0.3f, 0.3f));
+
+        addToolSet("Tantalite", "TANTALITE", 16, 180.0f);
+        addArmorSet("Tantalite", "TANTALITE", 1.00f, 18, 50.0f, 2.0f, 3.0f, new minicraft.math.Vector3f(0.2f, 0.6f, 0.8f));
+
+        addToolSet("Vanadinite", "VANADINITE", 17, 200.0f);
+        addArmorSet("Vanadinite", "VANADINITE", 1.10f, 20, 60.0f, 2.1f, 3.2f, new minicraft.math.Vector3f(1.0f, 0.1f, 0.1f));
+
+        addToolSet("Gadolinium", "GADOLINIUM", 18, 220.0f);
+        addArmorSet("Gadolinium", "GADOLINIUM", 1.20f, 22, 70.0f, 2.2f, 3.4f, new minicraft.math.Vector3f(0.9f, 0.9f, 1.0f));
+
+        addToolSet("Terbium", "TERBIUM", 19, 240.0f);
+        addArmorSet("Terbium", "TERBIUM", 1.30f, 24, 80.0f, 2.3f, 3.6f, new minicraft.math.Vector3f(0.5f, 1.0f, 0.5f));
+
+        addToolSet("Dysprosium", "DYSPROSIUM", 20, 260.0f);
+        addArmorSet("Dysprosium", "DYSPROSIUM", 1.40f, 26, 90.0f, 2.4f, 3.8f, new minicraft.math.Vector3f(1.0f, 0.8f, 0.0f));
+
+        addToolSet("Holmium", "HOLMIUM", 21, 280.0f);
+        addArmorSet("Holmium", "HOLMIUM", 1.50f, 28, 100.0f, 2.5f, 4.0f, new minicraft.math.Vector3f(1.0f, 0.5f, 0.0f));
+
+        addToolSet("Erbium", "ERBIUM", 22, 300.0f);
+        addArmorSet("Erbium", "ERBIUM", 1.60f, 30, 110.0f, 2.6f, 4.2f, new minicraft.math.Vector3f(1.0f, 0.2f, 0.6f));
+
+        addToolSet("Yttrium", "YTTRIUM", 23, 320.0f);
+        addArmorSet("Yttrium", "YTTRIUM", 1.70f, 32, 120.0f, 2.7f, 4.4f, new minicraft.math.Vector3f(0.8f, 0.8f, 0.8f));
+
+        addToolSet("Lutetium", "LUTETIUM", 24, 340.0f);
+        addArmorSet("Lutetium", "LUTETIUM", 1.80f, 34, 130.0f, 2.8f, 4.6f, new minicraft.math.Vector3f(1.0f, 1.0f, 1.0f));
+
+        addToolSet("Samarium", "SAMARIUM", 25, 360.0f);
+        addArmorSet("Samarium", "SAMARIUM", 1.90f, 36, 140.0f, 2.9f, 4.8f, new minicraft.math.Vector3f(1.0f, 1.0f, 0.5f));
+
+        addToolSet("Neodymium", "NEODYMIUM", 26, 380.0f);
+        addArmorSet("Neodymium", "NEODYMIUM", 2.00f, 38, 150.0f, 3.0f, 5.0f, new minicraft.math.Vector3f(0.5f, 0.0f, 0.5f));
+
+        addToolSet("Praseodymium", "PRASEODYMIUM", 27, 400.0f);
+        addArmorSet("Praseodymium", "PRASEODYMIUM", 2.10f, 40, 160.0f, 3.1f, 5.2f, new minicraft.math.Vector3f(0.2f, 0.8f, 0.2f));
+
+        addToolSet("Cerium", "CERIUM", 28, 420.0f);
+        addArmorSet("Cerium", "CERIUM", 2.20f, 42, 170.0f, 3.2f, 5.4f, new minicraft.math.Vector3f(1.0f, 1.0f, 0.8f));
+
+        addToolSet("Lanthanum", "LANTHANUM", 29, 440.0f);
+        addArmorSet("Lanthanum", "LANTHANUM", 2.30f, 44, 180.0f, 3.3f, 5.6f, new minicraft.math.Vector3f(0.9f, 0.9f, 0.9f));
+
+        addToolSet("Promethium", "PROMETHIUM", 30, 500.0f);
+        addArmorSet("Promethium", "PROMETHIUM", 3.00f, 50, 250.0f, 4.0f, 10.0f, new minicraft.math.Vector3f(0.0f, 1.0f, 1.0f)); // Final Tier Cyan Glow
+
+        // --- 12. MasterCraft Tier ---
         
         // Rogue Armor (Silver + Leather)
         Map<Item, Integer> rogueArmorIng = new HashMap<>();
@@ -232,8 +297,34 @@ public class CraftingManager {
     private Item createMaterialItem(String mat) {
         String tex = null;
 
+        // Rare Earth / High Tier Mappings
+        if (mat.equals("MONAZITE"))
+            tex = "item_ingot_monazite";
+        else if (mat.equals("ADAMANTINE"))
+            tex = "item_ingot_adamantine";
+        else if (mat.equals("BASTNAESITE"))
+            tex = "item_ingot_bastnaesite";
+        else if (mat.equals("XENOTIME"))
+            tex = "item_ingot_xenotime";
+        else if (mat.equals("LOPARITE"))
+            tex = "item_ingot_loparite";
+        else if (mat.equals("TANTALITE") || mat.equals("VANADINITE"))
+            tex = "item_ingot_titanium_standalone"; // Use high-tier ingot placeholder
+        else if (mat.equals("VANADINITE") || mat.equals("GADOLINIUM") || mat.equals("TERBIUM") || mat.equals("DYSPROSIUM") || mat.equals("HOLMIUM"))
+            tex = "item_ingot_mithril"; // Use celestial ingot placeholder
+        else if (mat.equals("ERBIUM") || mat.equals("YTTRIUM") || mat.equals("LUTETIUM") || mat.equals("SAMARIUM") || mat.equals("NEODYMIUM"))
+            tex = "item_ingot_mithril";
+        else if (mat.equals("PRASEODYMIUM") || mat.equals("CERIUM") || mat.equals("LANTHANUM"))
+            tex = "item_ingot_mithril";
+        else if (mat.equals("PROMETHIUM"))
+            tex = "item_ingot_promethium";
+        else if (mat.equals("XANTHIOSITE"))
+            tex = "item_ingot_xanthiosite";
+        else if (mat.equals("PLATINUM"))
+            tex = "item_ingot_silver";
+
         // Mapping internal IDs to the .png filenames in /textures/
-        if (mat.equals("IRON_INGOT"))
+        else if (mat.equals("IRON_INGOT"))
             tex = "item_ingot_iron_standalone";
         else if (mat.equals("GOLD_INGOT"))
             tex = "item_ingot_gold_standalone";
@@ -267,6 +358,8 @@ public class CraftingManager {
             tex = "item_gem_opal";
         else if (mat.equals("ALEXANDRITE_ORE"))
             tex = "item_gem_alexandrite";
+        else if (mat.equals("GRANDIDIERITE_ORE"))
+            tex = "item_gem_grandidierite";
         else if (mat.equals("MUSGRAVITE_ORE"))
             tex = "item_gem_musgravite";
         else if (mat.equals("MITHRIL_INGOT") || mat.equals("MITHRIL_ORE"))

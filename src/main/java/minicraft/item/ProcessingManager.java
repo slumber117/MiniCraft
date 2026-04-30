@@ -23,6 +23,8 @@ public class ProcessingManager {
         fuelValues.put("COAL_BLOCK", 400.0f); 
         fuelValues.put("URANIUM_ORE", 80.0f);
         fuelValues.put("PLUTONIUM_ORE", 150.0f);
+        fuelValues.put("PROMETHIUM_ORE", 500.0f); // Legendary fuel source
+        fuelValues.put("PROMETHIUM", 1000.0f); // Purest energy source
         fuelValues.put("CHARCOAL", 30.0f);
         fuelValues.put("LOG", 15.0f);
         fuelValues.put("STICK", 5.0f);
@@ -48,6 +50,28 @@ public class ProcessingManager {
         addFurnaceRecipe("PLATINUM_ORE", "PLATINUM_INGOT", 12.0f);
         addFurnaceRecipe("TITANIUM_ORE", "TITANIUM_INGOT", 10.0f); // Slower
         addFurnaceRecipe("TUNGSTEN_ORE", "TUNGSTEN_INGOT", 12.0f); // Slower
+
+        // Rare Earth Refining (Exotic Tiers)
+        addFurnaceRecipe("XANTHIOSITE_ORE", "XANTHIOSITE", 5.0f);
+        addFurnaceRecipe("MONAZITE_ORE", "MONAZITE", 25.0f);
+        addFurnaceRecipe("BASTNAESITE_ORE", "BASTNAESITE", 30.0f);
+        addFurnaceRecipe("XENOTIME_ORE", "XENOTIME", 35.0f);
+        addFurnaceRecipe("LOPARITE_ORE", "LOPARITE", 40.0f);
+        addFurnaceRecipe("TANTALITE_ORE", "TANTALITE", 45.0f);
+        addFurnaceRecipe("VANADINITE_ORE", "VANADINITE", 50.0f);
+        addFurnaceRecipe("GADOLINIUM_ORE", "GADOLINIUM", 55.0f);
+        addFurnaceRecipe("TERBIUM_ORE", "TERBIUM", 60.0f);
+        addFurnaceRecipe("DYSPROSIUM_ORE", "DYSPROSIUM", 65.0f);
+        addFurnaceRecipe("HOLMIUM_ORE", "HOLMIUM", 70.0f);
+        addFurnaceRecipe("ERBIUM_ORE", "ERBIUM", 75.0f);
+        addFurnaceRecipe("YTTRIUM_ORE", "YTTRIUM", 80.0f);
+        addFurnaceRecipe("LUTETIUM_ORE", "LUTETIUM", 85.0f);
+        addFurnaceRecipe("SAMARIUM_ORE", "SAMARIUM", 90.0f);
+        addFurnaceRecipe("NEODYMIUM_ORE", "NEODYMIUM", 95.0f);
+        addFurnaceRecipe("PRASEODYMIUM_ORE", "PRASEODYMIUM", 100.0f);
+        addFurnaceRecipe("CERIUM_ORE", "CERIUM", 110.0f);
+        addFurnaceRecipe("LANTHANUM_ORE", "LANTHANUM", 120.0f);
+        addFurnaceRecipe("PROMETHIUM_ORE", "PROMETHIUM", 150.0f); // Epic smelting time
         
         // Gems & Crystals
         addFurnaceRecipe("DIAMOND_ORE", "DIAMOND", 12.0f);
@@ -64,11 +88,12 @@ public class ProcessingManager {
         // Advanced/Atomic/Legendary
         addFurnaceRecipe("URANIUM_ORE", "URANIUM_INGOT", 18.0f);
         addFurnaceRecipe("PLUTONIUM_ORE", "PLUTONIUM_INGOT", 25.0f);
-        addFurnaceRecipe("ADAMANTINE_ORE", "ADAMANTINE_INGOT", 35.0f);
+        addFurnaceRecipe("ADAMANTINE_ORE", "ADAMANTINE", 35.0f);
         addFurnaceRecipe("MITHRIL_ORE", "MITHRIL_INGOT", 40.0f); // Much slower
         addFurnaceRecipe("NEPTUNIUM_ORE", "NEPTUNIUM_INGOT", 45.0f);
 
         // Absolute Rare Minerals (Fusion Level Refining)
+        addFurnaceRecipe("ONYX_ORE", "ONYX", 15.0f);
         addFurnaceRecipe("PAINITE_ORE", "PAINITE", 60.0f);
         addFurnaceRecipe("MUSGRAVITE_ORE", "MUSGRAVITE", 75.0f);
         addFurnaceRecipe("TAAFFEITE_ORE", "TAAFFEITE", 90.0f);
@@ -110,10 +135,25 @@ public class ProcessingManager {
         else if (output.contains("TANZANITE")) tex = "item_gem_amethyst_standalone";
         else if (output.contains("QUARTZ")) tex = "item_quartz_shard";
         else if (output.contains("MITHRIL")) tex = "item_ingot_mithril";
-        else if (output.contains("ADAMANTINE")) tex = "item_ingot_titanium_standalone";
+        else if (output.contains("ADAMANTINE")) tex = "item_ingot_adamantine";
         
+        // Rare Earth & Exotic Metal Textures
+        else if (output.equals("XANTHIOSITE")) tex = "item_ingot_xanthiosite";
+        else if (output.equals("PLATINUM_INGOT")) tex = "item_ingot_silver";
+        else if (output.equals("MONAZITE")) tex = "item_ingot_monazite";
+        else if (output.equals("BASTNAESITE")) tex = "item_ingot_bastnaesite";
+        else if (output.equals("XENOTIME")) tex = "item_ingot_xenotime";
+        else if (output.equals("LOPARITE")) tex = "item_ingot_loparite";
+        else if (output.equals("TANTALITE") || output.equals("VANADINITE")) tex = "item_ingot_titanium_standalone";
+        else if (output.equals("GADOLINIUM") || output.equals("TERBIUM") || output.equals("DYSPROSIUM") || output.equals("HOLMIUM")) tex = "item_ingot_mithril";
+        else if (output.equals("ERBIUM") || output.equals("YTTRIUM") || output.equals("LUTETIUM") || output.equals("SAMARIUM")) tex = "item_ingot_mithril";
+        else if (output.equals("NEODYMIUM") || output.equals("PRASEODYMIUM") || output.equals("CERIUM") || output.equals("LANTHANUM")) tex = "item_ingot_mithril";
+        else if (output.equals("PROMETHIUM")) tex = "item_ingot_promethium";
+
         // Rare Gem Fallbacks
-        else if (output.contains("ONYX")) tex = "item_ingot_titanium_standalone";
+        else if (output.equals("ONYX")) tex = "item_gem_onyx";
+        else if (output.equals("GRANDIDIERITE")) tex = "item_gem_grandidierite";
+        else if (output.contains("ONYX")) tex = "item_gem_onyx";
         else if (output.contains("ALEXANDRITE")) tex = "item_gem_amethyst_standalone";
         else if (output.contains("OPAL")) tex = "item_gem_aquamarine_standalone";
         else if (output.contains("PAINITE") || output.contains("GARNET")) tex = "item_gem_ruby_standalone_v2";
