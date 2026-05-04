@@ -804,13 +804,19 @@ public class Main {
             compositeShader.setUniform("texNormal", 2);
             compositeShader.setUniform("texDepth", 3);
             compositeShader.setUniform("torchPos", player.position);
+            
             minicraft.math.Vector3f aura = player.getAuraColor();
-            float torchPower = player.inventory.hasTorchEquipped() ? 1.0f : (aura != null ? 0.8f : 0.0f);
+            boolean hasTorch = player.inventory.hasTorchEquipped();
+            
+            // Brightness logic: Torch (1.0) > Armor/Aura (0.8) > None (0.0)
+            float torchPower = hasTorch ? 1.0f : (aura != null ? 0.8f : 0.0f);
             compositeShader.setUniform("torchStrength", torchPower);
+            
             if (aura != null) {
+                // If holding a torch AND having an aura, blend them or prioritize aura (Gold is radiant)
                 compositeShader.setUniform("torchColor", aura);
             } else {
-                compositeShader.setUniform("torchColor", new minicraft.math.Vector3f(1.0f, 0.8f, 0.4f)); // Warm default
+                compositeShader.setUniform("torchColor", new minicraft.math.Vector3f(1.0f, 0.8f, 0.4f)); // Warm Torch Default
             }
             compositeShader.setUniform("invProjection", invProj);
             compositeShader.setUniform("invView", invView);
@@ -977,7 +983,9 @@ public class Main {
 
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
             if (player.isGrounded) {
-                player.velocity.y = 8.2f;
+                float jumpPower = 8.2f;
+                if (player.inventory.hasFullSet("Painite")) jumpPower *= 1.20f;
+                player.velocity.y = jumpPower;
                 player.isGrounded = false;
             } else if (player.isInWater) {
                 // Gentle upward thrust in water
@@ -1603,7 +1611,7 @@ public class Main {
                 miningProgress = player.miningProgress = 0f;
                 player.addXp(b.xpValue, particleManager);
                 questManager.onBlockMined(b); // Quest hook
-                if (toolLevel >= b.requiredHarvestLevel) {
+                if (toolLevel >= b.requiredHarvestLevel - 1) {
                     int count = 1;
                     if (held instanceof ToolItem) {
                         ToolItem ti = (ToolItem) held;
@@ -1613,7 +1621,12 @@ public class Main {
                         }
                     }
                     for (int i = 0; i < count; i++) {
-                        ItemEntity drop = new ItemEntity(b);
+                        ItemEntity drop;
+                        if (b == Block.FIBRE_BUSH || b == Block.FLOWER_RED || b == Block.FLOWER_BLUE) {
+                            drop = new ItemEntity(new Item("FIBRE"));
+                        } else {
+                            drop = new ItemEntity(b);
+                        }
                         drop.setPosition(gx + 0.5f, gy + 0.5f, gz + 0.5f);
                         drop.velocity.set((float) Math.random() * 0.2f - 0.1f, 2f + (float) Math.random() * 0.5f, (float) Math.random() * 0.2f - 0.1f);
                         entityManager.spawn(drop);
@@ -1726,6 +1739,8 @@ public class Main {
             model = ModelRegistry.getModel("pickaxe_iron");
         else if (heldItem.getName().equalsIgnoreCase("Stone Pickaxe"))
             model = ModelRegistry.getModel("pickaxe_stone");
+        else if (heldItem.getName().equalsIgnoreCase("Gold Pickaxe"))
+            model = ModelRegistry.getModel("pickaxe_gold");
         else if (heldItem.getName().equalsIgnoreCase("Diamond Pickaxe"))
             model = ModelRegistry.getModel("pickaxe_diamond");
         else if (heldItem.getName().contains("Pickaxe"))

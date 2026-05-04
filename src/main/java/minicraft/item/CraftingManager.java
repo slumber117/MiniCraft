@@ -56,6 +56,9 @@ public class CraftingManager {
                 Map.of(new Item("PLUTONIUM_INGOT", null), 1, new Item("WOOD", Block.WOOD), 1),
                 new Item("PLUTONIUM_TORCH", Block.PLUTONIUM_TORCH), 4));
 
+        // --- 1. CLOTH TIER ---
+        addArmorSet("Cloth", "FIBRE", 0.05f, 2, 0.0f, 1.10f, 0.8f, null);
+
         // --- 2. STONE TIER ---
         addToolSet("Stone", "STONE", 1, 4.0f);
 
@@ -69,7 +72,8 @@ public class CraftingManager {
         addToolSet("Iron", "IRON_INGOT", 2, 8.0f);
 
         // --- 4. GOLD TIER (Precision & Speed) ---
-        addArmorSet("Gold", "GOLD_INGOT", 0.15f, 4, 0.2f, 1.15f, 0.3f, null); // Lightweight & Aerodynamic
+        addArmorSet("Gold", "GOLD_INGOT", 0.22f, 4, 0.2f, 0.95f, 0.6f, 
+                new minicraft.math.Vector3f(1.0f, 0.85f, 0.2f)); // Precious & Radiant
         addToolSet("Gold", "GOLD_INGOT", 3, 15.0f); // Fast mining speed
 
         // --- 5. TITANIUM TIER (High Industry) ---
@@ -139,8 +143,8 @@ public class CraftingManager {
         addToolSet("Onyx", "ONYX_ORE", 6, 22.0f);
 
         // --- 9. RAREST MINERAL TIERS (The Absolute Limit) ---
-        addArmorSet("Painite", "PAINITE_ORE", 0.40f, 6, 5.0f, 1.0f, 0.8f,
-                new minicraft.math.Vector3f(1.0f, 0.1f, 0.1f)); // Red Glow
+        addArmorSet("Painite", "PAINITE_ORE", 0.40f, 6, 5.0f, 1.0f, 10.0f,
+                new minicraft.math.Vector3f(1.0f, 0.1f, 0.1f)); // Red Glow + Thermal Equilibrium
         addToolSet("Painite", "PAINITE_ORE", 9, 30.0f, new minicraft.math.Vector3f(1.0f, 0.1f, 0.1f), 0.25f);
  
         addArmorSet("Musgravite", "MUSGRAVITE_ORE", 0.42f, 6, 6.0f, 1.0f, 0.8f, null);
@@ -161,66 +165,66 @@ public class CraftingManager {
                 new minicraft.math.Vector3f(0.6f, 0.8f, 1.0f)); // Celestial Blue Glow
         addToolSet("Mithril", "MITHRIL_ORE", 10, 100.0f);
 
-        // --- 11. RARE EARTH & EXOTIC TIERS (Tier 12 - 30) ---
-        addToolSet("Xanthiosite", "XANTHIOSITE", 1, 3.5f);
+        // --- 11. RARE EARTH & EXOTIC TIERS (Zenith Tier 11) ---
+        addToolSet("Xanthiosite", "XANTHIOSITE", 11, 105.0f);
         addToolSet("Platinum", "PLATINUM", 3, 10.5f);
         addArmorSet("Platinum", "PLATINUM", 0.22f, 4, 1.2f, 1.1f, 0.3f, null);
 
-        addToolSet("Monazite", "MONAZITE", 12, 120.0f);
+        addToolSet("Monazite", "MONAZITE", 11, 120.0f);
         addArmorSet("Monazite", "MONAZITE", 0.80f, 14, 30.0f, 1.6f, 2.2f, new minicraft.math.Vector3f(0.8f, 0.4f, 0.1f));
 
-        addToolSet("Bastnaesite", "BASTNAESITE", 13, 135.0f);
+        addToolSet("Bastnaesite", "BASTNAESITE", 11, 135.0f);
         addArmorSet("Bastnaesite", "BASTNAESITE", 0.85f, 15, 35.0f, 1.7f, 2.4f, new minicraft.math.Vector3f(0.9f, 0.5f, 0.2f));
 
-        addToolSet("Xenotime", "XENOTIME", 14, 150.0f);
+        addToolSet("Xenotime", "XENOTIME", 11, 150.0f);
         addArmorSet("Xenotime", "XENOTIME", 0.90f, 16, 40.0f, 1.8f, 2.6f, new minicraft.math.Vector3f(0.1f, 0.9f, 0.4f));
 
-        addToolSet("Loparite", "LOPARITE", 15, 165.0f);
+        addToolSet("Loparite", "LOPARITE", 11, 165.0f);
         addArmorSet("Loparite", "LOPARITE", 0.95f, 17, 45.0f, 1.9f, 2.8f, new minicraft.math.Vector3f(0.3f, 0.3f, 0.3f));
 
-        addToolSet("Tantalite", "TANTALITE", 16, 180.0f);
+        addToolSet("Tantalite", "TANTALITE", 11, 180.0f);
         addArmorSet("Tantalite", "TANTALITE", 1.00f, 18, 50.0f, 2.0f, 3.0f, new minicraft.math.Vector3f(0.2f, 0.6f, 0.8f));
 
-        addToolSet("Vanadinite", "VANADINITE", 17, 200.0f);
+        addToolSet("Vanadinite", "VANADINITE", 11, 200.0f);
         addArmorSet("Vanadinite", "VANADINITE", 1.10f, 20, 60.0f, 2.1f, 3.2f, new minicraft.math.Vector3f(1.0f, 0.1f, 0.1f));
 
-        addToolSet("Gadolinium", "GADOLINIUM", 18, 220.0f);
+        addToolSet("Gadolinium", "GADOLINIUM", 11, 220.0f);
         addArmorSet("Gadolinium", "GADOLINIUM", 1.20f, 22, 70.0f, 2.2f, 3.4f, new minicraft.math.Vector3f(0.9f, 0.9f, 1.0f));
 
-        addToolSet("Terbium", "TERBIUM", 19, 240.0f);
+        addToolSet("Terbium", "TERBIUM", 11, 240.0f);
         addArmorSet("Terbium", "TERBIUM", 1.30f, 24, 80.0f, 2.3f, 3.6f, new minicraft.math.Vector3f(0.5f, 1.0f, 0.5f));
 
-        addToolSet("Dysprosium", "DYSPROSIUM", 20, 260.0f);
+        addToolSet("Dysprosium", "DYSPROSIUM", 11, 260.0f);
         addArmorSet("Dysprosium", "DYSPROSIUM", 1.40f, 26, 90.0f, 2.4f, 3.8f, new minicraft.math.Vector3f(1.0f, 0.8f, 0.0f));
 
-        addToolSet("Holmium", "HOLMIUM", 21, 280.0f);
+        addToolSet("Holmium", "HOLMIUM", 11, 280.0f);
         addArmorSet("Holmium", "HOLMIUM", 1.50f, 28, 100.0f, 2.5f, 4.0f, new minicraft.math.Vector3f(1.0f, 0.5f, 0.0f));
 
-        addToolSet("Erbium", "ERBIUM", 22, 300.0f);
+        addToolSet("Erbium", "ERBIUM", 11, 300.0f);
         addArmorSet("Erbium", "ERBIUM", 1.60f, 30, 110.0f, 2.6f, 4.2f, new minicraft.math.Vector3f(1.0f, 0.2f, 0.6f));
 
-        addToolSet("Yttrium", "YTTRIUM", 23, 320.0f);
+        addToolSet("Yttrium", "YTTRIUM", 11, 320.0f);
         addArmorSet("Yttrium", "YTTRIUM", 1.70f, 32, 120.0f, 2.7f, 4.4f, new minicraft.math.Vector3f(0.8f, 0.8f, 0.8f));
 
-        addToolSet("Lutetium", "LUTETIUM", 24, 340.0f);
+        addToolSet("Lutetium", "LUTETIUM", 11, 340.0f);
         addArmorSet("Lutetium", "LUTETIUM", 1.80f, 34, 130.0f, 2.8f, 4.6f, new minicraft.math.Vector3f(1.0f, 1.0f, 1.0f));
 
-        addToolSet("Samarium", "SAMARIUM", 25, 360.0f);
+        addToolSet("Samarium", "SAMARIUM", 11, 360.0f);
         addArmorSet("Samarium", "SAMARIUM", 1.90f, 36, 140.0f, 2.9f, 4.8f, new minicraft.math.Vector3f(1.0f, 1.0f, 0.5f));
 
-        addToolSet("Neodymium", "NEODYMIUM", 10, 380.0f);
+        addToolSet("Neodymium", "NEODYMIUM", 9, 380.0f);
         addArmorSet("Neodymium", "NEODYMIUM", 2.00f, 38, 150.0f, 3.0f, 5.0f, new minicraft.math.Vector3f(0.5f, 0.0f, 0.5f));
 
-        addToolSet("Praseodymium", "PRASEODYMIUM", 27, 400.0f);
+        addToolSet("Praseodymium", "PRASEODYMIUM", 11, 400.0f);
         addArmorSet("Praseodymium", "PRASEODYMIUM", 2.10f, 40, 160.0f, 3.1f, 5.2f, new minicraft.math.Vector3f(0.2f, 0.8f, 0.2f));
 
-        addToolSet("Cerium", "CERIUM", 28, 420.0f);
+        addToolSet("Cerium", "CERIUM", 11, 420.0f);
         addArmorSet("Cerium", "CERIUM", 2.20f, 42, 170.0f, 3.2f, 5.4f, new minicraft.math.Vector3f(1.0f, 1.0f, 0.8f));
 
-        addToolSet("Lanthanum", "LANTHANUM", 29, 440.0f);
+        addToolSet("Lanthanum", "LANTHANUM", 11, 440.0f);
         addArmorSet("Lanthanum", "LANTHANUM", 2.30f, 44, 180.0f, 3.3f, 5.6f, new minicraft.math.Vector3f(0.9f, 0.9f, 0.9f));
 
-        addToolSet("Promethium", "PROMETHIUM", 30, 500.0f);
+        addToolSet("Promethium", "PROMETHIUM", 11, 500.0f);
         addArmorSet("Promethium", "PROMETHIUM", 3.00f, 50, 250.0f, 4.0f, 10.0f, new minicraft.math.Vector3f(0.0f, 1.0f, 1.0f)); // Final Tier Cyan Glow
 
         // --- 12. MasterCraft Tier ---

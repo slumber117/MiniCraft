@@ -90,11 +90,11 @@ public class Player extends Entity {
     @Override
     public void tick(EntityManager manager, World world, ParticleManager particleManager, float dt) {
         if (needsRespawn) {
-            int surfaceY = world.getSafeSpawnY((int)position.x, (int)position.z);
-            position.y = (float)surfaceY + 2.0f;
+            int respawnY = world.getSafeSpawnY((int)position.x, (int)position.y, (int)position.z);
+            position.y = (float)respawnY + 0.1f;
             velocity.set(0,0,0);
             needsRespawn = false;
-            System.out.println("[PLAYER] Respawned at Y=" + surfaceY);
+            System.out.println("[PLAYER] Respawned at Y=" + respawnY);
         }
 
         super.tick(manager, world, particleManager, dt);
@@ -144,6 +144,9 @@ public class Player extends Entity {
                 (int)Math.floor(position.z)
         );
         if (floor == Block.TRANSMAT_PAD && transmatCooldown <= 0f) {
+            // Safety: Only trigger if we are within the base camp range or station range
+            // This prevents "shadow pads" from caves triggering accidental ascension
+            if (position.y > 60 || position.y > 240) {
             if (position.y < 230) {
                 // Ground portal triggers ascension to Shipyard Sky Deck
                 System.out.println("TRANSMAT: Routing to Orbital Coordinates...");
@@ -176,6 +179,7 @@ public class Player extends Entity {
             }
         }
     }
+}
 
     // Keep the update method for mouse look / independent updates if needed, 
     // but physics should stay in tick or synced.
@@ -386,6 +390,13 @@ public class Player extends Entity {
         // Map 0..1 back to -30C..40C
         float baseTemp = worldTemp * 70f - 30f;
         
+        // 0. Painite Thermal Lock
+        if (inventory.hasFullSet("Painite")) {
+            temperature = 36.6f;
+            tempState = "Normal";
+            return;
+        }
+        
         float altitude = position.y;
         
         // 1. Geothermal Boost (Thermal Gradient for deep layers)
@@ -476,6 +487,13 @@ public class Player extends Entity {
 
     public void addXp(float amount, ParticleManager pm) {
         if (level >= 100) return;
+        
+        // Global 20% XP Increase
+        amount *= 1.20f;
+        
+        // Painite XP Boost (Stacking)
+        if (inventory.hasFullSet("Painite")) amount *= 1.20f;
+        
         this.xp += amount;
         while (this.xp >= xpToNextLevel && level < 100) {
             levelUp(pm);
@@ -551,10 +569,13 @@ public class Player extends Entity {
     @Override public boolean isPlayer() { return true; }
 
     public minicraft.math.Vector3f getAuraColor() {
+        // 1. Tool/Item Aura
         minicraft.item.Item held = inventory.getSelectedItem();
-        if (held instanceof ToolItem) {
+        if (held instanceof ToolItem && ((ToolItem) held).auraColor != null) {
             return ((ToolItem) held).auraColor;
         }
-        return null;
+        
+        // 2. Armor Set Glow
+        return inventory.getDominantGlow();
     }
 }

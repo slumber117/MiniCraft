@@ -49,7 +49,7 @@ public class FurnaceBlock implements BlockInteraction {
      */
     public static void handleClick(minicraft.entity.ProcessingFacility fac, minicraft.entity.Player player, Main main, float x, float y, int fbW, int fbH) {
         float panelW = 680f, panelH = 580f;
-        float sx = (fbW - panelW) / 2f, sy = (fbH - panelH) / 2f;
+        float sx = (fbW - panelW) / 2f, sy = (fbH - panelH) / 2f - 80f;
         float cx = sx + panelW / 2f, cy = sy + 180;
         float slotSize = 72f;
 

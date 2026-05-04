@@ -29,6 +29,9 @@ public enum Block {
     WOOD_PLANKS(true, 0, 1.5f, 0.5f, "wood_planks"),
     IRON_PLATE(true, 0, 2.0f, 1.0f, "iron_plating"),
     OBSIDIAN(true, 4, 40.0f, 50.0f, "obsidian"),
+    FORTRESS_WALL(true, 5, 50.0f, 60.0f, "fortress_obsidian_brick"),
+    FORTRESS_FLOOR(true, 5, 45.0f, 55.0f, "fortress_obsidian_floor"),
+    FORTRESS_CEILING(true, 5, 45.0f, 55.0f, "fortress_obsidian_ceiling"),
     GLASS(true, 0, 1.0f, 0.5f, "glass"),
 
     // ── Vegetation Variants ────────────────────────────────────────────────
@@ -71,8 +74,8 @@ public enum Block {
     GARNET_ORE(true, 5, 25.0f, 20.0f, "garnet_ore"),
     TOURMALINE_ORE(true, 5, 25.0f, 20.0f, "tourmaline_ore"),
     AGATE_ORE(true, 5, 20.0f, 15.0f, "agate_ore"),
-    PAINITE_ORE(true, 9, 80.0f, 100.0f, "painite_ore"),
-    TAAFFEITE_ORE(true, 7, 90.0f, 150.0f, "amethyst_ore"), // Redirected to higher-fidelity crystal pattern
+    PAINITE_ORE(true, 9, 80.0f, 100.0f, "painite_ore"), // High-fidelity deep red crystalline ore
+    TAAFFEITE_ORE(true, 7, 90.0f, 150.0f, "tanzanite_ore"), // Solid lilac crystal pattern
     GRANDIDIERITE_ORE(true, 8, 95.0f, 200.0f, "grandidierite_ore"),
     SERENDIBITE_ORE(true, 8, 100.0f, 300.0f, "serendibite_ore"),
     ALEXANDRITE_ORE(true, 7, 80.0f, 150.0f, "alexandrite_ore"),
@@ -81,7 +84,7 @@ public enum Block {
  
     QUARTZ_ORE(true, 4, 4.0f, 3.0f, "quartz_ore"),
     PYRITE_ORE(true, 1, 4.0f, 4.0f, "pyrite_ore"),
-    MITHRIL_ORE(true, 11, 150.0f, 500.0f, "mithril_ore"),
+    MITHRIL_ORE(true, 10, 150.0f, 500.0f, "mithril_ore"),
     ADAMANTINE_ORE(true, 7, 50.0f, 40.0f, "adamantine_ore"),
     ORICHALCUM_ORE(true, 6, 35.0f, 35.0f, "orichalcum_ore"),
     PLUTONIUM_ORE(true, 6, 50.0f, 50.0f, "plutonium_ore"),
@@ -92,26 +95,26 @@ public enum Block {
     TITANIUM_ORE(true, 3, 10.0f, 12.0f, "titanium_ore"),
 
     // ── Rare Earth Ores (Tier 1, 12-30) ──────────────────────────────────
-    XANTHIOSITE_ORE(true, 1, 4.0f, 5.0f, "xanthiosite_ore"),
-    MONAZITE_ORE(true, 12, 180.0f, 600.0f, "monazite_ore"),
-    BASTNAESITE_ORE(true, 13, 200.0f, 650.0f, "bastnaesite_ore"),
-    XENOTIME_ORE(true, 14, 220.0f, 700.0f, "xenotime_ore"),
-    LOPARITE_ORE(true, 15, 240.0f, 750.0f, "loparite_ore"),
-    TANTALITE_ORE(true, 16, 260.0f, 800.0f, "tantalite_ore"),
-    VANADINITE_ORE(true, 17, 280.0f, 850.0f, "vanadinite_ore"),
-    GADOLINIUM_ORE(true, 18, 300.0f, 900.0f, "gadolinium_ore"),
-    TERBIUM_ORE(true, 19, 320.0f, 950.0f, "terbium_ore"),
-    DYSPROSIUM_ORE(true, 20, 340.0f, 1000.0f, "dysprosium_ore"),
-    HOLMIUM_ORE(true, 21, 360.0f, 1100.0f, "holmium_ore"),
-    ERBIUM_ORE(true, 22, 380.0f, 1200.0f, "erbium_ore"),
-    YTTRIUM_ORE(true, 23, 400.0f, 1300.0f, "yttrium_ore"),
-    LUTETIUM_ORE(true, 24, 420.0f, 1400.0f, "lutetium_ore"),
-    SAMARIUM_ORE(true, 25, 440.0f, 1500.0f, "samarium_ore"),
-    NEODYMIUM_ORE(true, 10, 460.0f, 1600.0f, "neodymium_ore"),
-    PRASEODYMIUM_ORE(true, 27, 480.0f, 1700.0f, "praseodymium_ore"),
-    CERIUM_ORE(true, 28, 500.0f, 1800.0f, "cerium_ore"),
-    LANTHANUM_ORE(true, 29, 520.0f, 1900.0f, "lanthanum_ore"),
-    PROMETHIUM_ORE(true, 30, 600.0f, 2500.0f, "promethium_ore"),
+    XANTHIOSITE_ORE(true, 11, 4.0f, 5.0f, "xanthiosite_ore"),
+    MONAZITE_ORE(true, 11, 180.0f, 600.0f, "monazite_ore"),
+    BASTNAESITE_ORE(true, 11, 200.0f, 650.0f, "bastnaesite_ore"),
+    XENOTIME_ORE(true, 11, 220.0f, 700.0f, "xenotime_ore"),
+    LOPARITE_ORE(true, 11, 240.0f, 750.0f, "loparite_ore"),
+    TANTALITE_ORE(true, 11, 260.0f, 800.0f, "tantalite_ore"),
+    VANADINITE_ORE(true, 11, 280.0f, 850.0f, "vanadinite_ore"),
+    GADOLINIUM_ORE(true, 11, 300.0f, 900.0f, "gadolinium_ore"),
+    TERBIUM_ORE(true, 11, 320.0f, 950.0f, "terbium_ore"),
+    DYSPROSIUM_ORE(true, 11, 340.0f, 1000.0f, "dysprosium_ore"),
+    HOLMIUM_ORE(true, 11, 360.0f, 1100.0f, "holmium_ore"),
+    ERBIUM_ORE(true, 11, 380.0f, 1200.0f, "erbium_ore"),
+    YTTRIUM_ORE(true, 11, 400.0f, 1300.0f, "yttrium_ore"),
+    LUTETIUM_ORE(true, 11, 420.0f, 1400.0f, "lutetium_ore"),
+    SAMARIUM_ORE(true, 11, 440.0f, 1500.0f, "samarium_ore"),
+    NEODYMIUM_ORE(true, 9, 460.0f, 1600.0f, "neodymium_ore"),
+    PRASEODYMIUM_ORE(true, 11, 480.0f, 1700.0f, "praseodymium_ore"),
+    CERIUM_ORE(true, 11, 500.0f, 1800.0f, "cerium_ore"),
+    LANTHANUM_ORE(true, 11, 520.0f, 1900.0f, "lanthanum_ore"),
+    PROMETHIUM_ORE(true, 11, 600.0f, 2500.0f, "promethium_ore"),
 
     // Ores dropped from bosses
     DRAGON_SCALE_ORE(false, 1, 3, 100.0f, "dragon_scale_ore"),
@@ -143,6 +146,7 @@ public enum Block {
     CACTUS(true, 0, 0.5f, 0.5f, "cactus"),
     SEA_WEED(false, 0, 0f, 0f, "sea_weed", MeshType.CROSS),
     CORAL(true, 0, 0.3f, 1.0f, "coral"),
+    FIBRE_BUSH(false, 0, 0.1f, 0.5f, "fibre_bush", MeshType.CROSS),
 
     // ── Advanced Scientific blocks ───────────────────────────────────────
     ALLOY_PLATE(true, 1, 10.0f, 2.0f, "alloy_plate"),

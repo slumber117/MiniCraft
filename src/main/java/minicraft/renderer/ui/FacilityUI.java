@@ -16,7 +16,7 @@ public class FacilityUI {
         ui.drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.78f));
 
         float panelW = 680f, panelH = 580f;
-        float sx = (width - panelW) / 2f, sy = (height - panelH) / 2f;
+        float sx = (width - panelW) / 2f, sy = (height - panelH) / 2f - 80f;
 
         Block b = main.getWorld().getBlock(main.activeFacX, main.activeFacY, main.activeFacZ);
         String title = b.getInteractionLabel();

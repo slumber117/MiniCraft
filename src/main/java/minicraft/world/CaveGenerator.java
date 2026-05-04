@@ -50,7 +50,7 @@ public class CaveGenerator {
         
         double tunnelDensity = Math.abs(noiseGen.fractalNoise(tNoiseX, tNoiseY, tNoiseZ, 2, 0.5));
         
-        float tunnelThreshold = 0.035f + (0.015f * depthModifier);
+        float tunnelThreshold = 0.012f + (0.01f * depthModifier);
         if (tunnelDensity < tunnelThreshold) {
             return CaveType.TUNNEL;
         }
@@ -65,7 +65,7 @@ public class CaveGenerator {
         double ravineDensity = Math.abs(noiseGen.fractalNoise(rNoiseX, rNoiseY, rNoiseZ, 2, 0.5));
         
         double pinchNoise = noiseGen.noise(worldX * 0.005, 0, worldZ * 0.005);
-        if (ravineDensity < 0.022f && pinchNoise > 0.0) {
+        if (ravineDensity < 0.008f && pinchNoise > 0.0) {
             return CaveType.RAVINE;
         }
 
@@ -78,7 +78,7 @@ public class CaveGenerator {
         
         double cavernDensity = noiseGen.fractalNoise(cNoiseX, cNoiseY, cNoiseZ, 3, 0.5);
         
-        if (cavernDensity > 0.58f - (0.08f * depthModifier)) {
+        if (cavernDensity > 0.70f - (0.05f * depthModifier)) {
             return CaveType.CAVERN;
         }
 

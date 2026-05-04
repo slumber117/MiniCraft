@@ -9,6 +9,7 @@ import minicraft.math.Matrix4f;
 import minicraft.renderer.ShaderProgram;
 import minicraft.renderer.TextureRegistry;
 import minicraft.world.cave.geode.*;
+import minicraft.world.fortress.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -59,6 +60,7 @@ public class World implements IWeatherWorld {
 
     private final StructureGenerator structGen = new StructureGenerator();
     private final CaveCarver caveCarver;
+    private final FortressCarver fortressCarver;
     private final int renderDistance;
     private final WeatherManager weatherManager;
     private int tickCounter = 0;
@@ -69,6 +71,7 @@ public class World implements IWeatherWorld {
         this.textures = textures;
         this.generator = new WorldGenerator(seed);
         this.caveCarver = new CaveCarver(seed);
+        this.fortressCarver = new FortressCarver(seed);
         this.renderDistance = renderDistance;
         this.weatherManager = new WeatherManager(seed);
     }
@@ -93,11 +96,14 @@ public class World implements IWeatherWorld {
 
     @Override
     public int getSurfaceY(int x, int z) {
-        // Simple surface lookup: find first non-air block from top
-        for (int y = minicraft.world.Chunk.HEIGHT - 1; y >= 0; y--) {
-            if (getBlock(x, y, z) != Block.AIR) return y;
+        Chunk chunk = chunks.get(key(Math.floorDiv(x, Chunk.WIDTH), Math.floorDiv(z, Chunk.DEPTH)));
+        if (chunk != null) {
+            for (int y = minicraft.world.Chunk.HEIGHT - 1; y >= 0; y--) {
+                if (chunk.getBlock(Math.floorMod(x, Chunk.WIDTH), y, Math.floorMod(z, Chunk.DEPTH)) != Block.AIR) return y;
+            }
         }
-        return 0;
+        // Fallback to generator's analytical elevation if chunk is not yet in the map
+        return (int) (generator.generate(x, z).elevation * Chunk.HEIGHT);
     }
 
     @Override
@@ -382,6 +388,29 @@ public class World implements IWeatherWorld {
                 }
 
                 for (int y = BEDROCK_Y + 1; y < surfaceY; y++) {
+                    // ── Fortress Carving ───────────────────────────────────────────
+                    FortressCell fortressCell = fortressCarver.query(gx, y, gz, this);
+                    if (fortressCell.layer != FortressCell.Layer.OUTSIDE) {
+                        switch (fortressCell.layer) {
+                            case INTERIOR:
+                                chunk.setBlock(x, y, z, Block.AIR);
+                                break;
+                            case WALL:
+                                chunk.setBlock(x, y, z, Block.FORTRESS_WALL);
+                                break;
+                            case FLOOR:
+                                chunk.setBlock(x, y, z, Block.FORTRESS_FLOOR);
+                                break;
+                            case CEILING:
+                                chunk.setBlock(x, y, z, Block.FORTRESS_CEILING);
+                                break;
+                            default:
+                                chunk.setBlock(x, y, z, Block.OBSIDIAN);
+                                break;
+                        }
+                        continue; // Fortress overrides caves
+                    }
+
                     CaveCell caveCell = caveCarver.query(gx, y, gz, cell, surfaceY);
                     
                     // ── Geode Materialization ──────────────────────────────────────
@@ -484,15 +513,17 @@ public class World implements IWeatherWorld {
                     }
                     if (Math.random() < treeChance)
                         spawnTreeType(chunk, x, sY, z, log, leaf);
-                    else if (Math.random() < 0.15f) {
+                    else if (Math.random() < 0.35f) {
                         double f = Math.random();
-                        if (f < 0.60)
+                        if (f < 0.43) // ~15% total chance (0.35 * 0.43 = 0.15)
+                            chunk.setBlock(x, sY, z, Block.FIBRE_BUSH);
+                        else if (f < 0.70)
                             chunk.setBlock(x, sY, z, Block.TALL_GRASS);
-                        else if (f < 0.75)
+                        else if (f < 0.80)
                             chunk.setBlock(x, sY, z, Block.FLOWER_RED);
-                        else if (f < 0.85)
+                        else if (f < 0.90)
                             chunk.setBlock(x, sY, z, Block.FLOWER_BLUE);
-                        else if (f < 0.95)
+                        else
                             chunk.setBlock(x, sY, z, Block.MUSHROOM);
                     }
                 } else if (sY <= seaLevelY) {
@@ -532,9 +563,9 @@ public class World implements IWeatherWorld {
  
         // Tier 3: Deep Gems and Hard Metals (Y: 0 - 60)
         spawnOreGrip(chunk, Block.DIAMOND_ORE, ClusterSize.TINY, 3, 5, 45);
-        spawnOreGrip(chunk, Block.EMERALD_ORE, ClusterSize.TINY, 2, 80, 512); // Mountains only usually, but deep too
+        spawnOreGrip(chunk, Block.EMERALD_ORE, ClusterSize.TINY, 4, 5, 45); 
         spawnOreGrip(chunk, Block.RUBY_ORE, ClusterSize.TINY, 2, 5, 50);
-        spawnOreGrip(chunk, Block.SAPPHIRE_ORE, ClusterSize.TINY, 2, 5, 50);
+        spawnOreGrip(chunk, Block.SAPPHIRE_ORE, ClusterSize.TINY, 4, 5, 45);
         spawnOreGrip(chunk, Block.TITANIUM_ORE, ClusterSize.SMALL, 12, 5, 60);
 
         // Tier 4: Rare & Radioactive (Y: 0 - 25)
@@ -719,12 +750,42 @@ public class World implements IWeatherWorld {
     }
 
     public int getSafeSpawnY(int x, int z) {
+        // Standard sky-down scan for surface spawn
         for (int y = Chunk.HEIGHT - 1; y > 0; y--) {
             Block b = getBlock(x, y, z);
             if (b.solid || b == Block.WATER || b == Block.ICE)
                 return y + 1;
         }
         return (int) (WorldCell.SEA_LEVEL * Chunk.HEIGHT) + 2;
+    }
+
+    /**
+     * Finds a safe Y coordinate near the preferred height.
+     * Prevents surface teleportation during deep-mine respawns.
+     */
+    public int getSafeSpawnY(int x, int preferredY, int z) {
+        // Clamp preferredY
+        int startY = Math.max(1, Math.min(Chunk.HEIGHT - 3, preferredY));
+        
+        // 1. Search locally (up/down 15 blocks)
+        for (int dy = 0; dy <= 15; dy++) {
+            // Check current, then above, then below
+            int[] targets = {startY + dy, startY - dy};
+            for (int y : targets) {
+                if (y <= 0 || y >= Chunk.HEIGHT - 1) continue;
+                
+                Block b = getBlock(x, y, z);
+                if (b.solid || b == Block.WATER || b == Block.ICE) {
+                    // Potential floor found, check space for player (2 blocks high)
+                    if (!getBlock(x, y + 1, z).solid && !getBlock(x, y + 2, z).solid) {
+                        return y + 1;
+                    }
+                }
+            }
+        }
+
+        // 2. If local search fails, fallback to standard surface scan
+        return getSafeSpawnY(x, z);
     }
 
     /**

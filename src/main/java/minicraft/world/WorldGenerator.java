@@ -131,10 +131,10 @@ public class WorldGenerator {
                 float blockY = currentTile.blockHeightmap[lx][lz];
 
                 // Clamp height to safe chunk boundaries
-                blockY = Math.max(0, Math.min(255, blockY));
+                blockY = Math.max(0, Math.min(Chunk.HEIGHT - 1, blockY));
 
                 // Convert back to normalized float for internal WorldCell format
-                float elev = blockY / 256.0f; // Assumes Chunk.HEIGHT is 256
+                float elev = blockY / (float)Chunk.HEIGHT; 
 
                 // Map ML metrics
                 short mlBiomeId = currentTile.rawMlData.biomeIds[lz][lx];

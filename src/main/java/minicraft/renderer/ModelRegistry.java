@@ -11,50 +11,68 @@ public class ModelRegistry {
 
     public static void init(TextureRegistry textureRegistry) {
         try {
-            // 1. Load the high-fidelity pickaxe
-            TextureRegion woodRegion = textureRegistry.get("wood");
+            // 1. Load the high-fidelity wooden pickaxe
+            TextureRegion woodRegion = textureRegistry.get("material_wood_realistic");
             Texture woodTexture = woodRegion != null ? woodRegion.getTexture() : null;
             Mesh pickaxe = OBJLoader.loadModel("/models/pickaxe_wooden.obj", woodTexture);
             models.put("pickaxe_wooden", pickaxe);
 
             // 2. Load the high-fidelity stone pickaxe
-            TextureRegion stoneRegion = textureRegistry.get("stone");
+            TextureRegion stoneRegion = textureRegistry.get("material_stone_realistic");
             Texture stoneTexture = stoneRegion != null ? stoneRegion.getTexture() : null;
             Mesh stonePick = OBJLoader.loadModel("/models/pickaxe_stone.obj", stoneTexture);
             models.put("pickaxe_stone", stonePick);
 
             // 3. Load the high-fidelity iron pickaxe
-            TextureRegion ironRegion = textureRegistry.get("alloy_plate");
+            TextureRegion ironRegion = textureRegistry.get("material_iron_realistic");
             Texture ironTexture = ironRegion != null ? ironRegion.getTexture() : null;
             Mesh ironPick = OBJLoader.loadModel("/models/pickaxe_iron.obj", ironTexture);
             models.put("pickaxe_iron", ironPick);
 
-            // 4. Load the high-fidelity diamond pickaxe
+            // 4. Load the high-fidelity gold pickaxe
+            TextureRegion goldRegion = textureRegistry.get("material_gold_realistic");
+            Texture goldTexture = goldRegion != null ? goldRegion.getTexture() : null;
+            Mesh goldPick = OBJLoader.loadModel("/models/pickaxe_gold.obj", goldTexture);
+            models.put("pickaxe_gold", goldPick);
+
+            // 5. Load the high-fidelity diamond pickaxe
             TextureRegion diamondRegion = textureRegistry.get("alloy_plate");
             Texture diamondTexture = diamondRegion != null ? diamondRegion.getTexture() : null;
             Mesh diamondPick = OBJLoader.loadModel("/models/pickaxe_diamond.obj", diamondTexture);
             models.put("pickaxe_diamond", diamondPick);
 
-            // 5. Load the high-fidelity zombie (Humanoid mesh)
+            // 6. Neodymium Pickaxe
+            TextureRegion neoRegion = textureRegistry.get("item_pick_neodymium");
+            Texture neoTexture = neoRegion != null ? neoRegion.getTexture() : null;
+            Mesh neoPick = OBJLoader.loadModel("/models/pickaxe_gold.obj", neoTexture);
+            models.put("pickaxe_neodymium", neoPick);
+
+            // 7. Musgravite Pickaxe
+            TextureRegion musRegion = textureRegistry.get("item_pick_musgravite");
+            Texture musTexture = musRegion != null ? musRegion.getTexture() : null;
+            Mesh musPick = OBJLoader.loadModel("/models/pickaxe_gold.obj", musTexture);
+            models.put("pickaxe_musgravite", musPick);
+
+            // 8. Load the high-fidelity zombie (Humanoid mesh)
             TextureRegion zombieRegion = textureRegistry.get("zombie_hd");
             Texture zombieTexture = zombieRegion != null ? zombieRegion.getTexture() : null;
             Mesh zombie = OBJLoader.loadModel("/models/humanoid.obj", zombieTexture);
             models.put("zombie", zombie);
 
-            // 6. Load the player model (Humanoid mesh)
+            // 9. Load the player model (Humanoid mesh)
             TextureRegion playerRegion = textureRegistry.get("char_farmer");
             Texture playerTexture = playerRegion != null ? playerRegion.getTexture() : null;
             Mesh playerModel = OBJLoader.loadModel("/models/humanoid.obj", playerTexture);
             models.put("player_body", playerModel);
 
-            // 6. Load the player's custom Stalwart model
+            // 10. Load the player's custom Stalwart model
             // This is a 54MB high-fidelity asset!
             TextureRegion shipRegion = textureRegistry.get("alloy_plate");
             Texture shipTexture = shipRegion != null ? shipRegion.getTexture() : null;
             Mesh shipModel = OBJLoader.loadModel("/models/sof_.obj", shipTexture);
             models.put("ship_stalwart", shipModel);
             
-            // 7. Primitives
+            // 11. Primitives
             models.put("primitive_cube", createCubeMesh());
 
             System.out.println("Model Registry: Loaded high-fidelity assets (Pickaxes, Zombie & Stalwart).");

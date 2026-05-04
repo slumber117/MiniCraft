@@ -289,6 +289,9 @@ public class Inventory {
         if (getFullSetTier() != null) {
             if (total < 1.0f) total += (1.0f - total) * 0.15f; 
             else              total *= 1.15f;                 
+            
+            // Painite 20% Speed Boost
+            if (hasFullSet("Painite")) total *= 1.20f;
         }
         return Math.max(0.1f, total);
     }

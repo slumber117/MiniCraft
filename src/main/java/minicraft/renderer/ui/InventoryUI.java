@@ -39,6 +39,8 @@ public class InventoryUI {
         armorColors.put("ADAMANTINE", new Vector3f(1.00f, 0.25f, 0.10f));
         armorColors.put("MITHRIL", new Vector3f(0.70f, 1.00f, 0.95f));
         armorColors.put("PLATINUM", new Vector3f(0.90f, 0.90f, 1.00f));
+        armorColors.put("NEODYMIUM", new Vector3f(0.50f, 0.00f, 0.50f));
+        armorColors.put("MUSGRAVITE", new Vector3f(0.70f, 0.50f, 0.90f));
     }
 
     public void render(UIRenderer ui, Player player, ShaderProgram shader, int width, int height, Main main) {
@@ -265,7 +267,10 @@ public class InventoryUI {
                 if (toolName.contains("Wood")) modelId = "pickaxe_wooden";
                 else if (toolName.contains("Stone")) modelId = "pickaxe_stone";
                 else if (toolName.contains("Iron")) modelId = "pickaxe_iron";
+                else if (toolName.contains("Gold")) modelId = "pickaxe_gold";
                 else if (toolName.contains("Diamond")) modelId = "pickaxe_diamond";
+                else if (toolName.contains("Neodymium")) modelId = "pickaxe_neodymium";
+                else if (toolName.contains("Musgravite")) modelId = "pickaxe_musgravite";
 
                 if (modelId != null) {
                     Mesh toolMesh = ModelRegistry.getModel(modelId);
