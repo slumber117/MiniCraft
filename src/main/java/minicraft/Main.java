@@ -1604,10 +1604,20 @@ public class Main {
                 player.addXp(b.xpValue, particleManager);
                 questManager.onBlockMined(b); // Quest hook
                 if (toolLevel >= b.requiredHarvestLevel) {
-                    ItemEntity drop = new ItemEntity(b);
-                    drop.setPosition(gx + 0.5f, gy + 0.5f, gz + 0.5f);
-                    drop.velocity.set(0, 2f, 0);
-                    entityManager.spawn(drop);
+                    int count = 1;
+                    if (held instanceof ToolItem) {
+                        ToolItem ti = (ToolItem) held;
+                        if (b.name().contains("ORE") && Math.random() < ti.doubleDropChance) {
+                            count = 2;
+                            setStatusMessage("Double Drop!");
+                        }
+                    }
+                    for (int i = 0; i < count; i++) {
+                        ItemEntity drop = new ItemEntity(b);
+                        drop.setPosition(gx + 0.5f, gy + 0.5f, gz + 0.5f);
+                        drop.velocity.set((float) Math.random() * 0.2f - 0.1f, 2f + (float) Math.random() * 0.5f, (float) Math.random() * 0.2f - 0.1f);
+                        entityManager.spawn(drop);
+                    }
                 }
             }
             return;

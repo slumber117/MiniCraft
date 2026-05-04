@@ -514,16 +514,22 @@ public class World implements IWeatherWorld {
         // Tier 1: Common Surface Ores (Y: 80 - 250)
         spawnOreGrip(chunk, Block.COAL_ORE, ClusterSize.LARGE, 25, 80, 250);
         spawnOreGrip(chunk, Block.IRON_ORE, ClusterSize.MEDIUM, 18, 60, 200);
+        
+        // --- High Altitude Resource Injection (Per Request) ---
+        spawnOreGrip(chunk, Block.IRON_ORE, ClusterSize.LARGE, 20, 300, 500); // Dense Iron Belt
+        spawnOreGrip(chunk, Block.GOLD_ORE, ClusterSize.MEDIUM, 12, 200, 300); // Precious Metal Belt
+        spawnOreGrip(chunk, Block.TITANIUM_ORE, ClusterSize.MEDIUM, 10, 200, 300); // Industrial Metal Belt
+ 
         spawnOreGrip(chunk, Block.COPPER_ORE, ClusterSize.MEDIUM, 15, 60, 180);
         spawnOreGrip(chunk, Block.TIN_ORE, ClusterSize.MEDIUM, 12, 60, 160);
-
+ 
         // Tier 2: Mid-level Industrial/Precious (Y: 40 - 120)
         spawnOreGrip(chunk, Block.GOLD_ORE, ClusterSize.SMALL, 8, 30, 120);
         spawnOreGrip(chunk, Block.SILVER_ORE, ClusterSize.SMALL, 10, 30, 110);
         spawnOreGrip(chunk, Block.NICKEL_ORE, ClusterSize.SMALL, 7, 20, 100);
         spawnOreGrip(chunk, Block.TANZANITE_ORE, ClusterSize.SMALL, 4, 20, 90);
         spawnOreGrip(chunk, Block.QUARTZ_ORE, ClusterSize.MEDIUM, 15, 30, 250);
-
+ 
         // Tier 3: Deep Gems and Hard Metals (Y: 0 - 60)
         spawnOreGrip(chunk, Block.DIAMOND_ORE, ClusterSize.TINY, 3, 5, 45);
         spawnOreGrip(chunk, Block.EMERALD_ORE, ClusterSize.TINY, 2, 80, 512); // Mountains only usually, but deep too

@@ -70,7 +70,7 @@ public class CraftingManager {
 
         // --- 4. GOLD TIER (Precision & Speed) ---
         addArmorSet("Gold", "GOLD_INGOT", 0.15f, 4, 0.2f, 1.15f, 0.3f, null); // Lightweight & Aerodynamic
-        addToolSet("Gold", "GOLD_INGOT", 2, 15.0f); // Fast mining speed
+        addToolSet("Gold", "GOLD_INGOT", 3, 15.0f); // Fast mining speed
 
         // --- 5. TITANIUM TIER (High Industry) ---
         addArmorSet("Titanium", "TITANIUM_INGOT", 0.20f, 3, 0.6f, 0.95f, 0.3f, null);
@@ -86,7 +86,7 @@ public class CraftingManager {
         addToolSet("Ruby", "RUBY_ORE", 5, 18.0f);
 
         addArmorSet("Quartz", "QUARTZ_ORE", 0.20f, 2, -0.1f, 0.65f, 0.5f, null); // Heavy Crystal Armor
-        addToolSet("Quartz", "QUARTZ_ORE", 3, 11.0f); // Tier 3 Mining Capability
+        addToolSet("Quartz", "QUARTZ_ORE", 4, 11.0f); // Tier 4 Mining Capability
 
         addArmorSet("Tanzanite", "TANZANITE_ORE", 0.24f, 4, 0.8f, 1.0f, 0.3f, null); // Thorns Set
         addToolSet("Tanzanite", "TANZANITE_ORE", 4, 16.0f);
@@ -95,7 +95,7 @@ public class CraftingManager {
         addToolSet("Sapphire", "SAPPHIRE_ORE", 5, 22.0f);
 
         addArmorSet("Emerald", "EMERALD_ORE", 0.22f, 3, 0.5f, 1.1f, 0.4f, null);
-        addToolSet("Emerald", "EMERALD_ORE", 4, 14.0f);
+        addToolSet("Emerald", "EMERALD_ORE", 5, 14.0f);
 
         addArmorSet("Topaz", "TOPAZ_ORE", 0.22f, 3, 0.8f, 1.0f, 0.4f, null);
         addToolSet("Topaz", "TOPAZ_ORE", 4, 15.0f);
@@ -107,14 +107,14 @@ public class CraftingManager {
         addToolSet("Aquamarine", "AQUAMARINE_ORE", 3, 11.0f);
 
         addArmorSet("Adamantine", "ADAMANTINE", 0.26f, 3, 1.8f, 1.0f, 0.4f, null);
-        addToolSet("Adamantine", "ADAMANTINE", 5, 20.0f);
+        addToolSet("Adamantine", "ADAMANTINE", 7, 20.0f);
 
         addArmorSet("Obsidian", "OBSIDIAN", 0.30f, 3, 0.8f, 0.85f, 0.6f, null);
 
         // Atomic Tiers
         addArmorSet("Uranium", "URANIUM_ORE", 0.25f, 4, 0.8f, 1.0f, 0.5f,
                 new minicraft.math.Vector3f(0.2f, 1.0f, 0.2f)); // Green Glow
-        addToolSet("Uranium", "URANIUM_ORE", 5, 20.0f);
+        addToolSet("Uranium", "URANIUM_ORE", 6, 20.0f);
         addArmorSet("Plutonium", "PLUTONIUM_ORE", 0.28f, 4, 1.0f, 1.0f, 0.5f,
                 new minicraft.math.Vector3f(1.0f, 0.45f, 0.05f)); // Orange Glow
         addToolSet("Plutonium", "PLUTONIUM_ORE", 6, 25.0f);
@@ -133,27 +133,28 @@ public class CraftingManager {
         addToolSet("Opal", "OPAL_ORE", 5, 18.0f);
 
         addArmorSet("Alexandrite", "ALEXANDRITE_ORE", 0.26f, 4, 1.5f, 1.1f, 0.4f, null);
-        addToolSet("Alexandrite", "ALEXANDRITE_ORE", 5, 20.0f);
+        addToolSet("Alexandrite", "ALEXANDRITE_ORE", 7, 20.0f);
 
         addArmorSet("Onyx", "ONYX_ORE", 0.35f, 5, 3.0f, 0.9f, 0.7f, null); // Heavier than Adamantine
         addToolSet("Onyx", "ONYX_ORE", 6, 22.0f);
 
         // --- 9. RAREST MINERAL TIERS (The Absolute Limit) ---
-        addArmorSet("Painite", "PAINITE_ORE", 0.40f, 6, 5.0f, 1.0f, 0.8f, null);
-        addToolSet("Painite", "PAINITE_ORE", 7, 30.0f);
-
+        addArmorSet("Painite", "PAINITE_ORE", 0.40f, 6, 5.0f, 1.0f, 0.8f,
+                new minicraft.math.Vector3f(1.0f, 0.1f, 0.1f)); // Red Glow
+        addToolSet("Painite", "PAINITE_ORE", 9, 30.0f, new minicraft.math.Vector3f(1.0f, 0.1f, 0.1f), 0.25f);
+ 
         addArmorSet("Musgravite", "MUSGRAVITE_ORE", 0.42f, 6, 6.0f, 1.0f, 0.8f, null);
-        addToolSet("Musgravite", "MUSGRAVITE_ORE", 7, 35.0f);
+        addToolSet("Musgravite", "MUSGRAVITE_ORE", 8, 35.0f);
 
         addArmorSet("Taaffeite", "TAAFFEITE_ORE", 0.45f, 7, 7.0f, 1.0f, 0.9f, null);
-        addToolSet("Taaffeite", "TAAFFEITE_ORE", 8, 40.0f);
+        addToolSet("Taaffeite", "TAAFFEITE_ORE", 7, 40.0f);
 
         addArmorSet("Grandidierite", "GRANDIDIERITE_ORE", 0.48f, 7, 8.0f, 1.1f, 0.9f, null);
         addToolSet("Grandidierite", "GRANDIDIERITE_ORE", 8, 45.0f);
 
         addArmorSet("Serendibite", "SERENDIBITE_ORE", 0.55f, 8, 10.0f, 1.2f, 1.0f,
                 new minicraft.math.Vector3f(0.1f, 0.1f, 0.5f)); // Cosmic Glow
-        addToolSet("Serendibite", "SERENDIBITE_ORE", 9, 60.0f);
+        addToolSet("Serendibite", "SERENDIBITE_ORE", 8, 60.0f);
 
         // --- 10. ULTIMATE MITHRIL TIER (Dominus Industry) ---
         addArmorSet("Mithril", "MITHRIL_ORE", 0.75f, 12, 25.0f, 1.5f, 2.0f,
@@ -207,7 +208,7 @@ public class CraftingManager {
         addToolSet("Samarium", "SAMARIUM", 25, 360.0f);
         addArmorSet("Samarium", "SAMARIUM", 1.90f, 36, 140.0f, 2.9f, 4.8f, new minicraft.math.Vector3f(1.0f, 1.0f, 0.5f));
 
-        addToolSet("Neodymium", "NEODYMIUM", 26, 380.0f);
+        addToolSet("Neodymium", "NEODYMIUM", 10, 380.0f);
         addArmorSet("Neodymium", "NEODYMIUM", 2.00f, 38, 150.0f, 3.0f, 5.0f, new minicraft.math.Vector3f(0.5f, 0.0f, 0.5f));
 
         addToolSet("Praseodymium", "PRASEODYMIUM", 27, 400.0f);
@@ -407,30 +408,34 @@ public class CraftingManager {
     }
 
     private void addToolSet(String tier, String mat, int level, float speed) {
+        addToolSet(tier, mat, level, speed, null, 0.0f);
+    }
+ 
+    private void addToolSet(String tier, String mat, int level, float speed, minicraft.math.Vector3f aura, float chance) {
         Item m = createMaterialItem(mat);
         String name = tier + " ";
         String low = tier.toLowerCase();
-
+ 
         // Pickaxe
         Map<Item, Integer> pI = new HashMap<>();
         pI.put(m, 3);
         recipes.add(new Recipe(name + "Pickaxe", Recipe.Category.TOOLS, pI,
-                new ToolItem(name + "Pick", ToolItem.ToolType.PICKAXE, level, speed, "item_pick_" + low), 1));
+                new ToolItem(name + "Pick", ToolItem.ToolType.PICKAXE, level, speed, "item_pick_" + low, null, 0f, false, 0f, aura, 1.0f, 1.0f, chance), 1));
         // Axe
         Map<Item, Integer> aI = new HashMap<>();
         aI.put(m, 3);
         recipes.add(new Recipe(name + "Axe", Recipe.Category.TOOLS, aI,
-                new ToolItem(name + "Axe", ToolItem.ToolType.AXE, level, speed, "item_axe_" + low), 1));
+                new ToolItem(name + "Axe", ToolItem.ToolType.AXE, level, speed, "item_axe_" + low, null, 0f, false, 0f, aura, 1.0f, 1.0f, 0f), 1));
         // Shovel
         Map<Item, Integer> sI = new HashMap<>();
         sI.put(m, 3);
         recipes.add(new Recipe(name + "Shovel", Recipe.Category.TOOLS, sI,
-                new ToolItem(name + "Shovel", ToolItem.ToolType.SHOVEL, level, speed, "item_shovel_" + low), 1));
+                new ToolItem(name + "Shovel", ToolItem.ToolType.SHOVEL, level, speed, "item_shovel_" + low, null, 0f, false, 0f, aura, 1.0f, 1.0f, 0f), 1));
         // Sword
         Map<Item, Integer> swI = new HashMap<>();
         swI.put(m, 3);
         recipes.add(new Recipe(name + "Sword", Recipe.Category.TOOLS, swI,
-                new ToolItem(name + "Sword", ToolItem.ToolType.SWORD, level, speed, "item_sword_" + low), 1));
+                new ToolItem(name + "Sword", ToolItem.ToolType.SWORD, level, speed, "item_sword_" + low, null, 0f, false, 0f, aura, 1.0f, 1.0f, 0f), 1));
     }
 
     private void addArmorSet(String tierName, String matName, float prot, int cost,
