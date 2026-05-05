@@ -552,6 +552,7 @@ public class World implements IWeatherWorld {
         spawnOreGrip(chunk, Block.TITANIUM_ORE, ClusterSize.MEDIUM, 10, 200, 300); // Industrial Metal Belt
         spawnOreGrip(chunk, Block.SAPPHIRE_ORE, ClusterSize.MEDIUM, 8, 180, 220); // High-Altitude Gems
         spawnOreGrip(chunk, Block.EMERALD_ORE, ClusterSize.MEDIUM, 8, 180, 220); // High-Altitude Gems
+        spawnOreGrip(chunk, Block.TOPAZ_ORE, ClusterSize.MEDIUM, 10, 180, 220); // High-Altitude Gems
  
         spawnOreGrip(chunk, Block.COPPER_ORE, ClusterSize.MEDIUM, 15, 60, 180);
         spawnOreGrip(chunk, Block.TIN_ORE, ClusterSize.MEDIUM, 12, 60, 160);
@@ -567,6 +568,7 @@ public class World implements IWeatherWorld {
         spawnOreGrip(chunk, Block.DIAMOND_ORE, ClusterSize.TINY, 3, 5, 45);
         spawnOreGrip(chunk, Block.EMERALD_ORE, ClusterSize.TINY, 4, 5, 45); 
         spawnOreGrip(chunk, Block.RUBY_ORE, ClusterSize.TINY, 2, 5, 50);
+        spawnOreGrip(chunk, Block.TOPAZ_ORE, ClusterSize.SMALL, 6, 5, 60);
         spawnOreGrip(chunk, Block.SAPPHIRE_ORE, ClusterSize.TINY, 4, 5, 45);
         spawnOreGrip(chunk, Block.TITANIUM_ORE, ClusterSize.SMALL, 12, 5, 60);
 
