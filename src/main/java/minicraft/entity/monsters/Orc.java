@@ -58,6 +58,6 @@ public class Orc extends Entity {
         Item drop = new ToolItem("Stone " + type.name().toLowerCase(), type, 1, 4.0f, tex);
         ItemEntity e = new ItemEntity(drop);
         e.position.set(position);
-        manager.addEntity(e);
+        manager.spawn(e);
     }
 }

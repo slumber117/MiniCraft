@@ -50,4 +50,8 @@ public class Vector3f {
         float dz = this.z - other.z;
         return dx * dx + dy * dy + dz * dz;
     }
+
+    public float distance(Vector3f other) {
+        return (float) Math.sqrt(distanceSquared(other));
+    }
 }

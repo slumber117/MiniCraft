@@ -97,4 +97,8 @@ public enum EntityType {
     public boolean isHostile() {
         return category == Category.MONSTER || category == Category.PREDATOR;
     }
+
+    public Category getCategory() {
+        return category;
+    }
 }

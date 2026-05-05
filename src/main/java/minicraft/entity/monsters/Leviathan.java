@@ -46,6 +46,6 @@ public class Leviathan extends Entity {
         Item drop = new Item("Painite", null, "PAINITE_ORE", 64);
         ItemEntity e = new ItemEntity(drop);
         e.position.set(position);
-        manager.addEntity(e);
+        manager.spawn(e);
     }
 }

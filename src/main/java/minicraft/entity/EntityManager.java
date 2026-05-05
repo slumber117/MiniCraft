@@ -211,6 +211,23 @@ public class EntityManager {
 
     public List<Entity> getAll() { return entities; }
     public int count()            { return entities.size(); }
+
+    public Player getNearestPlayer(float x, float z) {
+        Player best = null;
+        float bestDistSq = Float.MAX_VALUE;
+        for (Entity e : entities) {
+            if (e instanceof Player) {
+                float dx = e.position.x - x;
+                float dz = e.position.z - z;
+                float d2 = dx*dx + dz*dz;
+                if (d2 < bestDistSq) {
+                    bestDistSq = d2;
+                    best = (Player) e;
+                }
+            }
+        }
+        return best;
+    }
     
     private float distSq(float x1, float z1, float x2, float z2) {
         float dx = x1 - x2, dz = z1 - z2;

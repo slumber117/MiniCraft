@@ -49,6 +49,6 @@ public class Griffin extends Entity {
         Item drop = new Item("Emerald", null, "EMERALD_ORE", 64);
         ItemEntity e = new ItemEntity(drop);
         e.position.set(position);
-        manager.addEntity(e);
+        manager.spawn(e);
     }
 }
