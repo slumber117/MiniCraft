@@ -29,6 +29,7 @@ public class EntityManager {
             tickAccum -= TICK_RATE;
             tick(TICK_RATE, world, particleManager);
             spawnHostilesInDarkness(world);
+            handleBlockAuras(world, particleManager);
         }
     }
 
@@ -41,7 +42,7 @@ public class EntityManager {
         while (it.hasNext()) {
             Entity e = it.next();
             if (e.isDead()) {
-                e.onDeath(this);
+                e.onDeath(this, world);
                 it.remove();
             }
         }
@@ -66,11 +67,36 @@ public class EntityManager {
             int gz = (int) Math.floor(sz);
 
             // Light & Depth check
-            if (world.getLight(gx, gy, gz) < 0.2f && gy < 60) {
-                // Check if air
-                if (world.getBlock(gx, gy, gz) == minicraft.world.Block.AIR) {
-                    EntityType type = rng.nextFloat() < 0.7f ? EntityType.ZOMBIE : EntityType.SPIDER;
-                    spawnAt(type, gx + 0.5f, gy, gz + 0.5f);
+            if (world.getLight(gx, gy, gz) < 0.2f) {
+                if (gy < 60) {
+                    // Underground spawns
+                    if (world.getBlock(gx, gy, gz) == minicraft.world.Block.AIR) {
+                        // Check for Procedural Boss Arenas
+                        if (checkBossSpawn(gx, gy, gz, world)) return;
+                        
+                        if (gy < 15 && rng.nextFloat() < 0.01f) {
+                            spawnAt(EntityType.FIRE_DEMON, gx + 0.5f, gy, gz + 0.5f);
+                        } else {
+                            EntityType type = rng.nextFloat() < 0.7f ? EntityType.ZOMBIE : EntityType.SPIDER;
+                            spawnAt(type, gx + 0.5f, gy, gz + 0.5f);
+                        }
+                        return;
+                    }
+                } else if (gy >= 60 && gy < 150) {
+                    // Surface Night Spawns (Including Trolls)
+                    if (world.getBlock(gx, gy, gz) == minicraft.world.Block.AIR && world.getBlock(gx, gy-1, gz).solid) {
+                        if (rng.nextFloat() < 0.15f) {
+                            spawnAt(EntityType.TROLL, gx + 0.5f, gy, gz + 0.5f);
+                        } else {
+                            spawnAt(EntityType.ZOMBIE, gx + 0.5f, gy, gz + 0.5f);
+                        }
+                        return;
+                    }
+                }
+            } else if (gy > 180) {
+                // Sky Spawns (Dragons)
+                if (world.getBlock(gx, gy, gz) == minicraft.world.Block.AIR && rng.nextFloat() < 0.05f) {
+                    spawnAt(EntityType.FIRE_DRAGON, gx + 0.5f, gy, gz + 0.5f);
                     return;
                 }
             }
@@ -113,6 +139,17 @@ public class EntityManager {
             // Monsters
             case ZOMBIE: return new minicraft.entity.monsters.Zombie();
             case SPIDER: return new minicraft.entity.monsters.Spider();
+            case TROLL:  return new minicraft.entity.monsters.Troll();
+            case FIRE_DRAGON: return new minicraft.entity.monsters.FireDragon();
+            case FIRE_DEMON:  return new minicraft.entity.monsters.FireDemon();
+            case GOLD_DRAGON: return new minicraft.entity.monsters.GoldDragon();
+            case ONYX_DRAGON: return new minicraft.entity.monsters.OnyxDragon();
+            case ORC: return new minicraft.entity.monsters.Orc();
+            case GRIFFINS: return new minicraft.entity.monsters.Griffin();
+            case LEVIATHAN: return new minicraft.entity.monsters.Leviathan();
+            case FIREBALL: return new minicraft.entity.monsters.Fireball(null, 0, 0, 0);
+            case ONYX_PROJECTILE: return new minicraft.entity.monsters.OnyxProjectile(null, 0, 0, 0);
+            case GOLD_FIREBALL: return new minicraft.entity.monsters.GoldFireball(null, 0, 0, 0);
             // Megastructures
             case STALWART_SHIP: 
                 // Ships cannot be spawned via generic type-only factory as they require definitions.
@@ -174,4 +211,56 @@ public class EntityManager {
 
     public List<Entity> getAll() { return entities; }
     public int count()            { return entities.size(); }
+    
+    private float distSq(float x1, float z1, float x2, float z2) {
+        float dx = x1 - x2, dz = z1 - z2;
+        return dx*dx + dz*dz;
+    }
+
+    private boolean checkBossSpawn(int gx, int gy, int gz, minicraft.world.World world) {
+        int gridSize = 64;
+        int cx = Math.floorDiv(gx, 16);
+        int cz = Math.floorDiv(gz, 16);
+        
+        int gridX = Math.floorDiv(cx, gridSize) * gridSize + 32;
+        int gridZ = Math.floorDiv(cz, gridSize) * gridSize + 32;
+        
+        long seed = (long)gridX * 3123456789L + (long)gridZ * 123456789L + 777;
+        Random r = new Random(seed);
+        
+        if (r.nextFloat() < 0.6f) {
+            int bossType = r.nextInt(3);
+            minicraft.world.WorldCell centerCell = world.getGenerator().generate(gridX * 16 + 8, gridZ * 16 + 8);
+            
+            float dx = (gx + 0.5f) - (gridX * 16 + 8);
+            float dz = (gz + 0.5f) - (gridZ * 16 + 8);
+            float distSq = dx*dx + dz*dz;
+            
+            if (bossType == 0 && centerCell.biome == minicraft.world.Biome.MOUNTAINS && distSq < 40*40) {
+                if (rng.nextFloat() < 0.2f) { spawnAt(EntityType.GOLD_DRAGON, gx+0.5f, gy, gz+0.5f); return true; }
+            } else if (bossType == 1 && centerCell.biome == minicraft.world.Biome.DESERT && distSq < 50*50) {
+                if (rng.nextFloat() < 0.2f) { spawnAt(EntityType.ONYX_DRAGON, gx+0.5f, gy, gz+0.5f); return true; }
+            } else if (bossType == 2 && centerCell.biome == minicraft.world.Biome.SAVANNA && distSq < 30*30) {
+                if (rng.nextFloat() < 0.2f) { spawnAt(EntityType.FIRE_DEMON, gx+0.5f, gy, gz+0.5f); return true; }
+            }
+        }
+        return false;
+    }
+
+    private void handleBlockAuras(minicraft.world.World world, minicraft.entity.ParticleManager pm) {
+        for (Entity e : entities) {
+            if (e instanceof Player) {
+                Player p = (Player) e;
+                // Sample 20 random blocks in a 31x31x11 area around each player
+                for (int i = 0; i < 20; i++) {
+                    int rx = (int)p.position.x + rng.nextInt(31) - 15;
+                    int ry = (int)p.position.y + rng.nextInt(11) - 5;
+                    int rz = (int)p.position.z + rng.nextInt(31) - 15;
+                    if (world.getBlock(rx, ry, rz) == minicraft.world.Block.GOLDEN_CHEST) {
+                        pm.spawnDivineAura(rx + 0.5f, ry, rz + 0.5f);
+                    }
+                }
+            }
+        }
+    }
 }

@@ -81,6 +81,14 @@ public class EntityRenderer {
         entityTextures.put("EAGLE",  "char_eagle");
         entityTextures.put("ZOMBIE", "char_zombie");
         entityTextures.put("SPIDER", "char_spider");
+        entityTextures.put("TROLL",  "dirt");
+        entityTextures.put("FIRE_DRAGON", "onyx_ore");
+        entityTextures.put("GOLD_DRAGON", "gold_block");
+        entityTextures.put("ONYX_DRAGON", "onyx_ore");
+        entityTextures.put("FIRE_DEMON", "char_zombie");
+        entityTextures.put("FIREBALL", "gold_block");
+        entityTextures.put("ONYX_PROJECTILE", "onyx_ore");
+        entityTextures.put("GOLD_FIREBALL", "gold_block");
     }
 
     public void render(EntityManager manager, ShaderProgram shader, TextureRegistry textures, Matrix4f viewMatrix, float sunBrightness, minicraft.Main.CameraMode cameraMode) {
@@ -95,12 +103,39 @@ public class EntityRenderer {
             String typeName = e.type.name();
             Vector4f color = new Vector4f(1, 1, 1, 1);
             if (e.damageFlashTimer > 0) color = new Vector4f(1.0f, 0.1f, 0.1f, 1.0f);
+            
+            if (typeName.equalsIgnoreCase("TROLL")) {
+                color = new Vector4f(0.2f, 0.8f, 0.2f, 1.0f); // Green dirt block
+            } else if (typeName.equalsIgnoreCase("FIRE_DRAGON")) {
+                float pulse = 0.8f + 0.2f * (float)Math.sin(System.currentTimeMillis() / 200.0);
+                color = new Vector4f(1.0f, 0.4f, 0.0f, pulse); // Glowing Magma Orange
+            } else if (typeName.equalsIgnoreCase("GOLD_DRAGON")) {
+                float pulse = 0.8f + 0.2f * (float)Math.sin(System.currentTimeMillis() / 200.0);
+                color = new Vector4f(1.0f, 0.9f, 0.0f, pulse); // Glowing Gold
+            } else if (typeName.equalsIgnoreCase("ONYX_DRAGON")) {
+                float pulse = 0.5f + 0.5f * (float)Math.sin(System.currentTimeMillis() / 400.0);
+                color = new Vector4f(0.3f, 0.0f, 0.5f, pulse); // Dark Purple Pulse
+            } else if (typeName.equalsIgnoreCase("ONYX_PROJECTILE")) {
+                color = new Vector4f(0.2f, 0.0f, 0.3f, 1.0f); // Darker purple
+            } else if (typeName.equalsIgnoreCase("GOLD_FIREBALL")) {
+                color = new Vector4f(1.0f, 0.8f, 0.2f, 1.0f); // Golden yellow
+            } else if (typeName.equalsIgnoreCase("FIRE_DEMON")) {
+                float pulse = 0.5f + 0.5f * (float)Math.sin(System.currentTimeMillis() / 300.0);
+                color = new Vector4f(0.6f + 0.4f * pulse, 0.05f, 0.05f, 1.0f); // Deep red glow
+            } else if (typeName.equalsIgnoreCase("FIREBALL")) {
+                color = new Vector4f(1.0f, 0.7f, 0.0f, 1.0f); // Amber color
+            }
 
             // --- HIGH-FIDELITY 3D NPC OVERRIDE ---
-            if (typeName.equalsIgnoreCase("ZOMBIE")) {
-                Mesh zombieMesh = ModelRegistry.getModel("zombie");
-                if (zombieMesh != null) {
-                    render3DNPC(e, zombieMesh, shader, color);
+            if (typeName.equalsIgnoreCase("ZOMBIE") || typeName.equalsIgnoreCase("FIRE_DEMON") || 
+                typeName.equalsIgnoreCase("ORC") || typeName.equalsIgnoreCase("LEVIATHAN")) {
+                
+                String modelId = typeName.toLowerCase();
+                if (typeName.equalsIgnoreCase("FIRE_DEMON")) modelId = "zombie";
+                
+                Mesh entityMesh = ModelRegistry.getModel(modelId);
+                if (entityMesh != null) {
+                    render3DNPC(e, entityMesh, shader, color);
                     if (e.getHealth() < e.getMaxHealth() || e.damageFlashTimer > 0) renderHealthBar(e, shader, viewMatrix);
                     continue;
                 }
@@ -146,8 +181,8 @@ public class EntityRenderer {
             TextureRegion region = textures.get(texName);
             cubeMesh.render(region != null ? region.getTexture() : null);
 
-            // Render Health Bar for damaged entities
-            if (e.getHealth() < e.getMaxHealth() || e.isDead()) {
+            // Render Health Bar for monsters and damaged entities
+            if (e.getType().getCategory() == minicraft.entity.EntityType.Category.MONSTER || e.getHealth() < e.getMaxHealth()) {
                 renderHealthBar(e, shader, viewMatrix);
             }
 
@@ -159,12 +194,16 @@ public class EntityRenderer {
     }
 
     private void render3DNPC(Entity e, Mesh mesh, ShaderProgram shader, Vector4f color) {
+        float scale = 0.8f;
+        if (e.type == minicraft.entity.EntityType.LEVIATHAN) scale = 3.5f;
+        if (e.type == minicraft.entity.EntityType.ORC) scale = 1.4f;
+
         // High-fidelity transform for humanoid models
         Matrix4f model = new Matrix4f()
             .identity()
             .translate(e.position.x, e.position.y, e.position.z)
             .rotateY((float) Math.toRadians(-e.yaw + 180)) // Compressing Blender vs Engine heading
-            .scale(0.8f, 0.8f, 0.8f); // High-fidelity scale (slightly taller than cube)
+            .scale(scale, scale, scale); // High-fidelity scale
 
         shader.setUniform("colorTint", color);
         shader.setUniform("modelMatrix", model);
@@ -274,8 +313,19 @@ public class EntityRenderer {
         shader.setUniform("modelMatrix", new Matrix4f(model).scale(0.45f, 0.04f, 1.0f));
         cubeMesh.render(null);
 
-        // 4. HEALTH FILL (Ruby to Emerald)
-        Vector4f hColor = (healthRatio > 0.45f) ? new Vector4f(0.3f, 0.9f, 0.3f, 1.0f) : new Vector4f(0.95f, 0.15f, 0.15f, 1.0f);
+        // 4. HEALTH FILL
+        Vector4f hColor;
+        String typeName = e.getType().name();
+        
+        if (typeName.equalsIgnoreCase("ONYX_DRAGON")) {
+            hColor = new Vector4f(0.1f, 0.0f, 0.2f, 1.0f); // Deep Black/Violet
+        } else if (typeName.equalsIgnoreCase("GOLD_DRAGON")) {
+            hColor = new Vector4f(1.0f, 0.85f, 0.1f, 1.0f); // Divine Gold
+        } else {
+            // Standard health color (Ruby to Emerald)
+            hColor = (healthRatio > 0.45f) ? new Vector4f(0.3f, 0.9f, 0.3f, 1.0f) : new Vector4f(0.95f, 0.15f, 0.15f, 1.0f);
+        }
+        
         shader.setUniform("colorTint", hColor);
         
         // Apply scaling and a tiny offset forward (Z) to prevent flickering against bg

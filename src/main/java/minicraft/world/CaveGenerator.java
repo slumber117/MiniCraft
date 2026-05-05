@@ -42,15 +42,18 @@ public class CaveGenerator {
         float depthModifier = 1.0f - (worldY / surfaceY);
 
         // ==========================================
-        // TYPE 1: Spaghetti Caves (Winding Tunnels)
+        // TYPE 1: Mineshaft-Style Tunnels
         // ==========================================
-        double tNoiseX = (worldX + tunnelOffset) * 0.015;
-        double tNoiseY = worldY * 0.007;  // Stretched vertically: tunnels descend smoothly
-        double tNoiseZ = (worldZ + tunnelOffset) * 0.015;
+        // Lower noise multipliers mean the noise changes much slower, creating 
+        // extremely long, continuous stretches of tunnels instead of fragmented pockets.
+        double tNoiseX = (worldX + tunnelOffset) * 0.006;
+        double tNoiseY = worldY * 0.008;  // Moderate vertical variation for smooth descents
+        double tNoiseZ = (worldZ + tunnelOffset) * 0.006;
         
-        double tunnelDensity = Math.abs(noiseGen.fractalNoise(tNoiseX, tNoiseY, tNoiseZ, 2, 0.5));
+        double tunnelDensity = Math.abs(noiseGen.fractalNoise(tNoiseX, tNoiseY, tNoiseZ, 3, 0.4));
         
-        float tunnelThreshold = 0.012f + (0.002f * depthModifier); // Subtle depth scaling only
+        // Wider threshold ensures tunnels are traversable and don't pinch off easily
+        float tunnelThreshold = 0.022f + (0.01f * depthModifier); 
         if (tunnelDensity < tunnelThreshold) {
             return CaveType.TUNNEL;
         }

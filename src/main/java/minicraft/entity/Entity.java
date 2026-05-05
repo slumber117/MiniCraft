@@ -30,6 +30,11 @@ public abstract class Entity implements minicraft.world.IWeatherEntity {
 
     // ── State ─────────────────────────────────────────────────────────────
     public EntityState state = EntityState.IDLE;
+    public float radiationTimer = 0f;
+    
+    public void applyRadiation(float duration) {
+        this.radiationTimer = Math.max(this.radiationTimer, duration);
+    }
 
     // ── Counter ───────────────────────────────────────────────────────────
     private static int idCounter = 0;
@@ -50,11 +55,19 @@ public abstract class Entity implements minicraft.world.IWeatherEntity {
     /** Called once per game tick (~20 times/sec). Override to implement AI. */
     public void tick(EntityManager manager, minicraft.world.World world, ParticleManager particleManager, float dt) {
         if (damageFlashTimer > 0) damageFlashTimer -= dt;
+        if (radiationTimer > 0) {
+            radiationTimer -= dt;
+            health -= 15.0f * dt; // 15 Damage per second DoT
+            if (health <= 0 && !dead) {
+                health = 0;
+                dead = true;
+            }
+        }
     }
 
     // ── Update helpers ────────────────────────────────────────────────────
 
-    public void onDeath(EntityManager manager) {
+    public void onDeath(EntityManager manager, minicraft.world.World world) {
         // Override to implement drops, etc.
     }
 
@@ -67,8 +80,8 @@ public abstract class Entity implements minicraft.world.IWeatherEntity {
 
         // Test X
         float nextX = position.x + velocity.x * dt;
-        if (!world.getBlock((int)Math.floor(nextX), (int)Math.floor(position.y), (int)Math.floor(position.z)).solid &&
-            !world.getBlock((int)Math.floor(nextX), (int)Math.floor(position.y + 1f), (int)Math.floor(position.z)).solid) {
+        if (!isSolid(world, (int)Math.floor(nextX), (int)Math.floor(position.y), (int)Math.floor(position.z)) &&
+            !isSolid(world, (int)Math.floor(nextX), (int)Math.floor(position.y + 1f), (int)Math.floor(position.z))) {
             position.x = nextX;
         } else {
             velocity.x = 0;
@@ -76,8 +89,8 @@ public abstract class Entity implements minicraft.world.IWeatherEntity {
 
         // Test Z
         float nextZ = position.z + velocity.z * dt;
-        if (!world.getBlock((int)Math.floor(position.x), (int)Math.floor(position.y), (int)Math.floor(nextZ)).solid &&
-            !world.getBlock((int)Math.floor(position.x), (int)Math.floor(position.y + 1f), (int)Math.floor(nextZ)).solid) {
+        if (!isSolid(world, (int)Math.floor(position.x), (int)Math.floor(position.y), (int)Math.floor(nextZ)) &&
+            !isSolid(world, (int)Math.floor(position.x), (int)Math.floor(position.y + 1f), (int)Math.floor(nextZ))) {
             position.z = nextZ;
         } else {
             velocity.z = 0;
@@ -87,7 +100,7 @@ public abstract class Entity implements minicraft.world.IWeatherEntity {
         float nextY = position.y + velocity.y * dt;
         if (velocity.y <= 0) {
             // Check floor
-            if (!world.getBlock((int)Math.floor(position.x), (int)Math.floor(nextY), (int)Math.floor(position.z)).solid) {
+            if (!isSolid(world, (int)Math.floor(position.x), (int)Math.floor(nextY), (int)Math.floor(position.z))) {
                 position.y = nextY;
             } else {
                 position.y = (float) Math.floor(position.y); // Snap to ground
@@ -95,7 +108,7 @@ public abstract class Entity implements minicraft.world.IWeatherEntity {
             }
         } else {
             // Check ceiling
-            if (!world.getBlock((int)Math.floor(position.x), (int)Math.floor(nextY + height), (int)Math.floor(position.z)).solid) {
+            if (!isSolid(world, (int)Math.floor(position.x), (int)Math.floor(nextY + height), (int)Math.floor(position.z))) {
                 position.y = nextY;
             } else {
                 velocity.y = 0;
@@ -105,6 +118,17 @@ public abstract class Entity implements minicraft.world.IWeatherEntity {
         // Friction
         velocity.x *= 0.85f;
         velocity.z *= 0.85f;
+    }
+
+    protected boolean isSolid(minicraft.world.World world, int x, int y, int z) {
+        minicraft.world.Block b = world.getBlock(x, y, z);
+        if (b == minicraft.world.Block.BOSS_GATE) {
+            if (this instanceof Player) {
+                return ((Player)this).level < 25;
+            }
+            return true; // Mobs can't pass
+        }
+        return b.solid;
     }
 
     // ── Health ────────────────────────────────────────────────────────────

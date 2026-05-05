@@ -139,6 +139,9 @@ public class Main {
     private static final float MOUSE_SENSITIVITY = 0.15f;
     private double lastMouseX, lastMouseY;
     private boolean firstMouse = true;
+    public float mouseX, mouseY;
+    public float scrollDelta = 0;
+    private boolean[] keys = new boolean[65536];
     private boolean prevMouseLeftDown = false;
     private boolean prevMouseRightDown = false;
 
@@ -260,7 +263,7 @@ public class Main {
                         glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                     } else {
                         glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                        firstMouse = true;
+                        // firstMouse = true;
                     }
                 }
                 if (key == GLFW_KEY_E || key == GLFW_KEY_I) {
@@ -270,7 +273,7 @@ public class Main {
                         glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                     } else {
                         glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                        firstMouse = true;
+                        // firstMouse = true;
                     }
                 }
                 if (key == GLFW_KEY_ESCAPE) {
@@ -310,7 +313,11 @@ public class Main {
 
         // ── Cursor callback ───────────────────────────────────────────────
         glfwSetCursorPosCallback(window, (win, xpos, ypos) -> {
-            if (!inventoryOpen && !craftingOpen && !shipConsoleOpen && !chestOpen && !furnaceOpen && !cookerOpen) {
+            mouseX = (float) xpos;
+            mouseY = (float) ypos;
+            
+            if (!inventoryOpen && !craftingOpen && !shipConsoleOpen && !chestOpen && !furnaceOpen && !cookerOpen && !blacksmithOpen) {
+                // If first mouse, just update last positions to avoid jump
                 if (firstMouse) {
                     lastMouseX = xpos;
                     lastMouseY = ypos;
@@ -320,41 +327,13 @@ public class Main {
                 double dy = lastMouseY - ypos;
                 lastMouseX = xpos;
                 lastMouseY = ypos;
-                player.handleMouseInput((float) dx * MOUSE_SENSITIVITY,
-                        (float) dy * MOUSE_SENSITIVITY);
+                player.handleMouseInput((float) dx * MOUSE_SENSITIVITY, (float) dy * MOUSE_SENSITIVITY);
             }
         });
 
         // ── Unified Scroll Callback ───────────────────────────────────────
-        glfwSetScrollCallback(window, (win, xoff, yoff) -> {
-            if (inventoryOpen) {
-                // Scroll the inventory grid (30px per notch)
-                inventoryScroll -= (int) (yoff * 30);
-                // Clamp: 9 rows total, 3 rows visible. Each row is ~66px.
-                // Max scroll is (9-3) * 66 = 396
-                inventoryScroll = Math.max(0, Math.min(inventoryScroll, 396));
-            } else if (craftingOpen) {
-                List<Recipe> filtered = new ArrayList<>();
-                for (Recipe r : craftingManager.getRecipes())
-                    if (r.getCategory() == activeCategory)
-                        filtered.add(r);
-                if (filtered.isEmpty()) return;
-
-                if (yoff > 0) recipeScrollOffset -= 45;
-                else if (yoff < 0) recipeScrollOffset += 45;
-
-                float totalH = (float) Math.ceil(filtered.size() / 7f) * 64f; // 64 = ICON_SIZE + ICON_GAP
-                float gridAreaH = 540f - 90f - 20f; // MENU_H - GRID_OFF_Y - 20
-                recipeScrollOffset = Math.max(0, (int)Math.min(recipeScrollOffset, totalH - gridAreaH));
-            } else if (blacksmithOpen) {
-                // Same as crafting scroll
-                if (yoff > 0) recipeScrollOffset -= 45;
-                else if (yoff < 0) recipeScrollOffset += 45;
-                recipeScrollOffset = Math.max(0, recipeScrollOffset); 
-            } else {
-                // Default: Change hotbar selection
-                player.inventory.changeSelection((int) -yoff);
-            }
+        glfwSetScrollCallback(window, (w, x, y) -> {
+            scrollDelta = (float) y;
         });
 
         // ── Framebuffer resize ────────────────────────────────────────────
@@ -758,7 +737,6 @@ public class Main {
 
             // ── 1. Input ──────────────────────────────────────────────────
             updateInput(dt);
-
             // ── 2. Fixed-timestep simulation tick ─────────────────────────
             gameLoop.update(dt);
 
@@ -998,6 +976,7 @@ public class Main {
 
             shaderProgram.unbind();
             glfwSwapBuffers(window);
+            scrollDelta = 0;
             glfwPollEvents();
         }
     }

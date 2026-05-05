@@ -41,12 +41,12 @@ public enum GemType {
      * in the deep zone approaching magma-chamber territory.
      * Named after Tanzania where the only known deposit exists.
      */
-    TANZANITE(0.72f, 0.88f, 12, "Tanzanite"),
+    TANZANITE(0.72f, 0.88f, 15, "Tanzanite"),
 
     // ── High-Tier Legendary Gems ───────────────────────────────────────────
-    AGATE(0.40f, 0.60f, 35, "Agate"),
-    GARNET(0.45f, 0.65f, 30, "Garnet"),
-    TOURMALINE(0.50f, 0.70f, 25, "Tourmaline"),
+    AGATE(0.40f, 0.60f, 55, "Agate"),
+    GARNET(0.45f, 0.65f, 90, "Garnet"),
+    TOURMALINE(0.50f, 0.70f, 50, "Tourmaline"),
     OPAL(0.55f, 0.75f, 20, "Opal"),
     ALEXANDRITE(0.65f, 0.80f, 15, "Alexandrite"),
     ONYX(0.75f, 0.90f, 7, "Onyx"), // Stronger than Adamantium

@@ -53,6 +53,18 @@ public class ParticleManager {
         particles.add(p);
     }
 
+    public void spawnDivineAura(float x, float y, float z) {
+        Particle p = new Particle();
+        // Spawn randomly around the base and rise
+        p.pos = new Vector3f(x + (rand.nextFloat() - 0.5f) * 1.2f, y + rand.nextFloat() * 0.8f, z + (rand.nextFloat() - 0.5f) * 1.2f);
+        p.vel = new Vector3f(0, 0.2f + rand.nextFloat() * 0.4f, 0);
+        p.maxLife = 1.5f + rand.nextFloat() * 1.0f;
+        p.life = p.maxLife;
+        p.scale = 0.1f + rand.nextFloat() * 0.1f;
+        p.color = new Vector4f(1.0f, 0.85f, 0.1f, 0.7f); // Divine Gold
+        particles.add(p);
+    }
+
     public void spawnExplosion(float x, float y, float z, float intensity) {
         int count = (int) (20 * intensity);
         for (int i = 0; i < count; i++) {

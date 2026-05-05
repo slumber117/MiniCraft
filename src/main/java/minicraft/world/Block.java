@@ -71,7 +71,7 @@ public enum Block {
     AMETHYST_ORE(true, 4, 12.0f, 12.0f, "amethyst_ore"),
     JADE_ORE(true, 4, 10.0f, 10.0f, "jade_ore"),
     ONYX_ORE(true, 10, 120.0f, 150.0f, "onyx_ore"),
-    GARNET_ORE(true, 5, 25.0f, 20.0f, "garnet_ore"),
+    GARNET_ORE(true, 8, 90.0f, 120.0f, "garnet_ore"),
     TOURMALINE_ORE(true, 5, 25.0f, 20.0f, "tourmaline_ore"),
     AGATE_ORE(true, 5, 20.0f, 15.0f, "agate_ore"),
     PAINITE_ORE(true, 9, 80.0f, 100.0f, "painite_ore"), // High-fidelity deep red crystalline ore
@@ -115,6 +115,12 @@ public enum Block {
     CERIUM_ORE(true, 27, 500.0f, 1800.0f, "cerium_ore"),
     LANTHANUM_ORE(true, 28, 520.0f, 1900.0f, "lanthanum_ore"),
     PROMETHIUM_ORE(true, 30, 600.0f, 2500.0f, "promethium_ore"),
+    
+    // Arena Blocks
+    BEDROCK_WALL(true, 0, 999999f, 999999f, "stone"), // Unbreakable
+    BOSS_GATE(true, 0, 999999f, 999999f, "iron_block"), // Only passable if Level 25+
+    GOLD_BLOCK(true, 0, 50.0f, 100.0f, "gold_block"),
+    ONYX_BLOCK(true, 0, 500.0f, 1000.0f, "onyx_ore"),
 
     // Ores dropped from bosses
     DRAGON_SCALE_ORE(false, 1, 3, 100.0f, "dragon_scale_ore"),
@@ -128,7 +134,9 @@ public enum Block {
             new minicraft.world.behavior.FurnaceBlock("INDUSTRIAL SMELTER", "FURNACE")),
     ALLOY_FORGE(true, 0, 4.0f, 15.0f, "alloy_forge", Block.MeshType.CUBE,
             new minicraft.world.behavior.FurnaceBlock("FUSION FORGE", "ALLOY_FORGE")),
-    CHEST(true, 0, 2.5f, 5.0f, "chest", Block.MeshType.CUBE, new minicraft.world.behavior.ChestBlock()),
+    CHEST(true, 0, 50.0f, 15.0f, "boss_chest_texture", Block.MeshType.CUBE, new minicraft.world.behavior.ChestBlock()),
+    GOLDEN_CHEST(true, 0, 50.0f, 15.0f, "golden_boss_chest_texture", Block.MeshType.CUBE, new minicraft.world.behavior.ChestBlock()),
+
 
     // ── Vegetation & Undersea ─────────────────────────────────────────────
     TALL_GRASS(false, 0, 0f, 0f, "tall_grass", MeshType.CROSS),

@@ -95,11 +95,27 @@ public class ModelRegistry {
             Mesh zombie = OBJLoader.loadModel("/models/humanoid.obj", zombieTexture);
             models.put("zombie", zombie);
 
-            // 9. Load the player model (Humanoid mesh)
+            // 10. Leviathan (Sea Monster)
+            TextureRegion leviRegion = textureRegistry.get("painite_ore");
+            Texture leviTexture = leviRegion != null ? leviRegion.getTexture() : null;
+            Mesh leviathan = OBJLoader.loadModel("/models/leviathan.obj", leviTexture);
+            models.put("leviathan", leviathan);
+
+            // 11. Orc (High-Fidelity)
+            TextureRegion orcRegion = textureRegistry.get("stone");
+            Texture orcTexture = orcRegion != null ? orcRegion.getTexture() : null;
+            Mesh orc = OBJLoader.loadModel("/models/orc.obj", orcTexture);
+            models.put("orc", orc);
+
+            // 9. Load the player model (First-Person Optimized)
             TextureRegion playerRegion = textureRegistry.get("char_farmer");
             Texture playerTexture = playerRegion != null ? playerRegion.getTexture() : null;
-            Mesh playerModel = OBJLoader.loadModel("/models/humanoid.obj", playerTexture);
-            models.put("player_body", playerModel);
+            Mesh playerBody = OBJLoader.loadModel("/models/player_body.obj", playerTexture);
+            models.put("player_body", playerBody);
+
+            // 10. Load the full character model (For Inventory UI)
+            Mesh playerFull = OBJLoader.loadModel("/models/humanoid.obj", playerTexture);
+            models.put("character_full", playerFull);
 
             // 10. Load the player's custom Stalwart model
             // This is a 54MB high-fidelity asset!

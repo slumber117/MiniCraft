@@ -300,6 +300,16 @@ public class Player extends Entity {
             if (dot > cos45) {
                 float finalDamage = baseDmg;
                 
+                // --- Radiation Blade Special Logic ---
+                if (held != null && held.getDisplayName().equals("Radiation Blade")) {
+                    if (e.getType() == EntityType.TROLL) {
+                        e.applyRadiation(15f); // DoT damage
+                        finalDamage = e.getMaxHealth() * 0.40f; 
+                    } else if (e.getMaxHealth() <= 50f) { // Spiders, Zombies, etc.
+                        finalDamage = e.getHealth() + 1000f; // Vaporize
+                    }
+                }
+                
                 // --- Specialized Logic ---
                 if (percentDmg > 0) {
                     finalDamage = e.getHealth() * percentDmg;
@@ -335,6 +345,9 @@ public class Player extends Entity {
         
         // Neodymium 30% Damage Reduction
         if (inventory.hasFullSet("Neodymium")) actualDamage *= 0.70f;
+        
+        // Onyx 35% Damage Reduction (Hardness)
+        if (inventory.hasFullSet("Onyx")) actualDamage *= 0.65f;
 
         super.damage(actualDamage, attacker);
         
@@ -480,11 +493,14 @@ public class Player extends Entity {
         Block b2 = world.getBlock((int)Math.floor(position.x), (int)Math.floor(position.y + 1.2f), (int)Math.floor(position.z));
         
         if (b1 == Block.LAVA || b2 == Block.LAVA) {
-            damage(80f * dt, null); // Instant high-damage vaporization
-            // Kick player back to safety
-            velocity.y = 5.0f; 
+            if (!inventory.hasFullSet("Onyx")) {
+                damage(80f * dt, null); // Instant high-damage vaporization
+                velocity.y = 5.0f; // Kick player back to safety
+            }
         } else if (b1 == Block.MAGMA || b2 == Block.MAGMA) {
-            damage(15f * dt, null); // Heat burn
+            if (!inventory.hasFullSet("Onyx")) {
+                damage(15f * dt, null); // Heat burn
+            }
         }
     }
 
@@ -503,6 +519,9 @@ public class Player extends Entity {
         
         // Neodymium XP Boost (30%)
         if (inventory.hasFullSet("Neodymium")) amount *= 1.30f;
+        
+        // Onyx XP Boost (35%)
+        if (inventory.hasFullSet("Onyx")) amount *= 1.35f;
         
         this.xp += amount;
         while (this.xp >= xpToNextLevel && level < 100) {

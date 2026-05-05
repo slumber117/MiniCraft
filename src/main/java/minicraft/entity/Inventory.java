@@ -27,9 +27,24 @@ public class Inventory {
     private minicraft.item.ArmorItem leggings = null;
     private minicraft.item.ArmorItem boots = null;
 
+    public boolean hasFullSet(String material) {
+        if (helmet == null || chestplate == null || leggings == null || boots == null) return false;
+        return helmet.getDisplayName().contains(material) &&
+               chestplate.getDisplayName().contains(material) &&
+               leggings.getDisplayName().contains(material) &&
+               boots.getDisplayName().contains(material);
+    }
+
+    public ItemStack[] getMainInventory() { return mainInventory; }
+
     public Inventory() {
         for (int i = 0; i < HOTBAR_SIZE; i++) hotbar[i] = null;
         for (int i = 0; i < INV_SIZE; i++) mainInventory[i] = null;
+
+        // Starter Kit
+        hotbar[0] = new ItemStack(new ToolItem("Iron Sword", ToolItem.ToolType.SWORD, 2, 8.0f, "item_sword_iron"), 1);
+        hotbar[1] = new ItemStack(new ToolItem("Iron Pick", ToolItem.ToolType.PICKAXE, 2, 8.0f, "item_pick_iron"), 1);
+        hotbar[8] = new ItemStack(new BossCompassItem(), 1);
     }
 
     public void add(Block block, int count) {
@@ -292,6 +307,9 @@ public class Inventory {
             
             // Painite 20% Speed Boost
             if (hasFullSet("Painite")) total *= 1.20f;
+            
+            // Onyx 25% Speed Boost
+            if (hasFullSet("Onyx")) total *= 1.25f;
         }
         return Math.max(0.1f, total);
     }

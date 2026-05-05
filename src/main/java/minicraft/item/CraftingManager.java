@@ -127,9 +127,6 @@ public class CraftingManager {
         addArmorSet("Agate", "AGATE_ORE", 0.20f, 3, 0.5f, 1.05f, 0.3f, null);
         addToolSet("Agate", "AGATE_ORE", 4, 14.0f);
 
-        addArmorSet("Garnet", "GARNET_ORE", 0.22f, 3, 1.0f, 1.0f, 0.4f, null);
-        addToolSet("Garnet", "GARNET_ORE", 4, 15.0f);
-
         addArmorSet("Tourmaline", "TOURMALINE_ORE", 0.22f, 3, 0.5f, 1.15f, 0.4f, null);
         addToolSet("Tourmaline", "TOURMALINE_ORE", 4, 16.0f);
 
@@ -139,10 +136,10 @@ public class CraftingManager {
         addArmorSet("Alexandrite", "ALEXANDRITE_ORE", 0.26f, 4, 1.5f, 1.1f, 0.4f, null);
         addToolSet("Alexandrite", "ALEXANDRITE_ORE", 7, 20.0f);
 
-        addArmorSet("Onyx", "ONYX_ORE", 0.35f, 5, 3.0f, 0.9f, 0.7f, null); // Heavier than Adamantine
-        addToolSet("Onyx", "ONYX_ORE", 6, 22.0f);
+        // --- 9. RAREST MINERAL TIERS (The Absolute Limit - Tier 8 & 9) ---
+        addArmorSet("Garnet", "GARNET_ORE", 0.50f, 8, 9.0f, 1.2f, 0.9f, null);
+        addToolSet("Garnet", "GARNET_ORE", 8, 55.0f);
 
-        // --- 9. RAREST MINERAL TIERS (The Absolute Limit) ---
         addArmorSet("Painite", "PAINITE_ORE", 0.40f, 6, 5.0f, 1.0f, 10.0f,
                 new minicraft.math.Vector3f(1.5f, 0.15f, 0.1f)); // Shiny Red Glow — brighter than Plutonium
         addToolSet("Painite", "PAINITE_ORE", 9, 30.0f, new minicraft.math.Vector3f(1.5f, 0.15f, 0.1f), 0.25f);
@@ -160,7 +157,11 @@ public class CraftingManager {
                 new minicraft.math.Vector3f(0.1f, 0.1f, 0.5f)); // Cosmic Glow
         addToolSet("Serendibite", "SERENDIBITE_ORE", 8, 60.0f);
 
-        // --- 10. ULTIMATE MITHRIL TIER (Dominus Industry) ---
+        // --- 10. ULTIMATE TIERS (Tier 10 Dominus Industry) ---
+        addArmorSet("Onyx", "ONYX_ORE", 0.85f, 15, 30.0f, 1.7f, 2.5f,
+                new minicraft.math.Vector3f(0.1f, 0.0f, 0.2f)); // Dark Violet Glow
+        addToolSet("Onyx", "ONYX_ORE", 10, 150.0f);
+
         addArmorSet("Mithril", "MITHRIL_ORE", 0.75f, 12, 25.0f, 1.5f, 2.0f,
                 new minicraft.math.Vector3f(0.6f, 0.8f, 1.0f)); // Celestial Blue Glow
         addToolSet("Mithril", "MITHRIL_ORE", 10, 100.0f);
@@ -295,6 +296,14 @@ public class CraftingManager {
         recipes.add(new Recipe("Echo of Regret", Recipe.Category.BLACKSMITH, eorIng,
                 new ToolItem("Echo of Regret", ToolItem.ToolType.SWORD, 15, 100.0f, "item_sword_echo_of_regret", null,
                         1.0f, true, 0.5f),
+                1));
+
+        Map<Item, Integer> radBladeIng = new HashMap<>();
+        radBladeIng.put(new Item("Onyx Sword", null), 1);
+        radBladeIng.put(new Item("Plutonium Sword", null), 1);
+        recipes.add(new Recipe("Radiation Blade", Recipe.Category.BLACKSMITH, radBladeIng,
+                new ToolItem("Radiation Blade", ToolItem.ToolType.SWORD, 10, 120.0f, "item_sword_onyx", null,
+                        0.0f, false, 0.0f),
                 1));
 
     }

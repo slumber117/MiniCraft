@@ -230,11 +230,11 @@ public class InventoryUI {
     }
 
     private void renderPaperDoll(UIRenderer ui, Player player, ShaderProgram shader, float cx, float cy, float scale) {
-        float rotation = (System.currentTimeMillis() % 10000) / 10000f * 360f;
+        float rotation = 160f + (float)Math.sin(System.currentTimeMillis() / 1000.0) * 20f;
         float pulse = (float)Math.sin(System.currentTimeMillis() / 400.0) * 0.02f;
         
         Matrix4f baseModelMatrix = new Matrix4f().identity()
-                .translate(cx, cy, 50f) 
+                .translate(cx, cy, 100f) 
                 .scale(scale * (1f + pulse), -scale * (1f + pulse), scale)
                 .rotateY((float) Math.toRadians(rotation));
         
@@ -243,9 +243,9 @@ public class InventoryUI {
         shader.setUniform("sunBrightness", 1.0f);
         shader.setUniform("colorTint", new Vector4f(1f, 1f, 1f, 1f));
         
-        Mesh human = ModelRegistry.getModel("zombie"); 
+        Mesh human = ModelRegistry.getModel("character_full"); 
         if (human != null) {
-            human.render(ui.getTextures().get("zombie_hd").getTexture()); 
+            human.render(ui.getTextures().get("char_farmer").getTexture()); 
 
             ArmorItem[] pieces = {
                 player.inventory.getHelmet(), 

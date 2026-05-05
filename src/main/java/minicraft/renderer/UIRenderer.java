@@ -353,6 +353,30 @@ public class UIRenderer {
         }
     }
 
+    public void drawArrow(ShaderProgram shader, float cx, float cy, float radius, float rotation, Vector4f color) {
+        Matrix4f base = new Matrix4f()
+            .identity()
+            .translate(cx, cy, 0)
+            .rotateZ(rotation);
+            
+        shader.setUniform("colorTint", color);
+        
+        // Stem
+        Matrix4f stem = new Matrix4f(base).scale(4, radius * 0.8f, 1).translate(-0.5f, -0.5f, 0);
+        shader.setUniform("modelMatrix", stem);
+        quadMesh.render(whiteTexture);
+        
+        // Tip (Triangle approximation with 2 angled bars)
+        float tipY = radius * 0.3f;
+        Matrix4f headL = new Matrix4f(base).translate(0, tipY, 0).rotateZ((float)Math.toRadians(45)).scale(4, radius*0.5f, 1).translate(-0.5f, -1.0f, 0);
+        shader.setUniform("modelMatrix", headL);
+        quadMesh.render(whiteTexture);
+
+        Matrix4f headR = new Matrix4f(base).translate(0, tipY, 0).rotateZ((float)Math.toRadians(-45)).scale(4, radius*0.5f, 1).translate(-0.5f, -1.0f, 0);
+        shader.setUniform("modelMatrix", headR);
+        quadMesh.render(whiteTexture);
+    }
+
     public void renderLoadingScreen(ShaderProgram shader, int width, int height, Main main) {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
