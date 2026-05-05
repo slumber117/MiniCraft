@@ -77,6 +77,28 @@ public class Main {
     private ShaderProgram uiShader;
     private boolean rtgiEnabled = true;
 
+    // ── FSR 1.0 Subsystem ────────────────────────────────────────────────
+    public enum FSRMode {
+        OFF("FSR Off", 1.0f),
+        ULTRA_QUALITY("FSR Ultra Quality", 0.77f),
+        QUALITY("FSR Quality", 0.67f),
+        BALANCED("FSR Balanced", 0.59f),
+        PERFORMANCE("FSR Performance", 0.50f);
+
+        public final String label;
+        public final float scale;
+        FSRMode(String label, float scale) { this.label = label; this.scale = scale; }
+    }
+    private FSRMode fsrMode = FSRMode.QUALITY; // Default: Quality (67% render scale)
+    private int renderW, renderH;              // Internal render resolution
+    private ShaderProgram fsrEasuShader;
+    private ShaderProgram fsrRcasShader;
+    private ShaderProgram blitShader;
+    private int fsrOutputTexture;              // Display-resolution output
+    private int compositeFBO;                  // FBO for composite → render-res texture
+    private int compositeTexture;              // Render-resolution composite result
+    private boolean prevF6 = false;
+
     // ── World ─────────────────────────────────────────────────────────────
     private World world;
     private EntityManager entityManager;
@@ -464,21 +486,24 @@ public class Main {
             }
         }, "WorldGenThread").start();
 
-        // ── Chunk Worker Thread — processes the generation queue in background ──
-        new Thread(() -> {
-            while (!glfwWindowShouldClose(window)) {
-                long[] pos = world.getGenerationQueue().poll();
-                if (pos != null) {
-                    world.processGeneration((int) pos[0], (int) pos[1]);
-                } else {
-                    try {
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                        break;
+        // ── Chunk Worker Threads — 2 parallel workers for faster generation ──
+        for (int t = 0; t < 2; t++) {
+            final int threadId = t;
+            new Thread(() -> {
+                while (!glfwWindowShouldClose(window)) {
+                    long[] pos = world.getGenerationQueue().poll();
+                    if (pos != null) {
+                        world.processGeneration((int) pos[0], (int) pos[1]);
+                    } else {
+                        try {
+                            Thread.sleep(10);
+                        } catch (InterruptedException e) {
+                            break;
+                        }
                     }
                 }
-            }
-        }, "ChunkWorkerThread").start();
+            }, "ChunkWorkerThread-" + threadId).start();
+        }
 
         // ── Register fixed-tick systems ───────────────────────────────────
         gameLoop.addTickable(dt -> {
@@ -508,8 +533,7 @@ public class Main {
         shaderProgram.link();
         for (String u : new String[] {
                 "projectionMatrix", "viewMatrix", "modelMatrix", "texture_sampler",
-                "colorTint", "torchPos", "torchStrength", "useLighting",
-                "sunBrightness", "weatherIntensity", "weatherType" }) {
+                "colorTint", "useLighting" }) {
             shaderProgram.createUniform(u);
         }
 
@@ -522,8 +546,6 @@ public class Main {
         uiShader.createUniform("modelMatrix");
         uiShader.createUniform("texture_sampler");
         uiShader.createUniform("colorTint");
-        uiShader.createUniform("useTexture");
-        uiShader.createUniform("useLighting");
 
         uiRenderer = new UIRenderer(textures);
         entityRenderer = new EntityRenderer(textures);
@@ -542,7 +564,7 @@ public class Main {
             throw new RuntimeException("RTGI shader invalid: " + glGetProgramInfoLog(rtgiShader.getProgramId()));
 
         for (String u : new String[] { "texAlbedo", "texNormal", "texDepth", "projectionMatrix", "viewMatrix",
-                "invProjection", "invView", "cameraPos", "uTime" })
+                "invProjection", "invView", "uTime" })
             rtgiShader.createUniform(u);
 
         compositeShader = new ShaderProgram();
@@ -555,6 +577,8 @@ public class Main {
         compositeShader.createUniform("texDepth");
         compositeShader.createUniform("torchPos");
         compositeShader.createUniform("torchStrength");
+        compositeShader.createUniform("torchColor");
+        compositeShader.createUniform("playerY");
         compositeShader.createUniform("invProjection");
         compositeShader.createUniform("invView");
         compositeShader.createUniform("rtgiEnabled");
@@ -564,18 +588,51 @@ public class Main {
             System.err.println("COMPOSITE SHADER INVALID: " + glGetProgramInfoLog(compositeShader.getProgramId()));
         }
 
-        // Create GI Storage Texture
+        // ── FSR 1.0 Pipeline ──────────────────────────────────────────────
+        // EASU (Edge-Adaptive Spatial Upsampling)
+        fsrEasuShader = new ShaderProgram();
+        fsrEasuShader.createComputeShader(Utils.loadResource("/shaders/fsr_easu.glsl"));
+        fsrEasuShader.link();
+        fsrEasuShader.createUniform("inputSize");
+        fsrEasuShader.createUniform("outputSize");
+
+        // RCAS (Robust Contrast-Adaptive Sharpening)
+        fsrRcasShader = new ShaderProgram();
+        fsrRcasShader.createComputeShader(Utils.loadResource("/shaders/fsr_rcas.glsl"));
+        fsrRcasShader.link();
+        fsrRcasShader.createUniform("sharpness");
+
+        // Blit shader (final output)
+        blitShader = new ShaderProgram();
+        blitShader.createVertexShader(Utils.loadResource("/shaders/post_vertex.glsl"));
+        blitShader.createFragmentShader(Utils.loadResource("/shaders/blit.glsl"));
+        blitShader.link();
+        blitShader.createUniform("texInput");
+
+        // Calculate internal render resolution
+        renderW = Math.max(1, (int)(framebufferW * fsrMode.scale));
+        renderH = Math.max(1, (int)(framebufferH * fsrMode.scale));
+        System.out.println("FSR: " + fsrMode.label + " — Render: " + renderW + "x" + renderH + " → Display: " + framebufferW + "x" + framebufferH);
+
+        // Re-create G-buffer at render resolution (already created above, resize it)
+        gtBuffer.cleanup();
+        gtBuffer = new GTBuffer(renderW, renderH);
+
+        // Create GI Storage Texture at render resolution
         giTexture = glGenTextures();
         glBindTexture(GL_TEXTURE_2D, giTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, framebufferW, framebufferH, 0, GL_RGBA, GL_FLOAT, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, renderW, renderH, 0, GL_RGBA, GL_FLOAT, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glBindTexture(GL_TEXTURE_2D, 0);
         float[] clearColor = { 0f, 0f, 0f, 1f };
-        // Ensure GL44 is imported if glClearTexImage is to be used,
-        // using simple clear fallback if not explicitly available.
-        // For now, we manually bind and clear to be safe across environments.
         org.lwjgl.opengl.GL44.glClearTexImage(giTexture, 0, GL_RGBA, GL_FLOAT, clearColor);
+
+        // Create Composite FBO (renders composite at render resolution)
+        initCompositeFBO();
+
+        // Create FSR Output Texture at display resolution
+        initFSROutputTexture();
 
         // Screen Quad for Composite
         float[] quadPos = { -1, 1, 0, -1, -1, 0, 1, -1, 0, 1, 1, 0 };
@@ -584,6 +641,66 @@ public class Main {
         screenQuad = new Mesh(quadPos, quadUV, quadIdx, null);
 
         ModelRegistry.init(textures);
+    }
+
+    /** Creates the intermediate FBO where composite renders at internal resolution. */
+    private void initCompositeFBO() {
+        compositeFBO = glGenFramebuffers();
+        glBindFramebuffer(GL_FRAMEBUFFER, compositeFBO);
+
+        compositeTexture = glGenTextures();
+        glBindTexture(GL_TEXTURE_2D, compositeTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, renderW, renderH, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // CLAMP_TO_EDGE
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, compositeTexture, 0);
+
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            System.err.println("FSR: Composite FBO incomplete!");
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    /** Creates the FSR output texture at full display resolution. */
+    private void initFSROutputTexture() {
+        fsrOutputTexture = glGenTextures();
+        glBindTexture(GL_TEXTURE_2D, fsrOutputTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, framebufferW, framebufferH, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    /** Rebuilds all resolution-dependent FSR resources after mode change or window resize. */
+    private void rebuildFSRPipeline() {
+        renderW = Math.max(1, (int)(framebufferW * fsrMode.scale));
+        renderH = Math.max(1, (int)(framebufferH * fsrMode.scale));
+        System.out.println("FSR: " + fsrMode.label + " — Render: " + renderW + "x" + renderH + " → Display: " + framebufferW + "x" + framebufferH);
+
+        // Rebuild G-buffer at new render resolution
+        gtBuffer.cleanup();
+        gtBuffer = new GTBuffer(renderW, renderH);
+
+        // Rebuild GI texture at render resolution
+        glDeleteTextures(giTexture);
+        giTexture = glGenTextures();
+        glBindTexture(GL_TEXTURE_2D, giTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, renderW, renderH, 0, GL_RGBA, GL_FLOAT, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        float[] clr = { 0, 0, 0, 1 };
+        org.lwjgl.opengl.GL44.glClearTexImage(giTexture, 0, GL_RGBA, GL_FLOAT, clr);
+
+        // Rebuild composite FBO at render resolution
+        glDeleteTextures(compositeTexture);
+        glDeleteFramebuffers(compositeFBO);
+        initCompositeFBO();
+
+        // Rebuild FSR output at display resolution
+        glDeleteTextures(fsrOutputTexture);
+        initFSROutputTexture();
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -629,19 +746,7 @@ public class Main {
                     framebufferH = currentH;
                     System.out.println("Resizing rendering pipeline: " + framebufferW + "x" + framebufferH);
                     try {
-                        gtBuffer.cleanup();
-                        gtBuffer = new minicraft.renderer.GTBuffer(framebufferW, framebufferH);
-
-                        // Re-create GI Storage Texture
-                        glDeleteTextures(giTexture);
-                        giTexture = glGenTextures();
-                        glBindTexture(GL_TEXTURE_2D, giTexture);
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, framebufferW, framebufferH, 0, GL_RGBA, GL_FLOAT, 0);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-                        float[] clr = { 0, 0, 0, 1 };
-                        org.lwjgl.opengl.GL44.glClearTexImage(giTexture, 0, GL_RGBA, GL_FLOAT, clr);
+                        rebuildFSRPipeline();
                         resizeCounter = 0;
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -707,7 +812,8 @@ public class Main {
             glDisable(GL_BLEND);
 
             shaderProgram.bind();
-            float aspect = (float) framebufferW / Math.max(1, framebufferH);
+            // Use render resolution aspect ratio for correct projection
+            float aspect = (float) renderW / Math.max(1, renderH);
 
             projectionMatrix.perspective(FOV, aspect, Z_NEAR, Z_FAR);
             viewMatrix.set(camera.getViewMatrix());
@@ -718,11 +824,6 @@ public class Main {
             shaderProgram.setUniform("modelMatrix", modelMatrix);
             shaderProgram.setUniform("texture_sampler", 0);
             shaderProgram.setUniform("colorTint", whiteTint);
-            shaderProgram.setUniform("sunBrightness", world.getWeatherManager().getSunBrightness());
-
-            minicraft.math.Vector3f totalGlow = player.inventory.getTotalGlow();
-            shaderProgram.setUniform("glowColor", totalGlow);
-            shaderProgram.setUniform("glowStrength", (totalGlow.x + totalGlow.y + totalGlow.z > 0.01f ? 1.0f : 0.0f));
             boolean isUnderwater = world.getBlock(
                     (int) Math.floor(player.position.x),
                     (int) Math.floor(player.position.y + 1.6f),
@@ -772,18 +873,25 @@ public class Main {
             rtgiShader.setUniform("uTime", (float) (System.currentTimeMillis() % 100000) / 1000f);
 
             if (rtgiEnabled) {
-                rtgiShader.dispatchCompute((framebufferW + 15) / 16, (framebufferH + 15) / 16, 1);
+                rtgiShader.dispatchCompute((renderW + 15) / 16, (renderH + 15) / 16, 1);
                 glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
-                // CLEANUP: Unbind image unit 0
                 glBindImageTexture(0, 0, 0, false, 0, GL_WRITE_ONLY, GL_RGBA16F);
             }
 
             rtgiShader.unbind();
 
-            // ── 8. Render Pass — Final Composite (Full-Screen) ────────────
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glViewport(0, 0, framebufferW, framebufferH);
-            glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Restore black clear
+            // ── 8. Render Pass — Composite → render-res FBO ──────────────
+            boolean fsrActive = (fsrMode != FSRMode.OFF);
+            if (fsrActive) {
+                // Composite renders to the intermediate FBO at render resolution
+                glBindFramebuffer(GL_FRAMEBUFFER, compositeFBO);
+                glViewport(0, 0, renderW, renderH);
+            } else {
+                // No FSR: composite directly to screen
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                glViewport(0, 0, framebufferW, framebufferH);
+            }
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glDisable(GL_DEPTH_TEST);
             glDisable(GL_BLEND);
@@ -804,37 +912,72 @@ public class Main {
             compositeShader.setUniform("texNormal", 2);
             compositeShader.setUniform("texDepth", 3);
             compositeShader.setUniform("torchPos", player.position);
+            compositeShader.setUniform("playerY", player.position.y);
             
             minicraft.math.Vector3f aura = player.getAuraColor();
-            boolean hasTorch = player.inventory.hasTorchEquipped();
+            float torchPower = player.inventory.getTorchPower();
             
-            // Brightness logic: Torch (1.0) > Armor/Aura (0.8) > None (0.0)
-            float torchPower = hasTorch ? 1.0f : (aura != null ? 0.8f : 0.0f);
+            if (torchPower < 0.01f && aura != null) {
+                torchPower = 0.4f;
+            }
             compositeShader.setUniform("torchStrength", torchPower);
             
             if (aura != null) {
-                // If holding a torch AND having an aura, blend them or prioritize aura (Gold is radiant)
                 compositeShader.setUniform("torchColor", aura);
             } else {
-                compositeShader.setUniform("torchColor", new minicraft.math.Vector3f(1.0f, 0.8f, 0.4f)); // Warm Torch Default
+                compositeShader.setUniform("torchColor", new minicraft.math.Vector3f(1.0f, 0.8f, 0.4f));
             }
             compositeShader.setUniform("invProjection", invProj);
             compositeShader.setUniform("invView", invView);
-
             compositeShader.setUniform("rtgiEnabled", rtgiEnabled ? 1 : 0);
 
-            // FIXED: Don't use screenQuad.render() because it unbinds unit 0
             glBindVertexArray(screenQuad.getVaoId());
             glDrawElements(GL_TRIANGLES, screenQuad.getVertexCount(), GL_UNSIGNED_INT, 0);
             glBindVertexArray(0);
-
             compositeShader.unbind();
 
+            // ── 8b. FSR Upscaling Pipeline ────────────────────────────────
+            if (fsrActive) {
+                glBindFramebuffer(GL_FRAMEBUFFER, 0); // Switch to screen
 
-            // ── 9. Overlays (Inventory / UI) ─────────────────────────────
+                // Pass 1: EASU — Upscale from renderW×renderH → framebufferW×framebufferH
+                fsrEasuShader.bind();
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, compositeTexture);
+                glBindImageTexture(0, fsrOutputTexture, 0, false, 0, GL_READ_WRITE, GL_RGBA8);
+                fsrEasuShader.setUniform("inputSize", new minicraft.math.Vector2f(renderW, renderH));
+                fsrEasuShader.setUniform("outputSize", new minicraft.math.Vector2f(framebufferW, framebufferH));
+                fsrEasuShader.dispatchCompute((framebufferW + 15) / 16, (framebufferH + 15) / 16, 1);
+                glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+                fsrEasuShader.unbind();
+
+                // Pass 2: RCAS — Sharpen at display resolution
+                fsrRcasShader.bind();
+                glBindImageTexture(0, fsrOutputTexture, 0, false, 0, GL_READ_WRITE, GL_RGBA8);
+                fsrRcasShader.setUniform("sharpness", 0.2f); // Moderate sharpness
+                fsrRcasShader.dispatchCompute((framebufferW + 15) / 16, (framebufferH + 15) / 16, 1);
+                glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+                glBindImageTexture(0, 0, 0, false, 0, GL_READ_WRITE, GL_RGBA8);
+                fsrRcasShader.unbind();
+
+                // Pass 3: Blit FSR output to screen
+                glViewport(0, 0, framebufferW, framebufferH);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                blitShader.bind();
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, fsrOutputTexture);
+                blitShader.setUniform("texInput", 0);
+                glBindVertexArray(screenQuad.getVaoId());
+                glDrawElements(GL_TRIANGLES, screenQuad.getVertexCount(), GL_UNSIGNED_INT, 0);
+                glBindVertexArray(0);
+                blitShader.unbind();
+            }
+
+            // ── 9. Overlays (Inventory / UI) — always at full resolution ─
             glDisable(GL_DEPTH_TEST);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glViewport(0, 0, framebufferW, framebufferH);
             
             uiShader.bind();
             uiRenderer.render(player, uiShader, currentW, currentH, this);
@@ -1050,6 +1193,18 @@ public class Main {
             System.out.println("Camera Mode: " + cameraMode);
         }
         prevF5 = isF5;
+
+        // F6 — Cycle FSR Mode
+        boolean isF6 = glfwGetKey(window, GLFW_KEY_F6) == GLFW_PRESS;
+        if (isF6 && !prevF6) {
+            FSRMode[] modes = FSRMode.values();
+            int next = (fsrMode.ordinal() + 1) % modes.length;
+            fsrMode = modes[next];
+            rebuildFSRPipeline();
+            setStatusMessage(fsrMode.label + " (" + renderW + "x" + renderH + ")");
+        }
+        prevF6 = isF6;
+
         prevQ = isQ;
 
         if (questLogOpen) {
@@ -1593,15 +1748,8 @@ public class Main {
             if (toolLevel < b.requiredHarvestLevel - 1) {
                 miningProgress = 0f;
             } else {
-                float bonus = 1.0f;
-                if (held instanceof ToolItem) {
-                    ToolItem ti = (ToolItem) held;
-                    if (b == Block.URANIUM_ORE || b == Block.PLUTONIUM_ORE) {
-                        bonus = ti.radioactiveBonus;
-                    }
-                }
                 float armorMiningMod = player.inventory.hasFullSet("Plutonium") ? 1.5f : 1.0f;
-                miningProgress += (dt * finalEfficiency * armorMiningMod * bonus) / b.hardness;
+                miningProgress += (dt * finalEfficiency * armorMiningMod) / b.hardness;
             }
 
             player.miningProgress = miningProgress;
@@ -1828,6 +1976,14 @@ public class Main {
             glDeleteTextures(giTexture);
         if (screenQuad != null)
             screenQuad.cleanup();
+
+        // FSR Cleanup
+        if (fsrEasuShader != null) fsrEasuShader.cleanup();
+        if (fsrRcasShader != null) fsrRcasShader.cleanup();
+        if (blitShader != null) blitShader.cleanup();
+        if (fsrOutputTexture != 0) glDeleteTextures(fsrOutputTexture);
+        if (compositeTexture != 0) glDeleteTextures(compositeTexture);
+        if (compositeFBO != 0) glDeleteFramebuffers(compositeFBO);
 
         glfwFreeCallbacks(window);
         glfwDestroyWindow(window);

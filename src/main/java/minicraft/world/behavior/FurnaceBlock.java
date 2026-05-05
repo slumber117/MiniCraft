@@ -49,7 +49,7 @@ public class FurnaceBlock implements BlockInteraction {
      */
     public static void handleClick(minicraft.entity.ProcessingFacility fac, minicraft.entity.Player player, Main main, float x, float y, int fbW, int fbH) {
         float panelW = 680f, panelH = 580f;
-        float sx = (fbW - panelW) / 2f, sy = (fbH - panelH) / 2f - 80f;
+        float sx = (fbW - panelW) / 2f, sy = (fbH - panelH) / 2f + 10f;
         float cx = sx + panelW / 2f, cy = sy + 180;
         float slotSize = 72f;
 
@@ -64,7 +64,7 @@ public class FurnaceBlock implements BlockInteraction {
             return;
         }
         // Fuel
-        if (x >= cx - 36 && x <= cx - 36 + slotSize && y >= cy + 52 && y <= cy + 52 + slotSize) {
+        if (x >= cx - 36 && x <= cx - 36 + slotSize && y >= cy + 15 && y <= cy + 15 + slotSize) {
             minicraft.item.ItemStack clicked = fac.getSlot(1);
             fac.setSlot(1, player.inventory.getCursorStack());
             player.inventory.setCursorStack(clicked);

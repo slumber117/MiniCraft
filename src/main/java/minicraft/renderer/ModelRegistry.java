@@ -53,6 +53,42 @@ public class ModelRegistry {
             Mesh musPick = OBJLoader.loadModel("/models/pickaxe_gold.obj", musTexture);
             models.put("pickaxe_musgravite", musPick);
 
+            // 8. Painite Pickaxe
+            TextureRegion painiteRegion = textureRegistry.get("item_pick_painite");
+            Texture painiteTexture = painiteRegion != null ? painiteRegion.getTexture() : null;
+            Mesh painitePick = OBJLoader.loadModel("/models/pickaxe_gold.obj", painiteTexture);
+            models.put("pickaxe_painite", painitePick);
+
+            // 9. Uranium Pickaxe
+            TextureRegion uraniumRegion = textureRegistry.get("item_pick_uranium");
+            Texture uraniumTexture = uraniumRegion != null ? uraniumRegion.getTexture() : null;
+            Mesh uraniumPick = OBJLoader.loadModel("/models/pickaxe_gold.obj", uraniumTexture);
+            models.put("pickaxe_uranium", uraniumPick);
+
+            // 10. Praseodymium Pickaxe
+            TextureRegion praseRegion = textureRegistry.get("item_pick_praseodymium");
+            Texture praseTexture = praseRegion != null ? praseRegion.getTexture() : null;
+            Mesh prasePick = OBJLoader.loadModel("/models/pickaxe_gold.obj", praseTexture);
+            models.put("pickaxe_praseodymium", prasePick);
+
+            // 11. Dysprosium Pickaxe
+            TextureRegion dysRegion = textureRegistry.get("item_pick_dysprosium");
+            Texture dysTexture = dysRegion != null ? dysRegion.getTexture() : null;
+            Mesh dysPick = OBJLoader.loadModel("/models/pickaxe_gold.obj", dysTexture);
+            models.put("pickaxe_dysprosium", dysPick);
+
+            // 12. Erbium Pickaxe
+            TextureRegion erbRegion = textureRegistry.get("item_pick_erbium");
+            Texture erbTexture = erbRegion != null ? erbRegion.getTexture() : null;
+            Mesh erbPick = OBJLoader.loadModel("/models/pickaxe_gold.obj", erbTexture);
+            models.put("pickaxe_erbium", erbPick);
+
+            // 13. Lutetium Pickaxe
+            TextureRegion lutRegion = textureRegistry.get("item_pick_lutetium");
+            Texture lutTexture = lutRegion != null ? lutRegion.getTexture() : null;
+            Mesh lutPick = OBJLoader.loadModel("/models/pickaxe_gold.obj", lutTexture);
+            models.put("pickaxe_lutetium", lutPick);
+
             // 8. Load the high-fidelity zombie (Humanoid mesh)
             TextureRegion zombieRegion = textureRegistry.get("zombie_hd");
             Texture zombieTexture = zombieRegion != null ? zombieRegion.getTexture() : null;

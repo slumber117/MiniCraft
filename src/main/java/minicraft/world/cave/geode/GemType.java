@@ -49,7 +49,7 @@ public enum GemType {
     TOURMALINE(0.50f, 0.70f, 25, "Tourmaline"),
     OPAL(0.55f, 0.75f, 20, "Opal"),
     ALEXANDRITE(0.65f, 0.80f, 15, "Alexandrite"),
-    ONYX(0.75f, 0.90f, 10, "Onyx"), // Stronger than Adamantium
+    ONYX(0.75f, 0.90f, 7, "Onyx"), // Stronger than Adamantium
 
     // ── Deepest Rarest Minerals ────────────────────────────────────────────
     PAINITE(0.85f, 0.95f, 5, "Painite"),

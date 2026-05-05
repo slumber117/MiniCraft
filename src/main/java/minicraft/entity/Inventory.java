@@ -348,9 +348,42 @@ public class Inventory {
     }
 
     public boolean hasTorchEquipped() {
-        Item selected = getSelectedItem();
-        if (selected != null && selected.getName().equalsIgnoreCase("TORCH")) return true;
-        if (offhandItem != null && offhandItem.getName().equalsIgnoreCase("TORCH")) return true;
-        return false;
+        return getTorchPower() > 0f;
+    }
+
+    /**
+     * Returns the torch illumination power based on the tier of torch
+     * equipped in either the selected slot or offhand.
+     * Higher-tier torches emit significantly more light.
+     * 
+     * Primitive Torch: 0.3 (barely visible, survival-mode flicker)
+     * Tin Torch:       0.6 (first usable cave torch)
+     * Copper Torch:    0.7
+     * Iron Torch:      0.8
+     * Nickel Torch:    0.85
+     * Gold Torch:      1.0 (full brightness, premium torch)
+     * Uranium Torch:   1.2 (radioactive glow, exceeds normal)
+     * Plutonium Torch: 1.5 (blinding industrial floodlight)
+     */
+    public float getTorchPower() {
+        float power = 0f;
+        power = Math.max(power, getTorchTierPower(getSelectedItem()));
+        power = Math.max(power, getTorchTierPower(offhandItem));
+        return power;
+    }
+
+    private float getTorchTierPower(Item item) {
+        if (item == null) return 0f;
+        String name = item.getName().toUpperCase();
+        if (!name.contains("TORCH")) return 0f;
+        
+        if (name.contains("PLUTONIUM")) return 1.5f;
+        if (name.contains("URANIUM"))   return 1.2f;
+        if (name.contains("GOLD"))      return 1.0f;
+        if (name.contains("NICKEL"))    return 0.85f;
+        if (name.contains("IRON"))      return 0.8f;
+        if (name.contains("COPPER"))    return 0.7f;
+        if (name.contains("TIN"))       return 0.6f;
+        return 0.3f; // Primitive torch
     }
 }

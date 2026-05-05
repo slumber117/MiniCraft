@@ -12,6 +12,7 @@ uniform int rtgiEnabled;
 uniform vec3 torchPos;
 uniform float torchStrength;
 uniform vec3 torchColor;
+uniform float playerY;
 
 uniform mat4 invProjection;
 uniform mat4 invView;
@@ -39,8 +40,15 @@ void main() {
     vec2 uv = outTexCoord;
     vec3 albedo = texture(texAlbedo, uv).rgb;
 
-    // Ambient lighting (Default base)
-    float ambient = 0.4;
+    // ── Depth-Aware Ambient Lighting ──
+    // Surface (Y >= 100): full ambient (0.4)
+    // Shallow caves (Y 60-100): rapidly fading
+    // Deep underground (Y < 60): near-total darkness (0.02)
+    float surfaceThreshold = 100.0;
+    float caveFloor = 60.0;
+    float depthFactor = clamp((playerY - caveFloor) / (surfaceThreshold - caveFloor), 0.0, 1.0);
+    float ambient = mix(0.02, 0.4, depthFactor);
+
     vec3 result = albedo * ambient;
 
     // Advanced Bilateral Denoising
@@ -75,21 +83,25 @@ void main() {
         
         vec3 finalGI = (sumWeight > 0.0001) ? (sumGI / sumWeight) : centerGI;
 
-        // Composite with a slightly stronger multiplier since noise is suppressed
-        result += albedo * finalGI * 1.2;
+        // Scale GI contribution by depth — underground GI is dimmer
+        float giScale = mix(0.3, 1.2, depthFactor);
+        result += albedo * finalGI * giScale;
     }
 
-    // --- Restore Torchlight (Point Light) ---
+    // ── Torch Point Light (Tiered Range & Brightness) ──
     if (torchStrength > 0.01) {
         vec3 worldPos = getPosition(uv);
         vec3 normal = texture(texNormal, uv).rgb * 2.0 - 1.0;
         vec3 toLight = torchPos - worldPos;
         float dist = length(toLight);
         
-        if (dist < 20.0) { // Limit effect range
+        // Torch range scales with tier: primitive=6, tin=12, gold=20, plutonium=30
+        float torchRange = 6.0 + torchStrength * 16.0;
+        
+        if (dist < torchRange) {
             vec3 L = normalize(toLight);
             float diff = max(0.0, dot(normal, L));
-            float atten = torchStrength / (1.0 + 0.1 * dist + 0.04 * dist * dist);
+            float atten = torchStrength / (1.0 + 0.08 * dist + 0.03 * dist * dist);
             
             // Apply torch color tint
             result += albedo * diff * atten * torchColor;

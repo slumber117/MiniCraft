@@ -41,6 +41,12 @@ public class InventoryUI {
         armorColors.put("PLATINUM", new Vector3f(0.90f, 0.90f, 1.00f));
         armorColors.put("NEODYMIUM", new Vector3f(0.50f, 0.00f, 0.50f));
         armorColors.put("MUSGRAVITE", new Vector3f(0.70f, 0.50f, 0.90f));
+        armorColors.put("CLOTH", new Vector3f(0.70f, 0.60f, 0.50f));
+        armorColors.put("PAINITE", new Vector3f(0.80f, 0.00f, 0.00f));
+        armorColors.put("PRASEODYMIUM", new Vector3f(0.20f, 0.80f, 0.20f));
+        armorColors.put("DYSPROSIUM", new Vector3f(1.00f, 0.80f, 0.00f));
+        armorColors.put("ERBIUM", new Vector3f(1.00f, 0.20f, 0.60f));
+        armorColors.put("LUTETIUM", new Vector3f(1.00f, 1.00f, 1.00f));
     }
 
     public void render(UIRenderer ui, Player player, ShaderProgram shader, int width, int height, Main main) {
@@ -271,6 +277,12 @@ public class InventoryUI {
                 else if (toolName.contains("Diamond")) modelId = "pickaxe_diamond";
                 else if (toolName.contains("Neodymium")) modelId = "pickaxe_neodymium";
                 else if (toolName.contains("Musgravite")) modelId = "pickaxe_musgravite";
+                else if (toolName.contains("Painite")) modelId = "pickaxe_painite";
+                else if (toolName.contains("Uranium")) modelId = "pickaxe_uranium";
+                else if (toolName.contains("Praseodymium")) modelId = "pickaxe_praseodymium";
+                else if (toolName.contains("Dysprosium")) modelId = "pickaxe_dysprosium";
+                else if (toolName.contains("Erbium")) modelId = "pickaxe_erbium";
+                else if (toolName.contains("Lutetium")) modelId = "pickaxe_lutetium";
 
                 if (modelId != null) {
                     Mesh toolMesh = ModelRegistry.getModel(modelId);

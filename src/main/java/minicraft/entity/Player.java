@@ -332,6 +332,10 @@ public class Player extends Entity {
         float defense = inventory.getTotalDefense();
         float reduction = 1.0f - defense;
         float actualDamage = amount * reduction;
+        
+        // Neodymium 30% Damage Reduction
+        if (inventory.hasFullSet("Neodymium")) actualDamage *= 0.70f;
+
         super.damage(actualDamage, attacker);
         
         damageFlashTimer = 1.0f;
@@ -390,8 +394,8 @@ public class Player extends Entity {
         // Map 0..1 back to -30C..40C
         float baseTemp = worldTemp * 70f - 30f;
         
-        // 0. Painite Thermal Lock
-        if (inventory.hasFullSet("Painite")) {
+        // 0. Thermal Lock (Painite & Neodymium)
+        if (inventory.hasFullSet("Painite") || inventory.hasFullSet("Neodymium")) {
             temperature = 36.6f;
             tempState = "Normal";
             return;
@@ -446,7 +450,10 @@ public class Player extends Entity {
         } else if (tempState.equals("Okay") || tempState.equals("Warm")) {
             // Regeneration
             if (hunger > 80 && thirst > 80) {
-                health = Math.min(maxHealth, health + 0.15f * dt);
+                float regenRate = 0.15f;
+                // Neodymium 10% Health Regen Boost
+                if (inventory.hasFullSet("Neodymium")) regenRate *= 1.10f;
+                health = Math.min(maxHealth, health + regenRate * dt);
             }
         }
     }
@@ -493,6 +500,9 @@ public class Player extends Entity {
         
         // Painite XP Boost (Stacking)
         if (inventory.hasFullSet("Painite")) amount *= 1.20f;
+        
+        // Neodymium XP Boost (30%)
+        if (inventory.hasFullSet("Neodymium")) amount *= 1.30f;
         
         this.xp += amount;
         while (this.xp >= xpToNextLevel && level < 100) {

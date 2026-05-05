@@ -70,7 +70,7 @@ public enum Block {
     SAPPHIRE_ORE(true, 5, 15.0f, 15.0f, "sapphire_ore"),
     AMETHYST_ORE(true, 4, 12.0f, 12.0f, "amethyst_ore"),
     JADE_ORE(true, 4, 10.0f, 10.0f, "jade_ore"),
-    ONYX_ORE(true, 6, 60.0f, 55.0f, "onyx_ore"),
+    ONYX_ORE(true, 10, 120.0f, 150.0f, "onyx_ore"),
     GARNET_ORE(true, 5, 25.0f, 20.0f, "garnet_ore"),
     TOURMALINE_ORE(true, 5, 25.0f, 20.0f, "tourmaline_ore"),
     AGATE_ORE(true, 5, 20.0f, 15.0f, "agate_ore"),

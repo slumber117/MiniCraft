@@ -178,9 +178,9 @@ public class ProcessingManager {
         float heal = 20f;
         float hunger = 30f;
 
-        if (output.contains("MEAT")) { tex = "item_meat_cooked"; heal = 25f; hunger = 40f; }
-        else if (output.contains("FISH")) { tex = "item_fish_cooked"; heal = 15f; hunger = 25f; }
-        else if (output.contains("CHICKEN")) { tex = "item_chicken_cooked"; heal = 20f; hunger = 35f; }
+        if (output.contains("COOKED_MEAT")) { tex = "item_meat_cooked"; heal = 25f; hunger = 40f; }
+        else if (output.contains("COOKED_FISH")) { tex = "item_fish_cooked"; heal = 15f; hunger = 25f; }
+        else if (output.contains("COOKED_CHICKEN")) { tex = "item_chicken_cooked"; heal = 20f; hunger = 35f; }
         else if (output.contains("BREAD")) { tex = "item_bread"; heal = 10f; hunger = 20f; }
 
         cookerRecipes.put(normalize(input), new Recipe(output, Recipe.Category.SURVIVAL, null, new FoodItem(output, tex, heal, hunger), 1, time));

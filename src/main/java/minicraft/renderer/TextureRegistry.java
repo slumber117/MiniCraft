@@ -18,29 +18,38 @@ public class TextureRegistry {
         // Project uses flattened root structure now, no atlases needed
     }
 
+    private final java.util.Set<String> missingTextures = new java.util.HashSet<>();
+
     public TextureRegion get(String name) {
         if (name == null || name.isEmpty()) return null;
 
         // 1. Check Cache
         if (regions.containsKey(name)) return regions.get(name);
 
-        // 2. Load Individual Texture from Root
+        // 2. Skip known-missing textures (prevents repeated disk I/O)
+        if (missingTextures.contains(name)) {
+            TextureRegion fallback = regions.get("grass");
+            if (fallback != null) regions.put(name, fallback); // Cache the fallback
+            return fallback;
+        }
+
+        // 3. Load Individual Texture from Root
         try {
-            // Check if name already has .png, if not add it
             String fileName = name.endsWith(".png") ? name : name + ".png";
-            // Important: assets are in /textures/
             Texture t = new Texture("/textures/" + fileName);
             TextureRegion region = new TextureRegion(t, 0, 0, 1, 1);
             regions.put(name, region);
             return region;
         } catch (Exception e) {
-            System.err.println("Error loading texture " + name + ": " + e.getMessage());
-            // Fallback for missing textures (use grass if available, or just fail)
+            missingTextures.add(name);
+            System.err.println("Missing texture (will use fallback): " + name);
             if (name.equals("grass")) {
                 System.err.println("CRITICAL: Root textures/grass.png not found!");
                 return null;
             }
-            return get("grass");
+            TextureRegion fallback = get("grass");
+            regions.put(name, fallback); // Cache immediately
+            return fallback;
         }
     }
 

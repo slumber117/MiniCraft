@@ -59,6 +59,7 @@ public class Chunk {
 
     public void markDirty() {
         for (int i = 0; i < NUM_SECTIONS; i++) sectionDirty[i] = true;
+        lightingValid = false; // Force lighting recalculation on block changes
     }
 
     public boolean isDirty() {
@@ -66,8 +67,13 @@ public class Chunk {
         return false;
     }
 
+    private boolean lightingValid = false;
+
     public void buildMesh(TextureRegistry registry, World world) {
-        recalculateLighting(world);
+        if (!lightingValid) {
+            recalculateLighting(world);
+            lightingValid = true;
+        }
         for (int s = 0; s < NUM_SECTIONS; s++) {
             if (sectionDirty[s]) {
                 buildSectionMesh(s, registry, world);
@@ -349,13 +355,15 @@ public class Chunk {
     }
 
     private float[] toFloatArr(ArrayList<Float> list) {
-        float[] a = new float[list.size()];
-        for (int i = 0; i < list.size(); i++) a[i] = list.get(i);
+        int size = list.size();
+        float[] a = new float[size];
+        for (int i = 0; i < size; i++) a[i] = list.get(i);
         return a;
     }
     private int[] toIntArr(ArrayList<Integer> list) {
-        int[] a = new int[list.size()];
-        for (int i = 0; i < list.size(); i++) a[i] = list.get(i);
+        int size = list.size();
+        int[] a = new int[size];
+        for (int i = 0; i < size; i++) a[i] = list.get(i);
         return a;
     }
 }

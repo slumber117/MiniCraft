@@ -1,6 +1,7 @@
 package minicraft.renderer;
 
 import minicraft.math.Matrix4f;
+import minicraft.math.Vector2f;
 import minicraft.math.Vector3f;
 import minicraft.math.Vector4f;
 import org.lwjgl.system.MemoryStack;
@@ -69,6 +70,12 @@ public class ShaderProgram {
         Integer location = uniforms.get(uniformName);
         if (location == null || location < 0) return;
         glUniform1f(location, value);
+    }
+
+    public void setUniform(String uniformName, Vector2f value) {
+        Integer location = uniforms.get(uniformName);
+        if (location == null || location < 0) return;
+        glUniform2f(location, value.x, value.y);
     }
 
     public void createVertexShader(String shaderCode) throws Exception {

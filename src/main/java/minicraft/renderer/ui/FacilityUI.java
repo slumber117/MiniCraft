@@ -16,7 +16,7 @@ public class FacilityUI {
         ui.drawRectInternal(shader, 0, 0, width, height, new Vector4f(0, 0, 0, 0.78f));
 
         float panelW = 680f, panelH = 580f;
-        float sx = (width - panelW) / 2f, sy = (height - panelH) / 2f - 80f;
+        float sx = (width - panelW) / 2f, sy = (height - panelH) / 2f + 10f;
 
         Block b = main.getWorld().getBlock(main.activeFacX, main.activeFacY, main.activeFacZ);
         String title = b.getInteractionLabel();
@@ -33,8 +33,8 @@ public class FacilityUI {
         ui.drawSlot(shader, cx - 170, cy - 36, slotSize, main.activeFacility.getSlot(0));
         ui.drawText(shader, "INPUT", cx - 170, cy - 52, 0.52f, UIPalette.RUSTIC_PARCHMENT);
 
-        ui.drawSlot(shader, cx - 36, cy + 45, slotSize, main.activeFacility.getSlot(1));
-        ui.drawText(shader, "FUEL", cx - 36, cy + 36, 0.52f, UIPalette.RUSTIC_PARCHMENT);
+        ui.drawSlot(shader, cx - 36, cy + 15, slotSize, main.activeFacility.getSlot(1));
+        ui.drawText(shader, "FUEL", cx - 36, cy + 6, 0.52f, UIPalette.RUSTIC_PARCHMENT);
 
         float fuelRatio = main.activeFacility.getFuelRatio();
         float heatPulse = main.activeFacility.isActive
@@ -42,13 +42,13 @@ public class FacilityUI {
                 : 1.0f;
         Vector4f fuelCol = main.furnaceOpen ? new Vector4f(1.0f, 0.4f * heatPulse, 0, 0.9f)
                 : new Vector4f(0.2f, 0.6f, 1.0f, 0.9f);
-        ui.drawRectInternal(shader, cx - 36, cy + 132, slotSize * fuelRatio, 6, fuelCol);
-        ui.drawRectInternal(shader, cx - 36, cy + 132, slotSize, 1, UIPalette.RUSTIC_BORDER);
+        ui.drawRectInternal(shader, cx - 36, cy + 102, slotSize * fuelRatio, 6, fuelCol);
+        ui.drawRectInternal(shader, cx - 36, cy + 102, slotSize, 1, UIPalette.RUSTIC_BORDER);
 
         if (main.activeFacility.isActive) {
             float flameAlpha = 0.4f + 0.6f * (float) Math.random();
-            ui.drawRectInternal(shader, cx - 12, cy + 12, 24, 24, new Vector4f(1.0f, 0.5f, 0, flameAlpha * 0.4f));
-            ui.drawRectInternal(shader, cx - 6, cy + 18, 12, 12, new Vector4f(1.0f, 0.8f, 0, flameAlpha));
+            ui.drawRectInternal(shader, cx - 12, cy - 18, 24, 24, new Vector4f(1.0f, 0.5f, 0, flameAlpha * 0.4f));
+            ui.drawRectInternal(shader, cx - 6, cy - 12, 12, 12, new Vector4f(1.0f, 0.8f, 0, flameAlpha));
         }
 
         ui.drawSlot(shader, cx + 98, cy - 36, slotSize, main.activeFacility.getSlot(2));

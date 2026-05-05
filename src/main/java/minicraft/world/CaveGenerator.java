@@ -45,12 +45,12 @@ public class CaveGenerator {
         // TYPE 1: Spaghetti Caves (Winding Tunnels)
         // ==========================================
         double tNoiseX = (worldX + tunnelOffset) * 0.015;
-        double tNoiseY = worldY * 0.015;
+        double tNoiseY = worldY * 0.007;  // Stretched vertically: tunnels descend smoothly
         double tNoiseZ = (worldZ + tunnelOffset) * 0.015;
         
         double tunnelDensity = Math.abs(noiseGen.fractalNoise(tNoiseX, tNoiseY, tNoiseZ, 2, 0.5));
         
-        float tunnelThreshold = 0.012f + (0.01f * depthModifier);
+        float tunnelThreshold = 0.012f + (0.002f * depthModifier); // Subtle depth scaling only
         if (tunnelDensity < tunnelThreshold) {
             return CaveType.TUNNEL;
         }
@@ -78,7 +78,7 @@ public class CaveGenerator {
         
         double cavernDensity = noiseGen.fractalNoise(cNoiseX, cNoiseY, cNoiseZ, 3, 0.5);
         
-        if (cavernDensity > 0.70f - (0.05f * depthModifier)) {
+        if (cavernDensity > 0.75f - (0.02f * depthModifier)) { // Rarer caverns, less depth influence
             return CaveType.CAVERN;
         }
 

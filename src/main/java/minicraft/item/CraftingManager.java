@@ -144,8 +144,8 @@ public class CraftingManager {
 
         // --- 9. RAREST MINERAL TIERS (The Absolute Limit) ---
         addArmorSet("Painite", "PAINITE_ORE", 0.40f, 6, 5.0f, 1.0f, 10.0f,
-                new minicraft.math.Vector3f(1.0f, 0.1f, 0.1f)); // Red Glow + Thermal Equilibrium
-        addToolSet("Painite", "PAINITE_ORE", 9, 30.0f, new minicraft.math.Vector3f(1.0f, 0.1f, 0.1f), 0.25f);
+                new minicraft.math.Vector3f(1.5f, 0.15f, 0.1f)); // Shiny Red Glow — brighter than Plutonium
+        addToolSet("Painite", "PAINITE_ORE", 9, 30.0f, new minicraft.math.Vector3f(1.5f, 0.15f, 0.1f), 0.25f);
  
         addArmorSet("Musgravite", "MUSGRAVITE_ORE", 0.42f, 6, 6.0f, 1.0f, 0.8f, null);
         addToolSet("Musgravite", "MUSGRAVITE_ORE", 8, 35.0f);
@@ -212,7 +212,7 @@ public class CraftingManager {
         addToolSet("Samarium", "SAMARIUM", 11, 360.0f);
         addArmorSet("Samarium", "SAMARIUM", 1.90f, 36, 140.0f, 2.9f, 4.8f, new minicraft.math.Vector3f(1.0f, 1.0f, 0.5f));
 
-        addToolSet("Neodymium", "NEODYMIUM", 9, 380.0f);
+        addToolSet("Neodymium", "NEODYMIUM", 9, 380.0f, new minicraft.math.Vector3f(0.5f, 0.0f, 0.5f), 1.10f);
         addArmorSet("Neodymium", "NEODYMIUM", 2.00f, 38, 150.0f, 3.0f, 5.0f, new minicraft.math.Vector3f(0.5f, 0.0f, 0.5f));
 
         addToolSet("Praseodymium", "PRASEODYMIUM", 11, 400.0f);
@@ -315,12 +315,26 @@ public class CraftingManager {
             tex = "item_ingot_loparite";
         else if (mat.equals("TANTALITE") || mat.equals("VANADINITE"))
             tex = "item_ingot_titanium_standalone"; // Use high-tier ingot placeholder
-        else if (mat.equals("VANADINITE") || mat.equals("GADOLINIUM") || mat.equals("TERBIUM") || mat.equals("DYSPROSIUM") || mat.equals("HOLMIUM"))
-            tex = "item_ingot_mithril"; // Use celestial ingot placeholder
-        else if (mat.equals("ERBIUM") || mat.equals("YTTRIUM") || mat.equals("LUTETIUM") || mat.equals("SAMARIUM") || mat.equals("NEODYMIUM"))
-            tex = "item_ingot_mithril";
-        else if (mat.equals("PRASEODYMIUM") || mat.equals("CERIUM") || mat.equals("LANTHANUM"))
-            tex = "item_ingot_mithril";
+        else if (mat.equals("TERBIUM"))
+            tex = "item_ingot_terbium";
+        else if (mat.equals("DYSPROSIUM"))
+            tex = "item_ingot_dysprosium";
+        else if (mat.equals("HOLMIUM"))
+            tex = "item_ingot_holmium";
+        else if (mat.equals("ERBIUM"))
+            tex = "item_ingot_erbium";
+        else if (mat.equals("LUTETIUM"))
+            tex = "item_ingot_lutetium";
+        else if (mat.equals("SAMARIUM"))
+            tex = "item_ingot_samarium";
+        else if (mat.equals("NEODYMIUM"))
+            tex = "item_ingot_neodymium";
+        else if (mat.equals("PRASEODYMIUM"))
+            tex = "item_ingot_praseodymium";
+        else if (mat.equals("CERIUM"))
+            tex = "item_ingot_cerium";
+        else if (mat.equals("GADOLINIUM") || mat.equals("YTTRIUM") || mat.equals("LANTHANUM"))
+            tex = "item_ingot_mithril"; // General fallback
         else if (mat.equals("PROMETHIUM"))
             tex = "item_ingot_promethium";
         else if (mat.equals("XANTHIOSITE"))
@@ -389,10 +403,16 @@ public class CraftingManager {
             tex = "block_obsidian";
 
         // Food
+        else if (mat.contains("RAW_MEAT"))
+            tex = "item_meat_raw";
         else if (mat.contains("MEAT"))
             tex = "item_meat_cooked";
+        else if (mat.contains("RAW_FISH"))
+            tex = "item_fish_raw";
         else if (mat.contains("FISH"))
             tex = "item_fish_cooked";
+        else if (mat.contains("RAW_CHICKEN"))
+            tex = "item_chicken_raw";
         else if (mat.contains("CHICKEN"))
             tex = "item_chicken_cooked";
         else if (mat.contains("APPLE"))
