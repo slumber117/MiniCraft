@@ -34,7 +34,9 @@ public class EntityManager {
     }
 
     private void tick(float dt, minicraft.world.World world, minicraft.entity.ParticleManager particleManager) {
-        for (Entity e : entities) {
+        // Use a copy to avoid ConcurrentModificationException if entities spawn during tick
+        List<Entity> toTick = new ArrayList<>(entities);
+        for (Entity e : toTick) {
             if (!e.isDead()) e.tick(this, world, particleManager, dt);
         }
         // Remove dead entities

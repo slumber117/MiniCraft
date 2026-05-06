@@ -141,6 +141,9 @@ public class Main {
     private boolean firstMouse = true;
     public float mouseX, mouseY;
     public float scrollDelta = 0;
+    
+    public Camera getCamera() { return camera; }
+
     private boolean[] keys = new boolean[65536];
     private boolean prevMouseLeftDown = false;
     private boolean prevMouseRightDown = false;

@@ -22,10 +22,10 @@ public class OnyxDragon extends BaseDragon {
         minicraft.entity.Inventory chestInv = world.getOrCreateContainer(ix, iy, iz);
         if (chestInv != null) {
             // Reward: Next Tier (Xanthiosite - Tier 11)
-            chestInv.add(new minicraft.item.ArmorItem("Xanthiosite Helmet", "Xanthiosite", 0.6f, 11, 10f, 1.2f, 0.5f, null, minicraft.item.ArmorItem.ArmorSlot.HELMET), 1);
-            chestInv.add(new minicraft.item.ArmorItem("Xanthiosite Chestplate", "Xanthiosite", 0.6f, 11, 10f, 1.2f, 0.5f, null, minicraft.item.ArmorItem.ArmorSlot.CHESTPLATE), 1);
-            chestInv.add(new minicraft.item.ArmorItem("Xanthiosite Leggings", "Xanthiosite", 0.6f, 11, 10f, 1.2f, 0.5f, null, minicraft.item.ArmorItem.ArmorSlot.LEGGINGS), 1);
-            chestInv.add(new minicraft.item.ArmorItem("Xanthiosite Boots", "Xanthiosite", 0.6f, 11, 10f, 1.2f, 0.5f, null, minicraft.item.ArmorItem.ArmorSlot.BOOTS), 1);
+            chestInv.add(new minicraft.item.ArmorItem("Xanthiosite Helmet", minicraft.item.ArmorItem.ArmorSlot.HELMET, 0.6f, "armor_onyx_helmet", "Xanthiosite", 10f, 1.2f, 0.5f, null), 1);
+            chestInv.add(new minicraft.item.ArmorItem("Xanthiosite Chestplate", minicraft.item.ArmorItem.ArmorSlot.CHESTPLATE, 0.6f, "armor_onyx_chest", "Xanthiosite", 10f, 1.2f, 0.5f, null), 1);
+            chestInv.add(new minicraft.item.ArmorItem("Xanthiosite Leggings", minicraft.item.ArmorItem.ArmorSlot.LEGGINGS, 0.6f, "armor_onyx_legs", "Xanthiosite", 10f, 1.2f, 0.5f, null), 1);
+            chestInv.add(new minicraft.item.ArmorItem("Xanthiosite Boots", minicraft.item.ArmorItem.ArmorSlot.BOOTS, 0.6f, "armor_onyx_boots", "Xanthiosite", 10f, 1.2f, 0.5f, null), 1);
             
             chestInv.add(new minicraft.item.ToolItem("Xanthiosite Sword", minicraft.item.ToolItem.ToolType.SWORD, 11, 105.0f, "item_sword_onyx"), 1);
             chestInv.add(new minicraft.item.ToolItem("Xanthiosite Pick", minicraft.item.ToolItem.ToolType.PICKAXE, 11, 105.0f, "item_pick_onyx"), 1);

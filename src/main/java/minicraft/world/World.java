@@ -80,6 +80,15 @@ public class World implements IWeatherWorld {
         this.entityManager = em;
     }
 
+    public minicraft.entity.Inventory getOrCreateContainer(int x, int y, int z) {
+        long key = packPos(x, y, z);
+        return worldContainers.computeIfAbsent(key, k -> new minicraft.entity.Inventory());
+    }
+
+    private long packPos(int x, int y, int z) {
+        return ((long) x & 0xFFFFFFL) | (((long) y & 0xFFFFL) << 24) | (((long) z & 0xFFFFFFL) << 40);
+    }
+
     @Override
     public long getSeed() { return generator.getSeed(); }
 
@@ -545,8 +554,8 @@ public class World implements IWeatherWorld {
     }
 
     private void applyDragonArenas(Chunk chunk) {
-        int cx = chunk.getGridX();
-        int cz = chunk.getGridZ();
+        int cx = chunk.chunkX;
+        int cz = chunk.chunkZ;
         
         // Procedural Boss Arena Grid (Every 64x64 chunks ≈ 1024x1024 blocks)
         int gridSize = 64;
@@ -574,8 +583,8 @@ public class World implements IWeatherWorld {
     }
 
     private void applyDomeArena(Chunk chunk, int centerX, int centerZ, int radius, int height, Block wallMaterial, boolean hasGate) {
-        int cx = chunk.getGridX() * 16; // Chunk.WIDTH is 16
-        int cz = chunk.getGridZ() * 16;
+        int cx = chunk.chunkX * 16; // Chunk.WIDTH is 16
+        int cz = chunk.chunkZ * 16;
         
         // Quick AABB check for chunk intersection with dome
         if (cx > centerX + radius + 10 || cx + 16 < centerX - radius - 10) return;
@@ -982,9 +991,6 @@ public class World implements IWeatherWorld {
         }
     }
 
-    private long packPos(int x, int y, int z) {
-        return (((long) x & 0x1FFFFF)) | (((long) y & 0x7FF) << 21) | (((long) z & 0x1FFFFF) << 32);
-    }
 
     private int unpackX(long pos) {
         return (int) ((pos << 43) >> 43); // Sign-extended 21-bit X

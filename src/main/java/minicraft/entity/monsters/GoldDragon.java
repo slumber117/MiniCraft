@@ -17,14 +17,14 @@ public class GoldDragon extends BaseDragon {
         int iy = (int)Math.floor(position.y);
         int iz = (int)Math.floor(position.z);
         
-        world.setBlock(ix, iy, iz, minicraft.world.Block.GOLDEN_CHEST);
+        world.setBlock(ix, iy, iz, minicraft.world.Block.CHEST);
         minicraft.entity.Inventory chestInv = world.getOrCreateContainer(ix, iy, iz);
         if (chestInv != null) {
             // Reward: Diamond Tier (Tier 4)
-            chestInv.add(new minicraft.item.ArmorItem("Diamond Helmet", "DIAMOND_ORE", 0.25f, 4, 1.0f, 1.0f, 0.4f, null, minicraft.item.ArmorItem.ArmorSlot.HELMET), 1);
-            chestInv.add(new minicraft.item.ArmorItem("Diamond Chestplate", "DIAMOND_ORE", 0.25f, 4, 1.0f, 1.0f, 0.4f, null, minicraft.item.ArmorItem.ArmorSlot.CHESTPLATE), 1);
-            chestInv.add(new minicraft.item.ArmorItem("Diamond Leggings", "DIAMOND_ORE", 0.25f, 4, 1.0f, 1.0f, 0.4f, null, minicraft.item.ArmorItem.ArmorSlot.LEGGINGS), 1);
-            chestInv.add(new minicraft.item.ArmorItem("Diamond Boots", "DIAMOND_ORE", 0.25f, 4, 1.0f, 1.0f, 0.4f, null, minicraft.item.ArmorItem.ArmorSlot.BOOTS), 1);
+            chestInv.add(new minicraft.item.ArmorItem("Diamond Helmet", minicraft.item.ArmorItem.ArmorSlot.HELMET, 0.5f, "armor_diamond_helmet", "Diamond", 1.0f, 1.0f, 0.4f, null), 1);
+            chestInv.add(new minicraft.item.ArmorItem("Diamond Chestplate", minicraft.item.ArmorItem.ArmorSlot.CHESTPLATE, 0.7f, "armor_diamond_chest", "Diamond", 2.0f, 0.9f, 0.5f, null), 1);
+            chestInv.add(new minicraft.item.ArmorItem("Diamond Leggings", minicraft.item.ArmorItem.ArmorSlot.LEGGINGS, 0.6f, "armor_diamond_legs", "Diamond", 1.5f, 0.95f, 0.45f, null), 1);
+            chestInv.add(new minicraft.item.ArmorItem("Diamond Boots", minicraft.item.ArmorItem.ArmorSlot.BOOTS, 0.4f, "armor_diamond_boots", "Diamond", 1.0f, 1.05f, 0.35f, null), 1);
             
             chestInv.add(new minicraft.item.ToolItem("Diamond Sword", minicraft.item.ToolItem.ToolType.SWORD, 4, 16.0f, "item_sword_diamond"), 1);
             chestInv.add(new minicraft.item.ToolItem("Diamond Pick", minicraft.item.ToolItem.ToolType.PICKAXE, 4, 16.0f, "item_pick_diamond"), 1);

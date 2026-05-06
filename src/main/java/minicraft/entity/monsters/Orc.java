@@ -47,7 +47,7 @@ public class Orc extends Entity {
     }
 
     @Override
-    public void onDeath(EntityManager manager, World world) {
+    public void onDeath(minicraft.entity.EntityManager manager, minicraft.world.World world) {
         super.onDeath(manager, world);
         // Drop stone equipment
         ToolItem.ToolType[] types = ToolItem.ToolType.values();

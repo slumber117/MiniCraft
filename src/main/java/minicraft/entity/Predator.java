@@ -106,7 +106,8 @@ public abstract class Predator extends Entity {
     }
 
     @Override
-    public void onDeath(EntityManager manager) {
+    public void onDeath(EntityManager manager, minicraft.world.World world) {
+        super.onDeath(manager, world);
         minicraft.item.Item dropItem = null;
         int count = 1 + PassiveAnimal.RNG.nextInt(2);
 

@@ -89,7 +89,7 @@ public abstract class PassiveAnimal extends Entity {
     }
 
     @Override
-    public void onDeath(EntityManager manager) {
+    public void onDeath(EntityManager manager, minicraft.world.World world) {
         minicraft.item.Item dropItem = null;
         int count = 1 + RNG.nextInt(2);
 

@@ -3,6 +3,8 @@ package minicraft.entity;
 import minicraft.world.Block;
 import minicraft.item.Item;
 import minicraft.item.ItemStack;
+import minicraft.item.ToolItem;
+import minicraft.item.BossCompassItem;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,15 +29,12 @@ public class Inventory {
     private minicraft.item.ArmorItem leggings = null;
     private minicraft.item.ArmorItem boots = null;
 
-    public boolean hasFullSet(String material) {
+    public boolean hasFullSet(String tier) {
         if (helmet == null || chestplate == null || leggings == null || boots == null) return false;
-        return helmet.getDisplayName().contains(material) &&
-               chestplate.getDisplayName().contains(material) &&
-               leggings.getDisplayName().contains(material) &&
-               boots.getDisplayName().contains(material);
+        // Check by tier name or display name fallback
+        return (helmet.getTierName() != null && helmet.getTierName().equalsIgnoreCase(tier)) ||
+               (helmet.getDisplayName().contains(tier));
     }
-
-    public ItemStack[] getMainInventory() { return mainInventory; }
 
     public Inventory() {
         for (int i = 0; i < HOTBAR_SIZE; i++) hotbar[i] = null;
@@ -123,6 +122,10 @@ public class Inventory {
         return (s == null) ? null : s.getItem();
     }
 
+    public ItemStack getHeldItem() {
+        return hotbar[selectedIndex];
+    }
+
     public void changeSelection(int delta) {
         selectedIndex = (selectedIndex + delta) % HOTBAR_SIZE;
         if (selectedIndex < 0) selectedIndex += HOTBAR_SIZE;
@@ -184,10 +187,6 @@ public class Inventory {
                     if (cursorStack.isEmpty()) cursorStack = null;
                     
                     if (old != null) {
-                        // If we had something equipped, it goes to cursor (Standard MC behavior: if cursor empty)
-                        // Actually, for simplicity, if we were holding a stack of 1, we just swapped.
-                        // If we were holding a stack > 1, the old one should go to inv or be dropped?
-                        // Let's just assume armor is usually stack-size 1.
                         if (cursorStack == null) {
                             cursorStack = new ItemStack(old, 1);
                         } else {
@@ -246,7 +245,7 @@ public class Inventory {
         if (index >= 0 && index < HOTBAR_SIZE) this.selectedIndex = index;
     }
 
-    // Armor & Defense (Unchanged Logic, just using ItemStack helper if needed in future)
+    // Armor & Defense
     public void equip(minicraft.item.ArmorItem armor) {
         if (armor == null) return;
         switch (armor.getSlot()) {
@@ -265,13 +264,10 @@ public class Inventory {
         return Math.min(0.95f, total);
     }
 
-    /**
-     * Returns the name of the tier if a full set is equipped, otherwise null.
-     */
     public String getFullSetTier() {
         if (helmet == null || chestplate == null || leggings == null || boots == null) return null;
         String tier = helmet.getTierName();
-        if (tier.equals(chestplate.getTierName()) && 
+        if (tier != null && tier.equals(chestplate.getTierName()) && 
             tier.equals(leggings.getTierName()) && 
             tier.equals(boots.getTierName())) {
             return tier;
@@ -294,7 +290,6 @@ public class Inventory {
 
     public float getTotalSpeedMod() {
         float sum = 0;
-        // Speed is additive: 1.0 + sum(offset)
         if (helmet     != null) sum += (helmet.getSpeedModifier() - 1.0f);
         if (chestplate != null) sum += (chestplate.getSpeedModifier() - 1.0f);
         if (leggings   != null) sum += (leggings.getSpeedModifier() - 1.0f);
@@ -305,10 +300,7 @@ public class Inventory {
             if (total < 1.0f) total += (1.0f - total) * 0.15f; 
             else              total *= 1.15f;                 
             
-            // Painite 20% Speed Boost
             if (hasFullSet("Painite")) total *= 1.20f;
-            
-            // Onyx 25% Speed Boost
             if (hasFullSet("Onyx")) total *= 1.25f;
         }
         return Math.max(0.1f, total);
@@ -324,8 +316,6 @@ public class Inventory {
     }
 
     public minicraft.math.Vector3f getDominantGlow() {
-        // Glow remains a full-set feature or just takes the highest contributing piece?
-        // Let's stick to full-set for the "Aura" effect.
         String set = getFullSetTier();
         if (set == null) return null;
         return helmet.getGlowColor();
@@ -339,14 +329,6 @@ public class Inventory {
         this.offhandItem = item;
     }
 
-    public boolean hasFullSet(String tier) {
-        if (helmet == null || chestplate == null || leggings == null || boots == null) return false;
-        return helmet.getTierName().equalsIgnoreCase(tier) &&
-               chestplate.getTierName().equalsIgnoreCase(tier) &&
-               leggings.getTierName().equalsIgnoreCase(tier) &&
-               boots.getTierName().equalsIgnoreCase(tier);
-    }
-
     public boolean hasPiece(String tier) {
         if (helmet != null && helmet.getTierName().equalsIgnoreCase(tier)) return true;
         if (chestplate != null && chestplate.getTierName().equalsIgnoreCase(tier)) return true;
@@ -356,7 +338,7 @@ public class Inventory {
     }
 
     public minicraft.math.Vector3f getTotalGlow() {
-        if (getFullSetTier() == null) return new minicraft.math.Vector3f(0, 0, 0); // Full set required for radiation
+        if (getFullSetTier() == null) return new minicraft.math.Vector3f(0, 0, 0); 
         minicraft.math.Vector3f total = new minicraft.math.Vector3f(0, 0, 0);
         if (helmet != null && helmet.getGlowColor() != null) total.add(helmet.getGlowColor());
         if (chestplate != null && chestplate.getGlowColor() != null) total.add(chestplate.getGlowColor());
@@ -369,20 +351,6 @@ public class Inventory {
         return getTorchPower() > 0f;
     }
 
-    /**
-     * Returns the torch illumination power based on the tier of torch
-     * equipped in either the selected slot or offhand.
-     * Higher-tier torches emit significantly more light.
-     * 
-     * Primitive Torch: 0.3 (barely visible, survival-mode flicker)
-     * Tin Torch:       0.6 (first usable cave torch)
-     * Copper Torch:    0.7
-     * Iron Torch:      0.8
-     * Nickel Torch:    0.85
-     * Gold Torch:      1.0 (full brightness, premium torch)
-     * Uranium Torch:   1.2 (radioactive glow, exceeds normal)
-     * Plutonium Torch: 1.5 (blinding industrial floodlight)
-     */
     public float getTorchPower() {
         float power = 0f;
         power = Math.max(power, getTorchTierPower(getSelectedItem()));

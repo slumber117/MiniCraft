@@ -306,6 +306,10 @@ public class UIRenderer {
         }
     }
 
+    public void drawTexture(ShaderProgram shader, String textureName, float x, float y, float w, float h, Vector4f color) {
+        drawRectInternal(shader, x, y, w, h, color, textureName);
+    }
+
     public void drawRectInternal(ShaderProgram shader, float x, float y, float w, float h, Vector4f color, String textureName) {
         Matrix4f model = new Matrix4f().identity().translate(x, y, 0).scale(w, h, 1);
         shader.setUniform("modelMatrix", model);
