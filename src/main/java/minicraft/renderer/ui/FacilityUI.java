@@ -30,10 +30,10 @@ public class FacilityUI {
 
         float cx = sx + panelW / 2f, cy = sy + 180f, slotSize = 72f;
 
-        ui.drawSlot(shader, cx - 170, cy - 36, slotSize, main.activeFacility.getSlot(0));
+        ui.drawSlot(shader, cx - 170, cy - 36, slotSize, main.activeFacility.getSlot(0), false, player.level);
         ui.drawText(shader, "INPUT", cx - 170, cy - 52, 0.52f, UIPalette.RUSTIC_PARCHMENT);
 
-        ui.drawSlot(shader, cx - 36, cy + 15, slotSize, main.activeFacility.getSlot(1));
+        ui.drawSlot(shader, cx - 36, cy + 15, slotSize, main.activeFacility.getSlot(1), false, player.level);
         ui.drawText(shader, "FUEL", cx - 36, cy + 6, 0.52f, UIPalette.RUSTIC_PARCHMENT);
 
         float fuelRatio = main.activeFacility.getFuelRatio();
@@ -51,7 +51,7 @@ public class FacilityUI {
             ui.drawRectInternal(shader, cx - 6, cy - 12, 12, 12, new Vector4f(1.0f, 0.8f, 0, flameAlpha));
         }
 
-        ui.drawSlot(shader, cx + 98, cy - 36, slotSize, main.activeFacility.getSlot(2));
+        ui.drawSlot(shader, cx + 98, cy - 36, slotSize, main.activeFacility.getSlot(2), false, player.level);
         ui.drawText(shader, "OUTPUT", cx + 98, cy - 52, 0.52f, UIPalette.RUSTIC_PARCHMENT);
 
         float prog = main.activeFacility.getProgress();
@@ -69,13 +69,13 @@ public class FacilityUI {
         ItemStack[] pInv = player.inventory.getMainInventory();
         for (int i = 0; i < 27; i++) {
             ui.drawSlot(shader, invStartX + (i % 9) * (ISLOT + IGAP), invStartY + (i / 9) * (ISLOT + IGAP), ISLOT,
-                    pInv[i]);
+                    pInv[i], false, player.level);
         }
         float hotStartY = invStartY + 3 * (ISLOT + IGAP) + 18f;
         ui.drawText(shader, "HOTBAR", invStartX, hotStartY - 14, 0.52f, UIPalette.RUSTIC_PARCHMENT);
         ItemStack[] hInv = player.inventory.getHotbar();
         for (int i = 0; i < 9; i++) {
-            ui.drawSlot(shader, invStartX + i * (ISLOT + IGAP), hotStartY, ISLOT, hInv[i]);
+            ui.drawSlot(shader, invStartX + i * (ISLOT + IGAP), hotStartY, ISLOT, hInv[i], false, player.level);
         }
     }
 }

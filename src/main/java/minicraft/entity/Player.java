@@ -441,6 +441,18 @@ public class Player extends Entity {
         
         // Onyx 35% Damage Reduction (Hardness)
         if (inventory.hasFullSet("Onyx")) actualDamage *= 0.65f;
+
+        // Obsidian 45% Damage Reduction (Hardness is now 45% as requested, but prot=0.45 already handles base)
+        // User asked for "armour hardness of reducing 45% incoming damage"
+        // If prot=0.45, then actualDamage = amount * (1.0 - 0.45) = amount * 0.55.
+        // This already reduces 45%. 
+        
+        // Obsidian Fireball Reduction (50%)
+        if (inventory.hasFullSet("Obsidian") && attacker != null) {
+            if (attacker.type == EntityType.FIREBALL || attacker.type == EntityType.GOLD_FIREBALL || attacker.type == EntityType.FIRE_DEMON) {
+                actualDamage *= 0.50f; // 50% Reduction
+            }
+        }
         
         // Xenotime Projectile/Fireball Resistance
         if (inventory.hasFullSet("Xenotime") && attacker != null) {
@@ -480,6 +492,39 @@ public class Player extends Entity {
             // Topaz (Reactive Reflection - 20% damage reflected back)
             if (inventory.hasFullSet("Topaz")) {
                 attacker.damage(actualDamage * 0.20f, this);
+            }
+            
+            // Obsidian (Reactive Reflection - 15% melee damage reflected back)
+            if (inventory.hasFullSet("Obsidian")) {
+                boolean isProjectile = attacker.type == EntityType.FIREBALL || 
+                                       attacker.type == EntityType.GOLD_FIREBALL || 
+                                       attacker.type == EntityType.ONYX_PROJECTILE ||
+                                       attacker.type == EntityType.SHIP_MISSILE;
+                
+                if (!isProjectile) {
+                    // It's a direct contact attack (melee/bite)
+                    attacker.damage(actualDamage * 0.15f, this);
+                    if (this.manager != null) {
+                        // Visual effect for reflection
+                        // pm.spawnSmoke(attacker.position.x, attacker.position.y + 1f, attacker.position.z);
+                    }
+                }
+            }
+            
+            // Agate (Reactive Reflection)
+            if (inventory.hasFullSet("Agate")) {
+                boolean isProjectile = attacker.type == EntityType.FIREBALL || 
+                                       attacker.type == EntityType.GOLD_FIREBALL || 
+                                       attacker.type == EntityType.ONYX_PROJECTILE ||
+                                       attacker.type == EntityType.SHIP_MISSILE;
+                
+                if (!isProjectile) {
+                    // Melee Reflection (20%)
+                    attacker.damage(actualDamage * 0.20f, this);
+                } else {
+                    // Fireball/Projectile Reflection (10%)
+                    attacker.damage(actualDamage * 0.10f, this);
+                }
             }
             // Tanzanite (Sharp/Thorns)
             if (inventory.hasPiece("Tanzanite")) {

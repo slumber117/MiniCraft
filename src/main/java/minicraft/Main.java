@@ -141,6 +141,7 @@ public class Main {
     private boolean firstMouse = true;
     public float mouseX, mouseY;
     public float scrollDelta = 0;
+    private float attackTimer = 0f;
     
     public Camera getCamera() { return camera; }
 
@@ -1044,12 +1045,27 @@ public class Main {
     }
 
     private void handleHotbarInput() {
-        if (inventoryOpen || craftingOpen || questLogOpen || shipConsoleOpen || chestOpen) {
-            scrollDelta = 0; // Reset scroll if UI is open
+        if (craftingOpen || questLogOpen || shipConsoleOpen || (chestOpen && !inventoryOpen)) {
+            scrollDelta = 0; // Reset scroll if other UI is open
             return;
         }
 
-        // 1. Mouse Scroll Cycling
+        if (inventoryOpen || (chestOpen && inventoryOpen)) {
+            if (scrollDelta != 0) {
+                // Update inventory scroll
+                inventoryScroll -= (int)(scrollDelta * 40); // 40 pixels per notch
+                
+                // Clamp scroll: totalRows=9, visibleRows=3, SLOT=58, GAP=8
+                // maxScroll = (9-3) * (58+8) = 396
+                if (inventoryScroll < 0) inventoryScroll = 0;
+                if (inventoryScroll > 396) inventoryScroll = 396;
+                
+                scrollDelta = 0;
+            }
+            return;
+        }
+
+        // 1. Mouse Scroll Cycling (Gameplay)
         if (scrollDelta != 0) {
             int current = player.inventory.getSelectedIndex();
             // Scroll down (negative y) -> next item (+1)
@@ -1409,6 +1425,15 @@ public class Main {
         for (int i = 0; i < 4; i++) {
             float slotY = armorYBase + i * (SLOT + GAP);
             if (x >= armorX && x <= armorX + SLOT && y >= slotY && y <= slotY + SLOT) {
+                // LEVEL CHECK for equipping armor
+                minicraft.item.ItemStack cursor = player.inventory.getCursorStack();
+                if (cursor != null && !cursor.isEmpty()) {
+                    minicraft.item.Item item = cursor.getItem();
+                    if (item.getLevelRequirement() > player.level) {
+                        setStatusMessage("REQUIRES LEVEL " + item.getLevelRequirement());
+                        return;
+                    }
+                }
                 player.inventory.clickArmorSlot(types[i]);
                 return;
             }
@@ -1687,6 +1712,13 @@ public class Main {
     }
 
     private void handlePlayerAttack(float dt) {
+        minicraft.item.Item held = player.inventory.getSelectedItem();
+        if (held != null && held.getLevelRequirement() > player.level) {
+            if (attackTimer <= 0) setStatusMessage("REQUIRES LEVEL " + held.getLevelRequirement());
+            attackTimer = 0.5f;
+            return;
+        }
+
         boolean mouseLeftDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
         if (mouseLeftDown && player.attackTimer <= 0) {
             player.meleeAttack(entityManager, particleManager);
@@ -1717,7 +1749,6 @@ public class Main {
                 miningProgress = 0f;
             }
 
-            Item held = player.inventory.getSelectedItem();
             float baseEfficiency = 0.5f; // Hand efficiency
             int toolLevel = -1; // Hand tool level
             ToolItem.ToolType toolType = null;
@@ -1803,6 +1834,12 @@ public class Main {
     }
 
     private void handlePlayerPlace() {
+        minicraft.item.Item held = player.inventory.getSelectedItem();
+        if (held != null && held.getLevelRequirement() > player.level) {
+            setStatusMessage("REQUIRES LEVEL " + held.getLevelRequirement());
+            return;
+        }
+
         Vector3f pos = camera.getPosition();
         float pitch = (float) Math.toRadians(camera.getRotation().x);
         float yaw = (float) Math.toRadians(camera.getRotation().y);

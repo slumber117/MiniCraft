@@ -427,9 +427,15 @@ public class HUD {
                 ui.drawRectInternal(shader, sx, topY, slotS, slotS, new Vector4f(0, 0, 0, 0.45f));
             }
             if (hotbar[i] != null && !hotbar[i].isEmpty()) {
-                ui.drawItemIcon(shader, hotbar[i].getItem(), sx + 5, topY + 5, slotS - 10);
+                Item item = hotbar[i].getItem();
+                ui.drawItemIcon(shader, item, sx + 5, topY + 5, slotS - 10);
                 if (hotbar[i].getCount() > 1)
                     ui.drawText(shader, String.valueOf(hotbar[i].getCount()), sx + 3, topY + slotS - 11, 0.52f);
+                    
+                if (item.getLevelRequirement() > player.level) {
+                    ui.drawRectInternal(shader, sx + slotS - 16, topY + 2, 14, 10, new Vector4f(0.8f, 0, 0, 0.7f));
+                    ui.drawText(shader, "L" + item.getLevelRequirement(), sx + slotS - 14, topY + 3, 0.30f, new Vector4f(1, 0.9f, 0.9f, 1f));
+                }
             }
         }
         Item selected = player.inventory.getSelectedItem();
@@ -437,8 +443,12 @@ public class HUD {
             String name = selected.getDisplayName();
             ui.drawText(shader, name, (width - name.length() * 7.5f) / 2f, topY - 16f, 0.6f, UIPalette.TEXT_COLOR);
             String tier = selected.getTierInfo();
-            if (tier != null)
+            if (selected.getLevelRequirement() > player.level) {
+                String req = "REQ LEVEL " + selected.getLevelRequirement();
+                ui.drawText(shader, req, (width - req.length() * 5.0f) / 2f, topY - 26f, 0.4f, new Vector4f(1.0f, 0.2f, 0.2f, 1.0f));
+            } else if (tier != null) {
                 ui.drawText(shader, tier, (width - tier.length() * 5.0f) / 2f, topY - 26f, 0.4f, UIPalette.TACT_ORANGE);
+            }
         }
         if (player.miningProgress > 0) {
             float pbW = 90f, pbH = 5f, px = (width - pbW) / 2f, py = height / 2f + 22f;

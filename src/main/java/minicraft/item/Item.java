@@ -35,6 +35,7 @@ public class Item {
     private final String textureName;
     private final int maxStackSize;
     private final QualityTier quality; // null = plain item (no quality tag)
+    private int levelRequirement = 1;
 
     public Item(String name, Block block, String textureName, int maxStackSize) {
         this(name, block, textureName, maxStackSize, null);
@@ -63,6 +64,9 @@ public class Item {
     public int getMaxStackSize() { return maxStackSize; }
     public QualityTier getQuality() { return quality; }
     public boolean hasQuality() { return quality != null; }
+    
+    public int getLevelRequirement() { return levelRequirement; }
+    public void setLevelRequirement(int level) { this.levelRequirement = level; }
 
     public String getDisplayName() {
         if (name == null || name.isEmpty()) return "Unknown Item";

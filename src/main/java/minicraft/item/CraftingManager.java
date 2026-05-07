@@ -108,13 +108,21 @@ public class CraftingManager {
         addArmorSet("Amethyst", "AMETHYST_ORE", 0.18f, 3, 0.2f, 1.0f, 0.3f, null);
         addToolSet("Amethyst", "AMETHYST_ORE", 3, 10.0f);
 
-        addArmorSet("Aquamarine", "AQUAMARINE_ORE", 0.18f, 3, 0.4f, 1.05f, 0.2f, null);
-        addToolSet("Aquamarine", "AQUAMARINE_ORE", 3, 11.0f);
+        addArmorSet("Aquamarine", "AQUAMARINE_ORE", 0.10f, 3, 0.4f, 1.05f, 0.2f,
+                new minicraft.math.Vector3f(0.15f, 0.35f, 0.7f)); // Subtle Light Blue Glow
+        addToolSet("Aquamarine", "AQUAMARINE_ORE", 5, 100.0f); // Tier 5 Aquamarine (100 * 4 = 400 damage)
 
-        addArmorSet("Adamantine", "ADAMANTINE", 0.26f, 3, 1.8f, 1.0f, 0.4f, null);
-        addToolSet("Adamantine", "ADAMANTINE", 7, 20.0f);
+        addArmorSet("Adamantine", "ADAMANTINE", 0.38f, 3, 1.8f, 1.0f, 0.4f, 
+                new minicraft.math.Vector3f(0.5f, 0.05f, 0.05f)); // Subtle Dark Red Glow
+        addToolSet("Adamantine", "ADAMANTINE", 7, 112.5f); // Tier 7 Adamantine (112.5 * 4 = 450 damage)
 
-        addArmorSet("Obsidian", "OBSIDIAN", 0.30f, 3, 0.8f, 0.85f, 0.6f, null);
+        addArmorSet("Agate", "AGATE_ORE", 0.45f, 3, 0.5f, 1.05f, 0.3f, 
+                new minicraft.math.Vector3f(0.8f, 0.0f, 0.0f)); // Deep Red Glow
+        addToolSet("Agate", "AGATE_ORE", 7, 112.5f); // Tier 7 Agate (112.5 * 4 = 450 damage)
+
+        addArmorSet("Obsidian", "OBSIDIAN", 0.45f, 3, 0.8f, 0.85f, 0.6f, 
+                new minicraft.math.Vector3f(0.4f, 0.05f, 0.8f)); // Deep Purple Glow
+        addToolSet("Obsidian", "OBSIDIAN", 8, 125.0f); // Tier 8 Obsidian Tools (125 * 4 = 500 damage)
 
         // Atomic Tiers
         addArmorSet("Uranium", "URANIUM_ORE", 0.25f, 4, 0.8f, 1.0f, 0.5f,
@@ -125,16 +133,14 @@ public class CraftingManager {
         addToolSet("Plutonium", "PLUTONIUM_ORE", 6, 25.0f);
 
         // --- 8. LEGENDARY GEM TIERS (Zenith Industry) ---
-        addArmorSet("Agate", "AGATE_ORE", 0.20f, 3, 0.5f, 1.05f, 0.3f, null);
-        addToolSet("Agate", "AGATE_ORE", 4, 14.0f);
-
         addArmorSet("Tourmaline", "TOURMALINE_ORE", 0.22f, 3, 0.5f, 1.15f, 0.4f, null);
         addToolSet("Tourmaline", "TOURMALINE_ORE", 4, 16.0f);
 
         addArmorSet("Opal", "OPAL_ORE", 0.24f, 4, 2.0f, 1.0f, 0.5f, null);
         addToolSet("Opal", "OPAL_ORE", 5, 18.0f);
 
-        addArmorSet("Alexandrite", "ALEXANDRITE_ORE", 0.26f, 4, 1.5f, 1.1f, 0.4f, null);
+        addArmorSet("Alexandrite", "ALEXANDRITE_ORE", 0.26f, 4, 1.5f, 1.1f, 0.4f,
+                new minicraft.math.Vector3f(1.0f, 0.1f, 0.1f)); // Bright Red Glow
         addToolSet("Alexandrite", "ALEXANDRITE_ORE", 7, 20.0f);
 
         // --- 9. RAREST MINERAL TIERS (The Absolute Limit - Tier 8 & 9) ---
@@ -441,6 +447,20 @@ public class CraftingManager {
         return new Item(mat, null, tex, 64);
     }
 
+    private int getReqLevel(int tier) {
+        if (tier <= 1) return 1;
+        if (tier == 2) return 5;
+        if (tier == 3) return 10;
+        if (tier == 4) return 20;
+        if (tier == 5) return 30;
+        if (tier == 6) return 40;
+        if (tier == 7) return 50;
+        if (tier == 8) return 65;
+        if (tier == 9) return 80;
+        if (tier == 10) return 100;
+        return 100 + (tier - 10) * 10;
+    }
+
     private void addToolSet(String tier, String mat, int level, float speed) {
         addToolSet(tier, mat, level, speed, null, 0.0f);
     }
@@ -456,18 +476,23 @@ public class CraftingManager {
         float radioactiveSpeed = 1.0f;
         if (tier.equals("Xenotime")) radioactiveSpeed = 1.5f; // 50% faster for radioactive ores
         
-        recipes.add(new Recipe(name + "Pickaxe", Recipe.Category.TOOLS, pI,
-                new ToolItem(name + "Pick", ToolItem.ToolType.PICKAXE, level, speed, "item_pick_" + low, null, 0f, false, 0f, aura, radioactiveSpeed, 1.0f, chance), 1));
+        ToolItem pick = new ToolItem(name + "Pick", ToolItem.ToolType.PICKAXE, level, speed, "item_pick_" + low, null, 0f, false, 0f, aura, radioactiveSpeed, 1.0f, chance);
+        pick.setLevelRequirement(getReqLevel(level));
+        recipes.add(new Recipe(name + "Pickaxe", Recipe.Category.TOOLS, pI, pick, 1));
+
         // Axe
         Map<Item, Integer> aI = new HashMap<>();
         aI.put(m, 3);
-        recipes.add(new Recipe(name + "Axe", Recipe.Category.TOOLS, aI,
-                new ToolItem(name + "Axe", ToolItem.ToolType.AXE, level, speed, "item_axe_" + low, null, 0f, false, 0f, aura, 1.0f, 1.0f, 0f), 1));
+        ToolItem axe = new ToolItem(name + "Axe", ToolItem.ToolType.AXE, level, speed, "item_axe_" + low, null, 0f, false, 0f, aura, 1.0f, 1.0f, 0f);
+        axe.setLevelRequirement(getReqLevel(level));
+        recipes.add(new Recipe(name + "Axe", Recipe.Category.TOOLS, aI, axe, 1));
+
         // Shovel
         Map<Item, Integer> sI = new HashMap<>();
         sI.put(m, 3);
-        recipes.add(new Recipe(name + "Shovel", Recipe.Category.TOOLS, sI,
-                new ToolItem(name + "Shovel", ToolItem.ToolType.SHOVEL, level, speed, "item_shovel_" + low, null, 0f, false, 0f, aura, 1.0f, 1.0f, 0f), 1));
+        ToolItem shovel = new ToolItem(name + "Shovel", ToolItem.ToolType.SHOVEL, level, speed, "item_shovel_" + low, null, 0f, false, 0f, aura, 1.0f, 1.0f, 0f);
+        shovel.setLevelRequirement(getReqLevel(level));
+        recipes.add(new Recipe(name + "Shovel", Recipe.Category.TOOLS, sI, shovel, 1));
         // Sword
         Map<Item, Integer> swI = new HashMap<>();
         swI.put(m, 3);
@@ -476,9 +501,13 @@ public class CraftingManager {
         // Tier 0 (Wood): 0.7x, Tier 2 (Iron): 1.0x, Tier 10 (Mithril): 2.5x
         float attackSpeed = 0.7f + (level * 0.18f);
         if (tier.equals("Gold")) attackSpeed += 0.5f; // Gold specialty is speed
+        if (tier.equals("Obsidian")) attackSpeed = 0.5f; // 0.8s cooldown: 0.4 / 0.5 = 0.8
+        if (tier.equals("Aquamarine")) attackSpeed = 0.444f; // 0.9s cooldown: 0.4 / 0.444 = 0.9
+        if (tier.equals("Agate")) attackSpeed = 0.533f; // 0.75s cooldown: 0.4 / 0.533 = 0.75
         
-        recipes.add(new Recipe(name + "Sword", Recipe.Category.TOOLS, swI,
-                new ToolItem(name + "Sword", ToolItem.ToolType.SWORD, level, speed, "item_sword_" + low, null, 0f, false, 0f, aura, 1.0f, attackSpeed, 0f), 1));
+        ToolItem sword = new ToolItem(name + "Sword", ToolItem.ToolType.SWORD, level, speed, "item_sword_" + low, null, 0f, false, 0f, aura, 1.0f, attackSpeed, 0f);
+        sword.setLevelRequirement(getReqLevel(level));
+        recipes.add(new Recipe(name + "Sword", Recipe.Category.TOOLS, swI, sword, 1));
     }
 
     private void addArmorSet(String tierName, String matName, float prot, int cost,
@@ -486,29 +515,42 @@ public class CraftingManager {
         Item mat = createMaterialItem(matName);
         String low = tierName.toLowerCase();
 
-        // Weighted Distribution: Helmet 20%, Chest 40%, Legs 25%, Boots 15%
-        recipes.add(new Recipe(tierName + " Helmet", Recipe.Category.ARMOR, Map.of(mat, cost),
-                new ArmorItem(tierName + " Helmet", ArmorItem.ArmorSlot.HELMET, prot * 0.20f, "armor_helm_" + low,
-                        tierName,
-                        healthBonus * 0.20f, 1.0f + (speedMod - 1.0f) * 0.20f, insulation * 0.20f, glow),
-                1));
+        // Determine Requirement Level from Tier Name/Context
+        int req = 1;
+        if (tierName.equals("Iron") || tierName.equals("Silver")) req = 5;
+        else if (tierName.equals("Gold") || tierName.equals("Nickel") || tierName.equals("Amethyst")) req = 10;
+        else if (tierName.equals("Diamond") || tierName.equals("Titanium") || tierName.equals("Tanzanite")) req = 20;
+        else if (tierName.equals("Aquamarine") || tierName.equals("Emerald") || tierName.equals("Topaz") || tierName.equals("Opal") || tierName.equals("Alexandrite")) req = 30;
+        else if (tierName.equals("Uranium") || tierName.equals("Plutonium")) req = 40;
+        else if (tierName.equals("Adamantine") || tierName.equals("Agate")) req = 50;
+        else if (tierName.equals("Obsidian")) req = 65;
+        else if (tierName.equals("Painite") || tierName.equals("Garnet") || tierName.equals("Serendibite")) req = 80;
+        else if (tierName.equals("Onyx") || tierName.equals("Mithril")) req = 100;
 
-        recipes.add(new Recipe(tierName + " Chestplate", Recipe.Category.ARMOR, Map.of(mat, cost + 2),
-                new ArmorItem(tierName + " Chestplate", ArmorItem.ArmorSlot.CHESTPLATE, prot * 0.40f,
+        // Helmet
+        ArmorItem helm = new ArmorItem(tierName + " Helmet", ArmorItem.ArmorSlot.HELMET, prot * 0.20f, "armor_helm_" + low,
+                        tierName, healthBonus * 0.20f, 1.0f + (speedMod - 1.0f) * 0.20f, insulation * 0.20f, glow);
+        helm.setLevelRequirement(req);
+        recipes.add(new Recipe(tierName + " Helmet", Recipe.Category.ARMOR, Map.of(mat, cost), helm, 1));
+
+        // Chestplate
+        ArmorItem chest = new ArmorItem(tierName + " Chestplate", ArmorItem.ArmorSlot.CHESTPLATE, prot * 0.40f,
                         "armor_chest_" + low, tierName, healthBonus * 0.40f, 1.0f + (speedMod - 1.0f) * 0.40f,
-                        insulation * 0.40f, glow),
-                1));
+                        insulation * 0.40f, glow);
+        chest.setLevelRequirement(req);
+        recipes.add(new Recipe(tierName + " Chestplate", Recipe.Category.ARMOR, Map.of(mat, cost + 2), chest, 1));
 
-        recipes.add(new Recipe(tierName + " Leggings", Recipe.Category.ARMOR, Map.of(mat, cost + 1),
-                new ArmorItem(tierName + " Leggings", ArmorItem.ArmorSlot.LEGGINGS, prot * 0.25f, "armor_legs_" + low,
-                        tierName, healthBonus * 0.25f, 1.0f + (speedMod - 1.0f) * 0.25f, insulation * 0.25f, glow),
-                1));
+        // Leggings
+        ArmorItem legs = new ArmorItem(tierName + " Leggings", ArmorItem.ArmorSlot.LEGGINGS, prot * 0.25f, "armor_legs_" + low,
+                        tierName, healthBonus * 0.25f, 1.0f + (speedMod - 1.0f) * 0.25f, insulation * 0.25f, glow);
+        legs.setLevelRequirement(req);
+        recipes.add(new Recipe(tierName + " Leggings", Recipe.Category.ARMOR, Map.of(mat, cost + 1), legs, 1));
 
-        recipes.add(new Recipe(tierName + " Boots", Recipe.Category.ARMOR, Map.of(mat, cost),
-                new ArmorItem(tierName + " Boots", ArmorItem.ArmorSlot.BOOTS, prot * 0.15f, "armor_boots_" + low,
-                        tierName,
-                        healthBonus * 0.15f, 1.0f + (speedMod - 1.0f) * 0.15f, insulation * 0.15f, glow),
-                1));
+        // Boots
+        ArmorItem boots = new ArmorItem(tierName + " Boots", ArmorItem.ArmorSlot.BOOTS, prot * 0.15f, "armor_boots_" + low,
+                        tierName, healthBonus * 0.15f, 1.0f + (speedMod - 1.0f) * 0.15f, insulation * 0.15f, glow);
+        boots.setLevelRequirement(req);
+        recipes.add(new Recipe(tierName + " Boots", Recipe.Category.ARMOR, Map.of(mat, cost), boots, 1));
     }
 
     public List<Recipe> getRecipes() {

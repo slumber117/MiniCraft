@@ -35,7 +35,7 @@ public class ChestUI {
             int col = i % 9, row = i / 9;
             float tx = gx + col * (SLOT + GAP), ty = chestY + row * (SLOT + GAP);
             boolean hovered = ui.isHovered(mouseX, mouseY, tx, ty, SLOT, SLOT);
-            ui.drawSlot(shader, tx, ty, SLOT, chestInv[i], hovered);
+            ui.drawSlot(shader, tx, ty, SLOT, chestInv[i], hovered, player.level);
             
             // Scroll to Transfer (Chest -> Player)
             if (hovered && main.scrollDelta != 0 && chestInv[i] != null) {
@@ -56,7 +56,7 @@ public class ChestUI {
             int col = i % 9, row = i / 9;
             float tx = gx + col * (SLOT + GAP), ty = playerY + row * (SLOT + GAP);
             boolean hovered = ui.isHovered(mouseX, mouseY, tx, ty, SLOT, SLOT);
-            ui.drawSlot(shader, tx, ty, SLOT, playerInv[i], hovered);
+            ui.drawSlot(shader, tx, ty, SLOT, playerInv[i], hovered, player.level);
 
             // Scroll to Transfer (Player -> Chest)
             if (hovered && main.scrollDelta != 0 && playerInv[i] != null) {

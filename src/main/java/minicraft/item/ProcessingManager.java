@@ -154,7 +154,7 @@ public class ProcessingManager {
         else if (output.equals("ONYX")) tex = "item_gem_onyx";
         else if (output.equals("GRANDIDIERITE")) tex = "item_gem_grandidierite";
         else if (output.contains("ONYX")) tex = "item_gem_onyx";
-        else if (output.contains("ALEXANDRITE")) tex = "item_gem_amethyst_standalone";
+        else if (output.contains("ALEXANDRITE")) tex = "item_gem_alexandrite";
         else if (output.contains("OPAL")) tex = "item_gem_aquamarine_standalone";
         else if (output.contains("PAINITE") || output.contains("GARNET")) tex = "item_gem_ruby_standalone_v2";
         else if (output.contains("TOURMALINE")) tex = "item_gem_emerald_standalone_v2";

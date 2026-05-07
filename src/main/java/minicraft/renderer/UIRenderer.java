@@ -237,10 +237,14 @@ public class UIRenderer {
         }
     }
 
-    public void drawArmorSlot(ShaderProgram shader, float x, float y, String label, Item item) {
+    public void drawArmorSlot(ShaderProgram shader, float x, float y, String label, Item item, int playerLevel) {
         drawRectInternal(shader, x, y, 64, 64, new Vector4f(0, 0, 0, 0.6f));
         if (item != null) {
             drawItemIcon(shader, item, x + 8, y + 8, 48);
+            if (item.getLevelRequirement() > playerLevel) {
+                drawRectInternal(shader, x + 44, y + 4, 18, 14, new Vector4f(0.8f, 0, 0, 0.6f));
+                drawText(shader, "L" + item.getLevelRequirement(), x + 46, y + 6, 0.35f, new Vector4f(1, 0.8f, 0.8f, 1f));
+            }
         } else {
             drawText(shader, label.substring(0, 1), x + 24, y + 20, 0.95f, UIPalette.RUSTIC_PARCHMENT);
         }
@@ -248,7 +252,7 @@ public class UIRenderer {
     }
 
     public void drawSlot(ShaderProgram shader, float x, float y, float size,
-            minicraft.item.ItemStack stack, boolean hovered) {
+            minicraft.item.ItemStack stack, boolean hovered, int playerLevel) {
         Vector4f bg = hovered ? new Vector4f(0.24f, 0.22f, 0.20f, 1.0f) : new Vector4f(0.12f, 0.11f, 0.10f, 1.0f);
         drawRectInternal(shader, x, y, size, size, bg);
         drawRectInternal(shader, x, y, size, 2f, new Vector4f(0.08f, 0.08f, 0.08f, 1.0f));
@@ -268,11 +272,17 @@ public class UIRenderer {
             drawItemIcon(shader, stack.getItem(), x + pad, y + pad, size - pad * 2);
             if (stack.getCount() > 1)
                 drawText(shader, String.valueOf(stack.getCount()), x + 3, y + size - 12, 0.58f);
+                
+            // Level Requirement Display
+            if (stack.getItem().getLevelRequirement() > playerLevel) {
+                drawRectInternal(shader, x + size - 20, y + 2, 18, 14, new Vector4f(0.8f, 0, 0, 0.6f));
+                drawText(shader, "L" + stack.getItem().getLevelRequirement(), x + size - 18, y + 4, 0.35f, new Vector4f(1, 0.8f, 0.8f, 1f));
+            }
         }
     }
 
     public void drawSlot(ShaderProgram shader, float x, float y, float size, minicraft.item.ItemStack stack) {
-        drawSlot(shader, x, y, size, stack, false);
+        drawSlot(shader, x, y, size, stack, false, 1);
     }
 
     public void drawPremiumBar(ShaderProgram shader, float x, float y, float w, float h, float fill,

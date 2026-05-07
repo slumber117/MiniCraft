@@ -47,6 +47,7 @@ public class InventoryUI {
         armorColors.put("DYSPROSIUM", new Vector3f(1.00f, 0.80f, 0.00f));
         armorColors.put("ERBIUM", new Vector3f(1.00f, 0.20f, 0.60f));
         armorColors.put("LUTETIUM", new Vector3f(1.00f, 1.00f, 1.00f));
+        armorColors.put("OBSIDIAN", new Vector3f(0.15f, 0.05f, 0.25f));
     }
 
     public void render(UIRenderer ui, Player player, ShaderProgram shader, int width, int height, Main main) {
@@ -87,10 +88,10 @@ public class InventoryUI {
         float armorX = dollX + dollW + 12f;
         float armorY = dollY;
         
-        ui.drawArmorSlot(shader, armorX, armorY, "HELMET", player.inventory.getHelmet());
-        ui.drawArmorSlot(shader, armorX, armorY + SLOT + GAP, "CHEST", player.inventory.getChestplate());
-        ui.drawArmorSlot(shader, armorX, armorY + 2*(SLOT + GAP), "LEGS", player.inventory.getLeggings());
-        ui.drawArmorSlot(shader, armorX, armorY + 3*(SLOT + GAP), "BOOTS", player.inventory.getBoots());
+        ui.drawArmorSlot(shader, armorX, armorY, "HELMET", player.inventory.getHelmet(), player.level);
+        ui.drawArmorSlot(shader, armorX, armorY + SLOT + GAP, "CHEST", player.inventory.getChestplate(), player.level);
+        ui.drawArmorSlot(shader, armorX, armorY + 2*(SLOT + GAP), "LEGS", player.inventory.getLeggings(), player.level);
+        ui.drawArmorSlot(shader, armorX, armorY + 3*(SLOT + GAP), "BOOTS", player.inventory.getBoots(), player.level);
 
         // ── 3. Vitals Readout ──────────────────────────────────────────────
         float statsY = dollY + dollH + 18f;
@@ -145,7 +146,7 @@ public class InventoryUI {
             
             if (sy2 + SLOT > mainGridY - 100 && sy2 < mainGridY + gridViewH + 100) {
                 boolean hover = ui.isHovered(mouseX, mouseY, sx2, sy2, SLOT, SLOT);
-                ui.drawSlot(shader, sx2, sy2, SLOT, mainInv[i], hover);
+                ui.drawSlot(shader, sx2, sy2, SLOT, mainInv[i], hover, player.level);
             }
         }
         glDisable(GL_SCISSOR_TEST);
@@ -164,7 +165,7 @@ public class InventoryUI {
             float sx2 = gridStartX + i * (SLOT + GAP);
             boolean sel = (i == selIdx);
             boolean hover = ui.isHovered(mouseX, mouseY, sx2, hotbarRowY, SLOT, SLOT);
-            ui.drawSlot(shader, sx2, hotbarRowY, SLOT, hotbar[i], hover);
+            ui.drawSlot(shader, sx2, hotbarRowY, SLOT, hotbar[i], hover, player.level);
             if (sel) {
                 ui.drawRectInternal(shader, sx2, hotbarRowY, SLOT, 3f, new Vector4f(1.0f, 0.95f, 0.0f, 1.0f));
             }

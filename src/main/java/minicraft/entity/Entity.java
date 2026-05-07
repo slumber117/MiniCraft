@@ -56,6 +56,7 @@ public abstract class Entity implements minicraft.world.IWeatherEntity {
 
     protected EntityManager manager;
     protected minicraft.world.World world;
+    protected ParticleManager particleManager;
 
     // ── Abstract API ──────────────────────────────────────────────────────
 
@@ -63,6 +64,7 @@ public abstract class Entity implements minicraft.world.IWeatherEntity {
     public void tick(EntityManager manager, minicraft.world.World world, ParticleManager particleManager, float dt) {
         this.manager = manager;
         this.world = world;
+        this.particleManager = particleManager;
         
         // --- Radiation Sickness Logic ---
         if (radiationSicknessTimer > 0) {
@@ -169,8 +171,13 @@ public abstract class Entity implements minicraft.world.IWeatherEntity {
         if (health <= 0) {
             health = 0;
             dead = true;
-            // No direct manager access here, will handle via EntityManager if needed
-            // or just rely on subclasses having state.
+            
+            // Award XP to player if they killed this entity
+            if (attacker instanceof Player) {
+                Player p = (Player) attacker;
+                float xpReward = Math.max(1.0f, maxHealth * 0.5f); // 50% of health as XP, min 1
+                p.addXp(xpReward, particleManager);
+            }
         }
     }
 
