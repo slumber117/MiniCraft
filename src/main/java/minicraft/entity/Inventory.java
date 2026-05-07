@@ -31,9 +31,13 @@ public class Inventory {
 
     public boolean hasFullSet(String tier) {
         if (helmet == null || chestplate == null || leggings == null || boots == null) return false;
-        // Check by tier name or display name fallback
-        return (helmet.getTierName() != null && helmet.getTierName().equalsIgnoreCase(tier)) ||
-               (helmet.getDisplayName().contains(tier));
+        return matchesTier(helmet, tier) && matchesTier(chestplate, tier)
+            && matchesTier(leggings, tier) && matchesTier(boots, tier);
+    }
+
+    private boolean matchesTier(minicraft.item.ArmorItem armor, String tier) {
+        if (armor.getTierName() != null && armor.getTierName().equalsIgnoreCase(tier)) return true;
+        return armor.getDisplayName().contains(tier);
     }
 
     public Inventory() {
@@ -302,6 +306,8 @@ public class Inventory {
             
             if (hasFullSet("Painite")) total *= 1.20f;
             if (hasFullSet("Onyx")) total *= 1.25f;
+            if (hasFullSet("Emerald")) total *= 1.25f; // Emerald 25% Speed Boost
+            if (hasFullSet("Topaz")) total *= 1.15f;   // Topaz 15% Speed Boost
         }
         return Math.max(0.1f, total);
     }
@@ -355,6 +361,10 @@ public class Inventory {
         float power = 0f;
         power = Math.max(power, getTorchTierPower(getSelectedItem()));
         power = Math.max(power, getTorchTierPower(offhandItem));
+        
+        // Topaz "Solar Radiance" Set Bonus
+        if (hasFullSet("Topaz")) power = Math.max(power, 1.0f); // Permanent Gold-tier light
+        
         return power;
     }
 

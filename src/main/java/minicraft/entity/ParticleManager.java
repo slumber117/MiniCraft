@@ -114,6 +114,24 @@ public class ParticleManager {
         }
     }
 
+    public void spawnDamage(float x, float y, float z, Vector4f color) {
+        int count = 6 + rand.nextInt(4);
+        for (int i = 0; i < count; i++) {
+            Particle p = new Particle();
+            p.pos = new Vector3f(x, y + 0.5f, z);
+            p.vel = new Vector3f(
+                (rand.nextFloat() - 0.5f) * 4.0f,
+                (rand.nextFloat() + 0.5f) * 2.0f,
+                (rand.nextFloat() - 0.5f) * 4.0f
+            );
+            p.maxLife = 0.4f + rand.nextFloat() * 0.2f;
+            p.life = p.maxLife;
+            p.scale = 0.08f + rand.nextFloat() * 0.04f;
+            p.color = new Vector4f(color);
+            particles.add(p);
+        }
+    }
+
     public void update(float dt) {
         Iterator<Particle> it = particles.iterator();
         while (it.hasNext()) {

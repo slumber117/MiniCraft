@@ -27,6 +27,10 @@ public abstract class Entity implements minicraft.world.IWeatherEntity {
     protected float health;
     protected boolean dead = false;
     public float damageFlashTimer = 0f;
+    public boolean justHit = false;
+    public float radiationSicknessTimer = 0f;
+    public float burnTimer = 0f;
+    protected java.util.Random rng = new java.util.Random();
 
     // ── State ─────────────────────────────────────────────────────────────
     public EntityState state = EntityState.IDLE;
@@ -50,10 +54,34 @@ public abstract class Entity implements minicraft.world.IWeatherEntity {
     }
 
 
+    protected EntityManager manager;
+    protected minicraft.world.World world;
+
     // ── Abstract API ──────────────────────────────────────────────────────
 
     /** Called once per game tick (~20 times/sec). Override to implement AI. */
     public void tick(EntityManager manager, minicraft.world.World world, ParticleManager particleManager, float dt) {
+        this.manager = manager;
+        this.world = world;
+        
+        // --- Radiation Sickness Logic ---
+        if (radiationSicknessTimer > 0) {
+            radiationSicknessTimer -= dt;
+            float damagePercent = 0.05f; // 5% per second
+            if (type.displayName.toLowerCase().contains("ice") || type.biome.toLowerCase().contains("snow") || type.biome.toLowerCase().contains("tundra")) {
+                damagePercent = 0.15f; // 15% for ice mobs
+            }
+            damage((maxHealth * damagePercent) * dt, null);
+            if (rng.nextFloat() < 0.2f) particleManager.spawnSmoke(position.x, position.y + 1f, position.z);
+        }
+        
+        // --- Burn Logic ---
+        if (burnTimer > 0) {
+            burnTimer -= dt;
+            damage(15f * dt, null); // Fire damage
+            if (rng.nextFloat() < 0.4f) particleManager.spawnSmoke(position.x, position.y + 0.5f, position.z);
+        }
+        
         if (damageFlashTimer > 0) damageFlashTimer -= dt;
         if (radiationTimer > 0) {
             radiationTimer -= dt;
@@ -137,6 +165,7 @@ public abstract class Entity implements minicraft.world.IWeatherEntity {
         if (dead) return;
         health -= amount;
         damageFlashTimer = 0.35f;
+        justHit = true;
         if (health <= 0) {
             health = 0;
             dead = true;
@@ -145,10 +174,18 @@ public abstract class Entity implements minicraft.world.IWeatherEntity {
         }
     }
 
-    public void applyKnockback(float dx, float dy, float dz) {
-        this.velocity.x += dx;
-        this.velocity.y += dy;
-        this.velocity.z += dz;
+    public void applyKnockback(float x, float y, float z) {
+        velocity.x += x;
+        velocity.y += y;
+        velocity.z += z;
+    }
+
+    public void applyRadiationSickness(float duration) {
+        this.radiationSicknessTimer = Math.max(radiationSicknessTimer, duration);
+    }
+
+    public void applyBurn(float duration) {
+        this.burnTimer = Math.max(this.burnTimer, duration);
     }
 
     public void heal(float amount) {

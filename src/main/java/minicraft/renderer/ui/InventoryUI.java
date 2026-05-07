@@ -81,7 +81,7 @@ public class InventoryUI {
         ui.drawRectInternal(shader, dollX, dollY, dollW, 1, UIPalette.RUSTIC_BORDER);
         ui.drawRectInternal(shader, dollX, dollY+dollH, dollW, 1, UIPalette.RUSTIC_BORDER);
         
-        renderPaperDoll(ui, player, shader, dollX + dollW/2, dollY + dollH - 30f, 90f);
+        renderPaperDoll(ui, player, shader, dollX + dollW/2, dollY + dollH - 30f, 75f);
 
         // ── 2. Armor Slots ──────────────────────────────────────────────────
         float armorX = dollX + dollW + 12f;

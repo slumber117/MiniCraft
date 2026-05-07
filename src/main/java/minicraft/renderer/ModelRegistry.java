@@ -123,6 +123,14 @@ public class ModelRegistry {
             Texture shipTexture = shipRegion != null ? shipRegion.getTexture() : null;
             Mesh shipModel = OBJLoader.loadModel("/models/sof_.obj", shipTexture);
             models.put("ship_stalwart", shipModel);
+
+            // Arborius (Horned Bear Boss)
+            TextureRegion bearTex = textureRegistry.get("char_bear");
+            models.put("arborius", OBJLoader.loadModel("/models/arborius.obj", bearTex != null ? bearTex.getTexture() : null));
+
+            // Dragons (Custom Mesh)
+            TextureRegion dragonTex = textureRegistry.get("onyx_ore"); // Default dark scale texture
+            models.put("dragon", OBJLoader.loadModel("/models/dragon.obj", dragonTex != null ? dragonTex.getTexture() : null));
             
             // 11. Primitives
             models.put("primitive_cube", createCubeMesh());

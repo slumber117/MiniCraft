@@ -57,8 +57,8 @@ public class Main {
 
     // ── Window ────────────────────────────────────────────────────────────
     private long window;
-    private static final int WIN_W = 1280;
-    private static final int WIN_H = 720;
+    private static final int WIN_W = 1920;
+    private static final int WIN_H = 1080;
     private static final String TITLE = "MiniCraft Engine";
 
     // ── Rendering ─────────────────────────────────────────────────────────
@@ -227,9 +227,8 @@ public class Main {
         return window;
     }
 
-    public World getWorld() {
-        return world;
-    }
+    public World getWorld() { return world; }
+    public EntityManager getEntityManager() { return entityManager; }
 
     public int getFramebufferW() { return framebufferW; }
     public int getFramebufferH() { return framebufferH; }
@@ -1039,8 +1038,35 @@ public class Main {
     // ─────────────────────────────────────────────────────────────────────
 
     private void updateInput(float dt) {
+        handleHotbarInput(); // Consume scroll delta and 1-9 keys
         handleMovementInput(dt);
         handleInteractionInput(dt);
+    }
+
+    private void handleHotbarInput() {
+        if (inventoryOpen || craftingOpen || questLogOpen || shipConsoleOpen || chestOpen) {
+            scrollDelta = 0; // Reset scroll if UI is open
+            return;
+        }
+
+        // 1. Mouse Scroll Cycling
+        if (scrollDelta != 0) {
+            int current = player.inventory.getSelectedIndex();
+            // Scroll down (negative y) -> next item (+1)
+            // Scroll up (positive y) -> prev item (-1)
+            int direction = scrollDelta > 0 ? -1 : 1;
+            int next = (current + direction) % 9;
+            if (next < 0) next += 9;
+            player.inventory.setSelectedIndex(next);
+            scrollDelta = 0; // Consume the scroll
+        }
+
+        // 2. Keyboard Number Keys (1-9)
+        for (int i = 0; i < 9; i++) {
+            if (glfwGetKey(window, GLFW_KEY_1 + i) == GLFW_PRESS) {
+                player.inventory.setSelectedIndex(i);
+            }
+        }
     }
 
     private void handleMovementInput(float dt) {
@@ -1108,8 +1134,10 @@ public class Main {
 
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
             if (player.isGrounded) {
-                float jumpPower = 8.2f;
+                float jumpPower = 11.6f; // Doubled jump height (v^2/2g)
                 if (player.inventory.hasFullSet("Painite")) jumpPower *= 1.20f;
+                if (player.inventory.hasFullSet("Xenotime")) jumpPower *= 1.10f; 
+                if (player.inventory.hasFullSet("Bastnaesite")) jumpPower *= 1.15f; // Bastnaesite 15% Jump Boost
                 player.velocity.y = jumpPower;
                 player.isGrounded = false;
             } else if (player.isInWater) {
@@ -1703,6 +1731,10 @@ public class Main {
                 }
                 toolLevel = t.getHarvestLevel();
                 toolType = t.getToolType();
+                
+                // --- No Mining Delay for Swords ---
+                // If holding a sword, we don't allow mining solid blocks (no bar)
+                if (toolType == ToolItem.ToolType.SWORD) return;
             }
 
             // --- Tool Type Efficiency Check ---
@@ -1731,6 +1763,8 @@ public class Main {
                 miningProgress = 0f;
             } else {
                 float armorMiningMod = player.inventory.hasFullSet("Plutonium") ? 1.5f : 1.0f;
+                // Emerald Set Bonus: 25% faster gem ore mining
+                if (b.isGemOre() && player.inventory.hasFullSet("Emerald")) armorMiningMod *= 1.25f;
                 miningProgress += (dt * finalEfficiency * armorMiningMod) / b.hardness;
             }
 

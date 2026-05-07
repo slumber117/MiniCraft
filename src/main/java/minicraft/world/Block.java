@@ -293,6 +293,22 @@ public enum Block {
         }
     }
 
+    /**
+     * Returns true if this block is a gem-type ore (precious/semi-precious stones).
+     * Used by the Emerald armor set bonus for gem mining speed.
+     */
+    public boolean isGemOre() {
+        return this == DIAMOND_ORE || this == EMERALD_ORE || this == RUBY_ORE
+            || this == TOPAZ_ORE || this == AQUAMARINE_ORE || this == PERIDOT_ORE
+            || this == SAPPHIRE_ORE || this == AMETHYST_ORE || this == JADE_ORE
+            || this == ONYX_ORE || this == GARNET_ORE || this == TOURMALINE_ORE
+            || this == AGATE_ORE || this == PAINITE_ORE || this == OPAL_ORE
+            || this == TANZANITE_ORE || this == LAPIS_ORE
+            || this == TAAFFEITE_ORE || this == GRANDIDIERITE_ORE
+            || this == SERENDIBITE_ORE || this == ALEXANDRITE_ORE
+            || this == MUSGRAVITE_ORE;
+    }
+
     public boolean isAir() {
         return this == AIR;
     }

@@ -37,7 +37,13 @@ public class EntityManager {
         // Use a copy to avoid ConcurrentModificationException if entities spawn during tick
         List<Entity> toTick = new ArrayList<>(entities);
         for (Entity e : toTick) {
-            if (!e.isDead()) e.tick(this, world, particleManager, dt);
+            if (!e.isDead()) {
+                e.tick(this, world, particleManager, dt);
+                if (e.justHit) {
+                    particleManager.spawnDamage(e.position.x, e.position.y, e.position.z, new minicraft.math.Vector4f(1, 0.1f, 0.1f, 1));
+                    e.justHit = false;
+                }
+            }
         }
         // Remove dead entities
         Iterator<Entity> it = entities.iterator();
@@ -90,16 +96,28 @@ public class EntityManager {
                         if (rng.nextFloat() < 0.15f) {
                             spawnAt(EntityType.TROLL, gx + 0.5f, gy, gz + 0.5f);
                         } else {
-                            spawnAt(EntityType.ZOMBIE, gx + 0.5f, gy, gz + 0.5f);
+                            // Tundra check for Ice Golem
+                            minicraft.world.Biome b = world.getBiome(gx, gz);
+                            if (b == minicraft.world.Biome.TUNDRA || b == minicraft.world.Biome.SNOWY_FOREST || b == minicraft.world.Biome.SNOWY_PEAKS) {
+                                if (rng.nextFloat() < 0.10f) spawnAt(EntityType.ICE_BEAST, gx + 0.5f, gy, gz + 0.5f);
+                                else if (rng.nextFloat() < 0.25f) spawnAt(EntityType.ICE_GOLEM, gx + 0.5f, gy, gz + 0.5f);
+                                else spawnAt(EntityType.ZOMBIE, gx + 0.5f, gy, gz + 0.5f);
+                            } else if (b == minicraft.world.Biome.FOREST || b == minicraft.world.Biome.REDWOOD || b == minicraft.world.Biome.JUNGLE) {
+                                // Forest bosses — Rare Arborius and Crawler
+                                if (rng.nextFloat() < 0.005f) spawnAt(EntityType.ARBORIUS, gx + 0.5f, gy, gz + 0.5f);
+                                else if (rng.nextFloat() < 0.03f) spawnAt(EntityType.FOREST_CRAWLER, gx + 0.5f, gy, gz + 0.5f);
+                                else spawnAt(EntityType.ZOMBIE, gx + 0.5f, gy, gz + 0.5f);
+                            } else {
+                                spawnAt(EntityType.ZOMBIE, gx + 0.5f, gy, gz + 0.5f);
+                            }
                         }
                         return;
                     }
                 }
-            } else if (gy > 180) {
-                // Sky Spawns (Dragons)
-                if (world.getBlock(gx, gy, gz) == minicraft.world.Block.AIR && rng.nextFloat() < 0.05f) {
-                    spawnAt(EntityType.FIRE_DRAGON, gx + 0.5f, gy, gz + 0.5f);
-                    return;
+            } else {
+                // Check for Sky Dragon Arenas
+                if (gy > 700) {
+                    if (checkDragonArenaSpawn(gx, gy, gz, world)) return;
                 }
             }
         }
@@ -149,6 +167,10 @@ public class EntityManager {
             case ORC: return new minicraft.entity.monsters.Orc();
             case GRIFFINS: return new minicraft.entity.monsters.Griffin();
             case LEVIATHAN: return new minicraft.entity.monsters.Leviathan();
+            case ICE_GOLEM: return new minicraft.entity.monsters.IceGolem();
+            case ICE_BEAST: return new minicraft.entity.monsters.IceBeast();
+            case FOREST_CRAWLER: return new minicraft.entity.monsters.ForestCrawler();
+            case ARBORIUS: return new minicraft.entity.monsters.Arborius();
             case FIREBALL: return new minicraft.entity.monsters.Fireball(null, 0, 0, 0);
             case ONYX_PROJECTILE: return new minicraft.entity.monsters.OnyxProjectile(null, 0, 0, 0);
             case GOLD_FIREBALL: return new minicraft.entity.monsters.GoldFireball(null, 0, 0, 0);
@@ -236,6 +258,41 @@ public class EntityManager {
         return dx*dx + dz*dz;
     }
 
+    private boolean checkDragonArenaSpawn(int gx, int gy, int gz, minicraft.world.World world) {
+        int gridSize = 128;
+        int cx = Math.floorDiv(gx, 16);
+        int cz = Math.floorDiv(gz, 16);
+        
+        int gridX = Math.floorDiv(cx, gridSize) * gridSize + 64;
+        int gridZ = Math.floorDiv(cz, gridSize) * gridSize + 64;
+        
+        long seed = (long)gridX * 3123456789L + (long)gridZ * 123456789L + 777;
+        Random r = new Random(seed);
+        
+        if (r.nextFloat() < 0.8f) {
+            int bossType = r.nextInt(5);
+            minicraft.world.WorldCell centerCell = world.getGenerator().generate(gridX * 16 + 8, gridZ * 16 + 8);
+            
+            // Check if we are inside the arena volume
+            float dx = (gx + 0.5f) - (gridX * 16 + 8);
+            float dz = (gz + 0.5f) - (gridZ * 16 + 8);
+            float distSq = dx*dx + dz*dz;
+            
+            if (distSq < 40*40 && rng.nextFloat() < 0.05f) {
+                switch(bossType) {
+                    case 0: if (centerCell.biome == minicraft.world.Biome.MOUNTAINS) spawnAt(EntityType.GOLD_DRAGON, gx+0.5f, gy, gz+0.5f); break;
+                    case 1: if (centerCell.biome == minicraft.world.Biome.DESERT) spawnAt(EntityType.ONYX_DRAGON, gx+0.5f, gy, gz+0.5f); break;
+                    case 2: if (centerCell.temperature > 0.8f) spawnAt(EntityType.FIRE_DRAGON, gx+0.5f, gy, gz+0.5f); break;
+                    case 3: if (centerCell.temperature < 0.2f) spawnAt(EntityType.ICE_DRAGON, gx+0.5f, gy, gz+0.5f); break;
+                    case 4: if (centerCell.biome == minicraft.world.Biome.FOREST || centerCell.biome == minicraft.world.Biome.JUNGLE) 
+                                spawnAt(EntityType.EARTH_DRAGON, gx+0.5f, gy, gz+0.5f); break;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
     private boolean checkBossSpawn(int gx, int gy, int gz, minicraft.world.World world) {
         int gridSize = 64;
         int cx = Math.floorDiv(gx, 16);
@@ -255,10 +312,11 @@ public class EntityManager {
             float dz = (gz + 0.5f) - (gridZ * 16 + 8);
             float distSq = dx*dx + dz*dz;
             
+            // Dragons removed from underground dome arenas per request - swapped with Fire Demons
             if (bossType == 0 && centerCell.biome == minicraft.world.Biome.MOUNTAINS && distSq < 40*40) {
-                if (rng.nextFloat() < 0.2f) { spawnAt(EntityType.GOLD_DRAGON, gx+0.5f, gy, gz+0.5f); return true; }
+                if (rng.nextFloat() < 0.2f) { spawnAt(EntityType.FIRE_DEMON, gx+0.5f, gy, gz+0.5f); return true; }
             } else if (bossType == 1 && centerCell.biome == minicraft.world.Biome.DESERT && distSq < 50*50) {
-                if (rng.nextFloat() < 0.2f) { spawnAt(EntityType.ONYX_DRAGON, gx+0.5f, gy, gz+0.5f); return true; }
+                if (rng.nextFloat() < 0.2f) { spawnAt(EntityType.FIRE_DEMON, gx+0.5f, gy, gz+0.5f); return true; }
             } else if (bossType == 2 && centerCell.biome == minicraft.world.Biome.SAVANNA && distSq < 30*30) {
                 if (rng.nextFloat() < 0.2f) { spawnAt(EntityType.FIRE_DEMON, gx+0.5f, gy, gz+0.5f); return true; }
             }

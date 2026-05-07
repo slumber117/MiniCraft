@@ -10,20 +10,32 @@ import minicraft.item.ItemStack;
 import minicraft.item.Item;
 
 public class HUD {
+    // Boss Compass Caching (Async)
+    private float cachedTargetX = 0, cachedTargetZ = 0;
+    private boolean cachedTargetFound = false;
+    private long lastScanTime = 0;
+    private boolean isScanning = false;
 
     public void renderPlayHUD(UIRenderer ui, Player player, ShaderProgram shader, int width, int height, Main main) {
         float hotbarTop = height - 14f - 42f;
         float xpBarTop = hotbarTop - 10f - 38f;
         float xpLabelTop = xpBarTop - 13f;
 
-        float panelH = 12f * 2 + 10f + 16f + 6f;
-        float statTop = xpBarTop - panelH - 12f;
-        float marginLeft = 22f;
+        float panelH = 12f * 2 + 20f + 20f + 6f; // Expanded to 70f to accommodate 20f gap
+        
+        // --- Calculate Hotbar Layout for Alignment ---
+        float slotS = 42f, gap = 6f, stripW = 9 * (slotS + gap) - gap;
+        float startX = (width - stripW) / 2f;
+        
+        float panelW = 210f + 40f + 16f;
+        float panelGap = 20f; // Gap between health and hotbar
+        
+        float panelX = startX - panelW - panelGap;
+        float statTop = hotbarTop - (panelH - slotS) / 2f; // Vertically center with hotbar
+        float marginLeft = panelX + 8f;
 
         renderHotbar(ui, player, shader, width, height, hotbarTop);
         renderXPBar(ui, player, shader, width, xpBarTop, xpLabelTop);
-
-        float panelX = marginLeft - 8f, panelW = 210f + 40f + 16f;
 
         // --- Radiation Bar (Above Health/Hunger) ---
         if (player.radiationLevel > 0) {
@@ -53,7 +65,7 @@ public class HUD {
                 UIPalette.HUNGER_COLOR, UIPalette.HUNGER_COLOR_DARK, "F");
 
         // ── Medieval heart bar replaces the old flat health bar ────────────
-        float heartRowY = hungBarY + 12f + 10f;
+        float heartRowY = hungBarY + 12f + 20f; // Increased gap to 20f
         drawMedievalHealthBar(ui, player, shader, barX, heartRowY);
 
         // Offhand item slot
@@ -99,55 +111,92 @@ public class HUD {
         ItemStack held = player.inventory.getHeldItem();
         if (held == null || !held.getDisplayName().equalsIgnoreCase("Boss Compass")) return;
 
-        // Boss Grid Parameters (Must match World.java)
-        int gridSize = 64;
-        int cx = (int)Math.floor(player.position.x / 16.0);
-        int cz = (int)Math.floor(player.position.z / 16.0);
-        
-        float minDistSq = Float.MAX_VALUE;
-        float targetX = 0, targetZ = 0;
-        boolean found = false;
-
-        // Check nearest 3x3 grid cells (covering ~3000x3000m area)
-        int gridX = Math.floorDiv(cx, gridSize) * gridSize + 32;
-        int gridZ = Math.floorDiv(cz, gridSize) * gridSize + 32;
-
-        for (int ox = -1; ox <= 1; ox++) {
-            for (int oz = -1; oz <= 1; oz++) {
-                int gx = gridX + ox * gridSize;
-                int gz = gridZ + oz * gridSize;
-                
-                long seed = (long)gx * 3123456789L + (long)gz * 123456789L + 777;
-                java.util.Random r = new java.util.Random(seed);
-                
-                if (r.nextFloat() < 0.6f) {
-                    int bossType = r.nextInt(3);
-                    minicraft.world.WorldCell centerCell = main.getWorld().getGenerator().generate(gx * 16 + 8, gz * 16 + 8);
+        long now = System.currentTimeMillis();
+        if (!isScanning && now - lastScanTime > 2000) {
+            isScanning = true;
+            final float px = player.position.x;
+            final float pz = player.position.z;
+            
+            new Thread(() -> {
+                try {
+                    int gridSize = 64;
+                    int cx = (int)Math.floor(px / 16.0);
+                    int cz = (int)Math.floor(pz / 16.0);
                     
-                    boolean valid = (bossType == 0 && centerCell.biome == minicraft.world.Biome.MOUNTAINS) ||
-                                    (bossType == 1 && centerCell.biome == minicraft.world.Biome.DESERT) ||
-                                    (bossType == 2 && centerCell.biome == minicraft.world.Biome.SAVANNA);
-                    
-                    if (valid) {
-                        float bx = gx * 16 + 8;
-                        float bz = gz * 16 + 8;
-                        float dSq = (bx - player.position.x)*(bx - player.position.x) + (bz - player.position.z)*(bz - player.position.z);
-                        if (dSq < minDistSq) {
-                            minDistSq = dSq;
-                            targetX = bx;
-                            targetZ = bz;
-                            found = true;
+                    float minDistSq = Float.MAX_VALUE;
+                    float tx = 0, tz = 0;
+                    boolean found = false;
+
+                    // Expanded 5x5 grid scan (~5000x5000m area)
+                    int gridX = Math.floorDiv(cx, gridSize) * gridSize + 32;
+                    int gridZ = Math.floorDiv(cz, gridSize) * gridSize + 32;
+
+                    for (int ox = -2; ox <= 2; ox++) {
+                        for (int oz = -2; oz <= 2; oz++) {
+                            int gx = gridX + ox * gridSize;
+                            int gz = gridZ + oz * gridSize;
+                            
+                            long seed = (long)gx * 3123456789L + (long)gz * 123456789L + 777;
+                            java.util.Random r = new java.util.Random(seed);
+                            
+                            if (r.nextFloat() < 0.6f) {
+                                int bossType = r.nextInt(3);
+                                // HEAVY ML CALL - Now on background thread!
+                                minicraft.world.WorldCell centerCell = main.getWorld().getGenerator().generate(gx * 16 + 8, gz * 16 + 8);
+                                
+                                boolean valid = (bossType == 0 && centerCell.biome == minicraft.world.Biome.MOUNTAINS) ||
+                                                (bossType == 1 && centerCell.biome == minicraft.world.Biome.DESERT) ||
+                                                (bossType == 2 && centerCell.biome == minicraft.world.Biome.SAVANNA);
+                                
+                                if (valid) {
+                                    float bx = gx * 16 + 8;
+                                    float bz = gz * 16 + 8;
+                                    float dSq = (bx - px)*(bx - px) + (bz - pz)*(bz - pz);
+                                    if (dSq < minDistSq) {
+                                        minDistSq = dSq;
+                                        tx = bx;
+                                        tz = bz;
+                                        found = true;
+                                    }
+                                }
+                            }
                         }
                     }
+                    
+                    cachedTargetX = tx;
+                    cachedTargetZ = tz;
+                    cachedTargetFound = found;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    lastScanTime = System.currentTimeMillis();
+                    isScanning = false;
                 }
+            }, "CompassScannerThread").start();
+        }
+
+        float guiX = width - 110f, guiY = height - 120f;
+        float targetX = cachedTargetX;
+        float targetZ = cachedTargetZ;
+        boolean found = cachedTargetFound;
+        
+        // Check for entities first (priority tracking)
+        for (minicraft.entity.Entity e : main.getEntityManager().getAll()) {
+            if (e instanceof minicraft.entity.monsters.ForestCrawler || 
+                e.getType() == minicraft.entity.EntityType.GOLD_DRAGON ||
+                e.getType() == minicraft.entity.EntityType.ICE_BEAST) {
+                targetX = e.position.x;
+                targetZ = e.position.z;
+                found = true;
+                break;
             }
         }
 
-        float guiX = width - 80f, guiY = 80f;
         if (found) {
             float dx = targetX - player.position.x;
             float dz = targetZ - player.position.z;
             float angle = (float) Math.atan2(dz, dx);
+            float dist = (float) Math.sqrt(dx*dx + dz*dz);
             
             // Relative to player viewing direction
             float camYaw = (float) Math.toRadians(main.getCamera().getRotation().y);
@@ -157,6 +206,10 @@ public class HUD {
             ui.drawTacticalFrame(shader, guiX - 35, guiY - 35, 70, 70);
             ui.drawArrow(shader, guiX, guiY, 25f, -relAngle, new Vector4f(0.2f, 1.0f, 0.2f, 1.0f));
             ui.drawText(shader, "BOSS SIGNAL", guiX - 45, guiY + 42, 0.35f, new Vector4f(0.2f, 1.0f, 0.2f, 1.0f));
+            
+            // Distance Meter
+            String distStr = (int)dist + "m";
+            ui.drawText(shader, distStr, guiX - (distStr.length() * 4), guiY + 54, 0.35f, new Vector4f(1f, 0.8f, 0.2f, 1.0f));
         } else {
             ui.drawText(shader, "NO SIGNAL", guiX - 40, guiY, 0.4f, new Vector4f(0.6f, 0.6f, 0.6f, 1.0f));
         }

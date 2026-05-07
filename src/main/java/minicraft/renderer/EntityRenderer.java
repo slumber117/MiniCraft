@@ -89,6 +89,10 @@ public class EntityRenderer {
         entityTextures.put("FIREBALL", "gold_block");
         entityTextures.put("ONYX_PROJECTILE", "onyx_ore");
         entityTextures.put("GOLD_FIREBALL", "gold_block");
+        entityTextures.put("ICE_GOLEM", "snow");
+        entityTextures.put("ICE_BEAST", "ice");
+        entityTextures.put("FOREST_CRAWLER", "dirt");
+        entityTextures.put("ARBORIUS", "char_bear");
     }
 
     public void render(EntityManager manager, ShaderProgram shader, TextureRegistry textures, Matrix4f viewMatrix, float sunBrightness, minicraft.Main.CameraMode cameraMode) {
@@ -124,14 +128,27 @@ public class EntityRenderer {
                 color = new Vector4f(0.6f + 0.4f * pulse, 0.05f, 0.05f, 1.0f); // Deep red glow
             } else if (typeName.equalsIgnoreCase("FIREBALL")) {
                 color = new Vector4f(1.0f, 0.7f, 0.0f, 1.0f); // Amber color
+            } else if (typeName.equalsIgnoreCase("ICE_GOLEM")) {
+                color = new Vector4f(0.8f, 0.9f, 1.0f, 1.0f); // Cold white/blue
+            } else if (typeName.equalsIgnoreCase("ICE_BEAST")) {
+                float pulse = 0.7f + 0.3f * (float)Math.sin(System.currentTimeMillis() / 250.0);
+                color = new Vector4f(0.5f, 0.7f, 1.0f, pulse); // Pulsing blue ice
+            } else if (typeName.equalsIgnoreCase("FOREST_CRAWLER")) {
+                float pulse = 0.7f + 0.3f * (float)Math.sin(System.currentTimeMillis() / 350.0);
+                color = new Vector4f(0.15f, 0.5f * pulse, 0.08f, 1.0f); // Dark pulsing forest green
+            } else if (typeName.equalsIgnoreCase("ARBORIUS")) {
+                float pulse = 0.6f + 0.4f * (float)Math.sin(System.currentTimeMillis() / 500.0);
+                color = new Vector4f(0.3f, 0.5f + 0.5f * pulse, 0.1f, 1.0f); // Moss-green glowing pulse
             }
 
             // --- HIGH-FIDELITY 3D NPC OVERRIDE ---
             if (typeName.equalsIgnoreCase("ZOMBIE") || typeName.equalsIgnoreCase("FIRE_DEMON") || 
-                typeName.equalsIgnoreCase("ORC") || typeName.equalsIgnoreCase("LEVIATHAN")) {
+                typeName.equalsIgnoreCase("ORC") || typeName.equalsIgnoreCase("LEVIATHAN") ||
+                typeName.equalsIgnoreCase("ARBORIUS") || typeName.contains("DRAGON")) {
                 
                 String modelId = typeName.toLowerCase();
                 if (typeName.equalsIgnoreCase("FIRE_DEMON")) modelId = "zombie";
+                if (typeName.contains("DRAGON")) modelId = "dragon";
                 
                 Mesh entityMesh = ModelRegistry.getModel(modelId);
                 if (entityMesh != null) {

@@ -45,6 +45,7 @@ dependencies {
 
 application {
     mainClass = 'minicraft.Main'
+    applicationDefaultJvmArgs = ["-Xmx8G", "-XX:MaxDirectMemorySize=8G"]
 }
 
 // Fat JAR — bundles all dependencies so the game runs with: java -jar MiniCraft.jar

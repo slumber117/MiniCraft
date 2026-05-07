@@ -19,9 +19,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class World implements IWeatherWorld {
 
-    private static final int SEA_LEVEL = 102;
-    private static final int MOUNTAIN_START = 256;
-    private static final int SNOW_START = 512;
+    private static final int SEA_LEVEL = 512;
+    private static final int MOUNTAIN_START = 640;
+    private static final int SNOW_START = 800;
     private static final int BEDROCK_Y = 1;
     private static final int DIRT_LAYERS = 5;
 
@@ -383,7 +383,7 @@ public class World implements IWeatherWorld {
                     else if (y >= surfaceY - DIRT_LAYERS)
                         b = getFillerBlock(cell.biome);
                     else {
-                        boolean isDeep = y < 80;
+                        boolean isDeep = y < (SEA_LEVEL - 100);
                         boolean isMountainCore = (cell.biome == Biome.MOUNTAINS || cell.biome == Biome.SNOWY_PEAKS)
                                 && y > (surfaceY - 45);
                         b = (isDeep || isMountainCore) ? Block.STONE_DARK : Block.STONE;
@@ -439,12 +439,12 @@ public class World implements IWeatherWorld {
                         
                         if (caveCell.type == CaveType.GEODE_HOLLOW) b = Block.AIR;
 
-                        if (caveCell.type == CaveType.UNDERWATER) b = Block.WATER;
-                        else if (y < 80 && Math.random() < 0.05 && caveCell.type != CaveType.GEODE_HOLLOW)
+                        if (caveCell.type == minicraft.world.cave.CaveType.UNDERWATER) b = Block.WATER;
+                        else if (y < 50 && Math.random() < 0.05 && caveCell.type != minicraft.world.cave.CaveType.GEODE_HOLLOW)
                             b = Block.LAVA;
                         
                         chunk.setBlock(x, y, z, b);
-                    } else if (y < 80 && Math.random() < 0.03) {
+                    } else if (y < 50 && Math.random() < 0.03) {
                         chunk.setBlock(x, y, z, Block.MAGMA);
                     }
                 }
@@ -557,8 +557,9 @@ public class World implements IWeatherWorld {
         int cx = chunk.chunkX;
         int cz = chunk.chunkZ;
         
-        // Procedural Boss Arena Grid (Every 64x64 chunks ≈ 1024x1024 blocks)
-        int gridSize = 64;
+        // Procedural Boss Arena Grid (Every 128x128 chunks ≈ 2048x2048 blocks)
+        // Spaced out more for the massive 1024 world
+        int gridSize = 128;
         int gx = Math.floorDiv(cx, gridSize) * gridSize + (gridSize / 2);
         int gz = Math.floorDiv(cz, gridSize) * gridSize + (gridSize / 2);
         
@@ -566,27 +567,43 @@ public class World implements IWeatherWorld {
         long seed = (long)gx * 3123456789L + (long)gz * 123456789L + 777; 
         java.util.Random r = new java.util.Random(seed);
         
-        if (r.nextFloat() < 0.6f) { // 60% chance a grid cell has a boss
-            int bossType = r.nextInt(3); // 0 = Gold, 1 = Onyx, 2 = Fire Demon
+        if (r.nextFloat() < 0.8f) { // 80% chance a grid cell has a boss
+            int bossType = r.nextInt(5); // 0-4 for different dragons
             
             // Check biome at the potential center
             WorldCell centerCell = generator.generate(gx * 16 + 8, gz * 16 + 8);
+            int arenaY = 750 + r.nextInt(150); // Floating in the sky (Y: 750 - 900)
             
-            if (bossType == 0 && centerCell.biome == Biome.MOUNTAINS) {
-                applyDomeArena(chunk, gx * 16 + 8, gz * 16 + 8, 50, 30, Block.GOLD_BLOCK, false);
-            } else if (bossType == 1 && centerCell.biome == Biome.DESERT) {
-                applyDomeArena(chunk, gx * 16 + 8, gz * 16 + 8, 60, 40, Block.ONYX_BLOCK, false);
-            } else if (bossType == 2 && centerCell.biome == Biome.SAVANNA) {
-                applyDomeArena(chunk, gx * 16 + 8, gz * 16 + 8, 45, 25, Block.BEDROCK_WALL, true);
+            switch(bossType) {
+                case 0: // Gold Dragon (Mountains)
+                    if (centerCell.biome == Biome.MOUNTAINS)
+                        applyDomeArena(chunk, gx * 16 + 8, arenaY, gz * 16 + 8, 50, 40, Block.GOLD_BLOCK, false);
+                    break;
+                case 1: // Onyx Dragon (Desert)
+                    if (centerCell.biome == Biome.DESERT)
+                        applyDomeArena(chunk, gx * 16 + 8, arenaY, gz * 16 + 8, 60, 45, Block.ONYX_BLOCK, false);
+                    break;
+                case 2: // Fire Dragon (Magma/Volcanic)
+                    if (centerCell.temperature > 0.8f)
+                        applyDomeArena(chunk, gx * 16 + 8, arenaY, gz * 16 + 8, 55, 35, Block.MAGMA, true);
+                    break;
+                case 3: // Ice Dragon (Tundra/Cold)
+                    if (centerCell.temperature < 0.2f)
+                        applyDomeArena(chunk, gx * 16 + 8, arenaY, gz * 16 + 8, 50, 40, Block.ICE, false);
+                    break;
+                case 4: // Earth Dragon (Forests)
+                    if (centerCell.biome == Biome.FOREST || centerCell.biome == Biome.JUNGLE)
+                        applyDomeArena(chunk, gx * 16 + 8, arenaY, gz * 16 + 8, 55, 35, Block.OAK_WOOD, true); // Wood and Dirt (handled in applyDome)
+                    break;
             }
         }
     }
 
-    private void applyDomeArena(Chunk chunk, int centerX, int centerZ, int radius, int height, Block wallMaterial, boolean hasGate) {
-        int cx = chunk.chunkX * 16; // Chunk.WIDTH is 16
+    private void applyDomeArena(Chunk chunk, int centerX, int arenaY, int centerZ, int radius, int height, Block wallMaterial, boolean hasGate) {
+        int cx = chunk.chunkX * 16;
         int cz = chunk.chunkZ * 16;
         
-        // Quick AABB check for chunk intersection with dome
+        // Quick AABB check
         if (cx > centerX + radius + 10 || cx + 16 < centerX - radius - 10) return;
         if (cz > centerZ + radius + 10 || cz + 16 < centerZ - radius - 10) return;
 
@@ -599,20 +616,24 @@ public class World implements IWeatherWorld {
                 
                 float distSq = dx * dx + dz * dz;
                 if (distSq <= (radius + 5) * (radius + 5)) {
-                    for (int y = 1; y <= height + 5; y++) {
-                        float dy = y - 1;
+                    for (int y = arenaY; y <= arenaY + height + 5; y++) {
+                        if (y >= Chunk.HEIGHT) continue;
+                        float dy = y - arenaY;
                         float val = distSq / (radius * radius) + (dy * dy) / (height * height);
                         
                         if (val <= 1.0f) {
                             chunk.setBlock(x, y, z, Block.AIR);
                         } else if (val <= 1.2f) {
-                            chunk.setBlock(x, y, z, wallMaterial);
+                            Block mat = wallMaterial;
+                            // Earth Arena Special: Alternating Dirt and Wood
+                            if (wallMaterial == Block.OAK_WOOD && (y % 2 == 0)) mat = Block.DIRT;
+                            chunk.setBlock(x, y, z, mat);
                         }
                     }
                     
                     if (hasGate && dx >= radius - 2 && dx <= radius + 5 && Math.abs(dz) <= 3) {
-                         for (int y = 1; y <= 6; y++) {
-                             chunk.setBlock(x, y, z, Block.BOSS_GATE);
+                         for (int y = arenaY + 1; y <= arenaY + 6; y++) {
+                             if (y < Chunk.HEIGHT) chunk.setBlock(x, y, z, Block.BOSS_GATE);
                          }
                     }
                 }
@@ -621,87 +642,43 @@ public class World implements IWeatherWorld {
     }
 
     private void spawnOres(Chunk chunk, int cx, int cz) {
-        // Tier 1: Common Surface Ores (Y: 80 - 250)
-        spawnOreGrip(chunk, Block.COAL_ORE, ClusterSize.LARGE, 25, 80, 250);
-        spawnOreGrip(chunk, Block.IRON_ORE, ClusterSize.MEDIUM, 18, 60, 200);
+        // --- LAYERED SPAWNING TIERS (Relative to SEA_LEVEL = 512) ---
+        // Surface Tiers (-10 to -100)
+        spawnOreGrip(chunk, Block.COAL_ORE, ClusterSize.LARGE, 30, SEA_LEVEL - 100, SEA_LEVEL - 10);
+        spawnOreGrip(chunk, Block.COPPER_ORE, ClusterSize.MEDIUM, 20, SEA_LEVEL - 100, SEA_LEVEL - 20);
         
-        // --- High Altitude Resource Injection (Per Request) ---
-        spawnOreGrip(chunk, Block.IRON_ORE, ClusterSize.LARGE, 20, 300, 500); // Dense Iron Belt
-        spawnOreGrip(chunk, Block.GOLD_ORE, ClusterSize.MEDIUM, 12, 200, 300); // Precious Metal Belt
-        spawnOreGrip(chunk, Block.TITANIUM_ORE, ClusterSize.MEDIUM, 10, 200, 300); // Industrial Metal Belt
-        spawnOreGrip(chunk, Block.SAPPHIRE_ORE, ClusterSize.MEDIUM, 8, 180, 220); // High-Altitude Gems
-        spawnOreGrip(chunk, Block.EMERALD_ORE, ClusterSize.MEDIUM, 8, 180, 220); // High-Altitude Gems
-        spawnOreGrip(chunk, Block.TOPAZ_ORE, ClusterSize.MEDIUM, 10, 180, 220); // High-Altitude Gems
- 
-        spawnOreGrip(chunk, Block.COPPER_ORE, ClusterSize.MEDIUM, 15, 60, 180);
-        spawnOreGrip(chunk, Block.TIN_ORE, ClusterSize.MEDIUM, 12, 60, 160);
- 
-        // Tier 2: Mid-level Industrial/Precious (Y: 40 - 120)
-        spawnOreGrip(chunk, Block.GOLD_ORE, ClusterSize.SMALL, 8, 30, 120);
-        spawnOreGrip(chunk, Block.SILVER_ORE, ClusterSize.SMALL, 10, 30, 110);
-        spawnOreGrip(chunk, Block.NICKEL_ORE, ClusterSize.SMALL, 7, 20, 100);
-        spawnOreGrip(chunk, Block.TANZANITE_ORE, ClusterSize.SMALL, 4, 20, 90);
-        spawnOreGrip(chunk, Block.QUARTZ_ORE, ClusterSize.MEDIUM, 15, 30, 250);
- 
-        // Tier 3: Deep Gems and Hard Metals (Y: 0 - 60)
-        spawnOreGrip(chunk, Block.DIAMOND_ORE, ClusterSize.TINY, 3, 5, 45);
-        spawnOreGrip(chunk, Block.EMERALD_ORE, ClusterSize.TINY, 4, 5, 45); 
-        spawnOreGrip(chunk, Block.RUBY_ORE, ClusterSize.TINY, 2, 5, 50);
-        spawnOreGrip(chunk, Block.TOPAZ_ORE, ClusterSize.SMALL, 6, 5, 60);
-        spawnOreGrip(chunk, Block.SAPPHIRE_ORE, ClusterSize.TINY, 4, 5, 45);
-        spawnOreGrip(chunk, Block.TITANIUM_ORE, ClusterSize.SMALL, 12, 5, 60);
+        // Mid-Crust Tiers (-100 to -220)
+        spawnOreGrip(chunk, Block.TIN_ORE, ClusterSize.MEDIUM, 15, SEA_LEVEL - 200, SEA_LEVEL - 100);
+        spawnOreGrip(chunk, Block.NICKEL_ORE, ClusterSize.SMALL, 12, SEA_LEVEL - 220, SEA_LEVEL - 120);
+        spawnOreGrip(chunk, Block.SILVER_ORE, ClusterSize.SMALL, 10, SEA_LEVEL - 220, SEA_LEVEL - 150);
 
-        // Tier 4: Rare & Radioactive (Y: 5 - 25)
-        spawnOreGrip(chunk, Block.URANIUM_ORE, ClusterSize.SMALL, 3, 5, 25);
-        spawnOreGrip(chunk, Block.PLUTONIUM_ORE, ClusterSize.SMALL, 2, 5, 20);
-
-        // Tier 5: Mid-Legendary Gems (Y: 5 - 30)
-        spawnOreGrip(chunk, Block.ALEXANDRITE_ORE, ClusterSize.TINY, 1, 5, 20);
-        spawnOreGrip(chunk, Block.OPAL_ORE, ClusterSize.TINY, 2, 5, 30);
-
-        // --- HIGHEST TIERS (Y < 15 ONLY) ---
-
-        // Tier 6/7: Deepest Core (Y: 2 - 15)
-        spawnOreGrip(chunk, Block.ADAMANTINE_ORE, ClusterSize.TINY, 1, 2, 15);
-        spawnOreGrip(chunk, Block.TAAFFEITE_ORE, ClusterSize.TINY, 1, 1, 12);
-        spawnOreGrip(chunk, Block.GRANDIDIERITE_ORE, ClusterSize.TINY, 1, 1, 12);
-
-        // Tier 8: Ascended Minerals (Y: 1 - 10)
-        spawnOreGrip(chunk, Block.GARNET_ORE, ClusterSize.TINY, 1, 1, 10);
-        spawnOreGrip(chunk, Block.SERENDIBITE_ORE, ClusterSize.TINY, 1, 1, 8);
-        spawnOreGrip(chunk, Block.MUSGRAVITE_ORE, ClusterSize.TINY, 1, 2, 8);
-
-        // Tier 9/10: The Absolute Limit (Y: 1 - 8)
-        spawnOreGrip(chunk, Block.PAINITE_ORE, ClusterSize.TINY, 1, 2, 8);
-        spawnOreGrip(chunk, Block.ONYX_ORE, ClusterSize.TINY, 1, 1, 7);
-        spawnOreGrip(chunk, Block.MITHRIL_ORE, ClusterSize.TINY, 2, 1, 6);
-
-        // Tier 7: Rare Earth & Exotic Metals (Y: 0 - 150)
-        spawnOreGrip(chunk, Block.XANTHIOSITE_ORE, ClusterSize.MEDIUM, 12, 40, 150);
+        // REQUESTED DEPTHS
+        // y-250: Gold Tier (512 - 250 = 262)
+        spawnOreGrip(chunk, Block.GOLD_ORE, ClusterSize.MEDIUM, 15, 250, 275); 
         
-        // Deep Rare Earths (T12-T16)
-        spawnOreGrip(chunk, Block.MONAZITE_ORE, ClusterSize.SMALL, 4, 5, 40);
-        spawnOreGrip(chunk, Block.BASTNAESITE_ORE, ClusterSize.SMALL, 3, 5, 35);
-        spawnOreGrip(chunk, Block.XENOTIME_ORE, ClusterSize.SMALL, 3, 5, 30);
-        spawnOreGrip(chunk, Block.LOPARITE_ORE, ClusterSize.SMALL, 2, 5, 25);
-        spawnOreGrip(chunk, Block.TANTALITE_ORE, ClusterSize.SMALL, 2, 5, 25);
+        // y-300: Iron Tier (512 - 300 = 212)
+        spawnOreGrip(chunk, Block.IRON_ORE, ClusterSize.LARGE, 25, 200, 225); 
 
-        // Deepest Rare Earths (T17-T21)
-        spawnOreGrip(chunk, Block.VANADINITE_ORE, ClusterSize.SMALL, 2, 2, 20);
-        spawnOreGrip(chunk, Block.GADOLINIUM_ORE, ClusterSize.SMALL, 2, 2, 18);
-        spawnOreGrip(chunk, Block.TERBIUM_ORE, ClusterSize.SMALL, 1, 2, 16);
-        spawnOreGrip(chunk, Block.DYSPROSIUM_ORE, ClusterSize.SMALL, 1, 2, 14);
-        spawnOreGrip(chunk, Block.HOLMIUM_ORE, ClusterSize.SMALL, 1, 2, 12);
-
-        // Bedrock Layer Rare Earths (T22-T26)
-        spawnOreGrip(chunk, Block.ERBIUM_ORE, ClusterSize.TINY, 1, 1, 10);
-        spawnOreGrip(chunk, Block.YTTRIUM_ORE, ClusterSize.TINY, 1, 1, 10);
-        spawnOreGrip(chunk, Block.LUTETIUM_ORE, ClusterSize.TINY, 1, 1, 8);
-        spawnOreGrip(chunk, Block.SAMARIUM_ORE, ClusterSize.TINY, 1, 1, 8);
-        spawnOreGrip(chunk, Block.NEODYMIUM_ORE, ClusterSize.TINY, 1, 1, 6);
-
-        // Legendary Core Metals (T27-T30)
-        spawnOreGrip(chunk, Block.PRASEODYMIUM_ORE, ClusterSize.TINY, 1, 0, 5);
+        // Deep Crust Tiers (-350 to -450)
+        spawnOreGrip(chunk, Block.DIAMOND_ORE, ClusterSize.SMALL, 8, 100, 180);
+        spawnOreGrip(chunk, Block.SAPPHIRE_ORE, ClusterSize.SMALL, 8, 100, 180);
+        spawnOreGrip(chunk, Block.EMERALD_ORE, ClusterSize.SMALL, 8, 100, 180);
+        spawnOreGrip(chunk, Block.TOPAZ_ORE, ClusterSize.SMALL, 8, 100, 180);
+        spawnOreGrip(chunk, Block.TITANIUM_ORE, ClusterSize.MEDIUM, 10, 50, 150);
+        
+        // Radioactive & Rare Earths (-450 to -500)
+        spawnOreGrip(chunk, Block.URANIUM_ORE, ClusterSize.SMALL, 5, 20, 80);
+        spawnOreGrip(chunk, Block.PLUTONIUM_ORE, ClusterSize.TINY, 3, 10, 60);
+        
+        // LEGENDARY ABYSSAL TIERS (Bedrock Layer: 1 - 40)
+        spawnOreGrip(chunk, Block.PAINITE_ORE, ClusterSize.TINY, 2, 5, 20);
+        spawnOreGrip(chunk, Block.ONYX_ORE, ClusterSize.TINY, 2, 2, 15);
+        spawnOreGrip(chunk, Block.XENOTIME_ORE, ClusterSize.SMALL, 4, 1, 30);
+        spawnOreGrip(chunk, Block.BASTNAESITE_ORE, ClusterSize.SMALL, 4, 1, 30);
+        
+        // High Altitude Resource Injection (Strictly for Mountains)
+        spawnOreGrip(chunk, Block.IRON_ORE, ClusterSize.LARGE, 15, 700, 900);
+        spawnOreGrip(chunk, Block.QUARTZ_ORE, ClusterSize.MEDIUM, 20, 600, 800);
         spawnOreGrip(chunk, Block.CERIUM_ORE, ClusterSize.TINY, 1, 0, 4);
         spawnOreGrip(chunk, Block.LANTHANUM_ORE, ClusterSize.TINY, 1, 0, 3);
         spawnOreGrip(chunk, Block.PROMETHIUM_ORE, ClusterSize.TINY, 1, 0, 3);
@@ -993,15 +970,15 @@ public class World implements IWeatherWorld {
 
 
     private int unpackX(long pos) {
-        return (int) ((pos << 43) >> 43); // Sign-extended 21-bit X
+        return (int) ((pos << 40) >> 40); // Sign-extend 24-bit X
     }
 
     private int unpackY(long pos) {
-        return (int) ((pos >> 21) & 0x7FF);
+        return (int) ((pos >> 24) & 0xFFFF);
     }
 
     private int unpackZ(long pos) {
-        return (int) ((pos >> 32) << 11 >> 11); // Sign-extended 21-bit Z
+        return (int) (pos >> 40); // Sign-extend 24-bit Z
     }
 
     public WeatherManager getWeather() {

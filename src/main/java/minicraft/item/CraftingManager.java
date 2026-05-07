@@ -101,8 +101,9 @@ public class CraftingManager {
         addArmorSet("Emerald", "EMERALD_ORE", 0.22f, 3, 0.5f, 1.1f, 0.4f, null);
         addToolSet("Emerald", "EMERALD_ORE", 5, 14.0f);
 
-        addArmorSet("Topaz", "TOPAZ_ORE", 0.22f, 3, 0.8f, 1.0f, 0.4f, null);
-        addToolSet("Topaz", "TOPAZ_ORE", 4, 15.0f);
+        addArmorSet("Topaz", "TOPAZ_ORE", 0.35f, 6, 2.5f, 1.15f, 0.7f, 
+                new minicraft.math.Vector3f(1.0f, 0.8f, 0.0f)); // Tier 5 Amber Glow
+        addToolSet("Topaz", "TOPAZ_ORE", 5, 25.0f, new minicraft.math.Vector3f(1.0f, 0.8f, 0.0f), 0.15f); // Tier 5
 
         addArmorSet("Amethyst", "AMETHYST_ORE", 0.18f, 3, 0.2f, 1.0f, 0.3f, null);
         addToolSet("Amethyst", "AMETHYST_ORE", 3, 10.0f);
@@ -174,11 +175,11 @@ public class CraftingManager {
         addToolSet("Monazite", "MONAZITE", 13, 120.0f);
         addArmorSet("Monazite", "MONAZITE", 0.80f, 14, 30.0f, 1.6f, 2.2f, new minicraft.math.Vector3f(0.8f, 0.4f, 0.1f));
 
-        addToolSet("Bastnaesite", "BASTNAESITE", 14, 135.0f);
-        addArmorSet("Bastnaesite", "BASTNAESITE", 0.85f, 15, 35.0f, 1.7f, 2.4f, new minicraft.math.Vector3f(0.9f, 0.5f, 0.2f));
+        addToolSet("Bastnaesite", "BASTNAESITE", 40, 250.0f, new minicraft.math.Vector3f(1.0f, 0.5f, 0.0f), 0.0f); // Apex Tier
+        addArmorSet("Bastnaesite", "BASTNAESITE", 1.20f, 40, 200.0f, 1.3f, 10.0f, new minicraft.math.Vector3f(1.0f, 0.5f, 0.0f));
 
-        addToolSet("Xenotime", "XENOTIME", 15, 150.0f);
-        addArmorSet("Xenotime", "XENOTIME", 0.90f, 16, 40.0f, 1.8f, 2.6f, new minicraft.math.Vector3f(0.1f, 0.9f, 0.4f));
+        addToolSet("Xenotime", "XENOTIME", 35, 200.0f, new minicraft.math.Vector3f(0.0f, 1.0f, 0.2f), 0.0f); // Zenith Tier
+        addArmorSet("Xenotime", "XENOTIME", 1.10f, 30, 150.0f, 1.4f, 5.0f, new minicraft.math.Vector3f(0.0f, 1.0f, 0.2f));
 
         addToolSet("Loparite", "LOPARITE", 16, 165.0f);
         addArmorSet("Loparite", "LOPARITE", 0.95f, 17, 45.0f, 1.9f, 2.8f, new minicraft.math.Vector3f(0.3f, 0.3f, 0.3f));
@@ -452,8 +453,11 @@ public class CraftingManager {
         // Pickaxe
         Map<Item, Integer> pI = new HashMap<>();
         pI.put(m, 3);
+        float radioactiveSpeed = 1.0f;
+        if (tier.equals("Xenotime")) radioactiveSpeed = 1.5f; // 50% faster for radioactive ores
+        
         recipes.add(new Recipe(name + "Pickaxe", Recipe.Category.TOOLS, pI,
-                new ToolItem(name + "Pick", ToolItem.ToolType.PICKAXE, level, speed, "item_pick_" + low, null, 0f, false, 0f, aura, 1.0f, 1.0f, chance), 1));
+                new ToolItem(name + "Pick", ToolItem.ToolType.PICKAXE, level, speed, "item_pick_" + low, null, 0f, false, 0f, aura, radioactiveSpeed, 1.0f, chance), 1));
         // Axe
         Map<Item, Integer> aI = new HashMap<>();
         aI.put(m, 3);
@@ -467,8 +471,14 @@ public class CraftingManager {
         // Sword
         Map<Item, Integer> swI = new HashMap<>();
         swI.put(m, 3);
+        
+        // Attack Speed Scaling: Higher level = Faster swing (Lower latency)
+        // Tier 0 (Wood): 0.7x, Tier 2 (Iron): 1.0x, Tier 10 (Mithril): 2.5x
+        float attackSpeed = 0.7f + (level * 0.18f);
+        if (tier.equals("Gold")) attackSpeed += 0.5f; // Gold specialty is speed
+        
         recipes.add(new Recipe(name + "Sword", Recipe.Category.TOOLS, swI,
-                new ToolItem(name + "Sword", ToolItem.ToolType.SWORD, level, speed, "item_sword_" + low, null, 0f, false, 0f, aura, 1.0f, 1.0f, 0f), 1));
+                new ToolItem(name + "Sword", ToolItem.ToolType.SWORD, level, speed, "item_sword_" + low, null, 0f, false, 0f, aura, 1.0f, attackSpeed, 0f), 1));
     }
 
     private void addArmorSet(String tierName, String matName, float prot, int cost,

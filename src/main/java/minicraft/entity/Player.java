@@ -129,6 +129,38 @@ public class Player extends Entity {
                 }
             }
         }
+        
+        // --- Xenotime Omega Radiation Pulse ---
+        if (inventory.hasFullSet("Xenotime")) {
+            plutoniumPulseTimer += dt;
+            if (plutoniumPulseTimer >= 1.5f) { // Faster pulse
+                plutoniumPulseTimer = 0f;
+                // Emit huge pulse (Double area: 6.0f -> 12.0f)
+                for (Entity e : manager.getNearby(position.x, position.y, position.z, 12.0f)) {
+                    if (e != this && e.type.isHostile()) {
+                        e.damage(e.getMaxHealth() * 0.35f, this); // 35% pulse
+                        e.applyRadiationSickness(5.0f); // Sickness from pulse
+                        for(int i=0; i<3; i++) particleManager.spawnSmoke(e.position.x, e.position.y + 1f, e.position.z);
+                    }
+                }
+                // Visual aura at player
+                for(int i=0; i<15; i++) {
+                   particleManager.spawnSmoke(position.x + (rng.nextFloat()-0.5f)*2f, position.y, position.z + (rng.nextFloat()-0.5f)*2f);
+                }
+            }
+            // Continuous particles
+            if (rng.nextFloat() < 0.3f) {
+                particleManager.spawnSmoke(position.x, position.y, position.z);
+            }
+        }
+        
+        // --- Bastnaesite Obsidian Smoke Particles ---
+        if (inventory.hasFullSet("Bastnaesite")) {
+            if (rng.nextFloat() < 0.4f) {
+                // Black smoke
+                particleManager.spawnSmoke(position.x, position.y, position.z);
+            }
+        }
 
         // 3. Environment (Temp & Hazards)
         updateEnvironment(dt, world);
@@ -251,6 +283,8 @@ public class Player extends Entity {
         // ── Friction (skip in water — drag handled in applyGravity) ──────────
         if (!isInWater) {
             float speedMod = inventory.getTotalSpeedMod();
+            if (inventory.hasFullSet("Xenotime")) speedMod *= 1.40f; // Xenotime 40% Speed Boost
+            if (inventory.hasFullSet("Bastnaesite")) speedMod *= 1.30f; // Bastnaesite 30% Speed Boost
             velocity.x *= 0.8f * speedMod;
             velocity.z *= 0.8f * speedMod;
         }
@@ -300,6 +334,39 @@ public class Player extends Entity {
             if (dot > cos45) {
                 float finalDamage = baseDmg;
                 
+                // --- Bastnaesite Sword Logic ---
+                if (held != null && held.getDisplayName().equals("Bastnaesite Sword")) {
+                    finalDamage = 800f; 
+                    if (e.getType() == EntityType.ONYX_DRAGON) {
+                        finalDamage *= 2.5f; // Dragon Slayer
+                    }
+                    
+                    // Summon Solar Beam (First hit in loop summons it)
+                    if (e == manager.getNearby(position.x, position.y, position.z, range).get(0)) {
+                        summonSolarBeam(manager, pm);
+                    }
+                }
+                
+                // --- Xenotime Sword Logic ---
+                if (held != null && held.getDisplayName().equals("Xenotime Sword")) {
+                    finalDamage = 600f; // The Zenith Strike
+                    e.applyRadiationSickness(10.0f); // Severe radiation
+                }
+                
+                // --- Garnet Sword Special Logic ---
+                if (held != null && held.getDisplayName().equals("Garnet Sword")) {
+                    finalDamage = 100f; // 4 hits to kill 400HP Orc
+                }
+                
+                // --- Topaz Sword Special Logic ---
+                if (held != null && held.getDisplayName().equals("Topaz Sword")) {
+                    if (e.getType() == EntityType.ZOMBIE || e.getType() == EntityType.SPIDER) {
+                        finalDamage *= 2.0f; // Smites common arthropods and undead
+                    }
+                }
+                
+                // --- Topaz Sword Special Logic ---
+                
                 // --- Radiation Blade Special Logic ---
                 if (held != null && held.getDisplayName().equals("Radiation Blade")) {
                     if (e.getType() == EntityType.TROLL) {
@@ -335,6 +402,32 @@ public class Player extends Entity {
         }
     }
 
+    private void summonSolarBeam(EntityManager manager, ParticleManager pm) {
+        // Simple beam: damage in a line 15 blocks out
+        float pitch = (float) Math.toRadians(camera.getRotation().x);
+        float yaw = (float) Math.toRadians(camera.getRotation().y);
+        float dx = (float) (Math.sin(yaw) * Math.cos(pitch));
+        float dy = (float) (-Math.sin(pitch));
+        float dz = (float) (-Math.cos(yaw) * Math.cos(pitch));
+
+        for (float d = 1.0f; d < 15.0f; d += 0.5f) {
+            float bx = position.x + dx * d;
+            float by = (position.y + 1.5f) + dy * d;
+            float bz = position.z + dz * d;
+            
+            // Visuals
+            pm.spawnSmoke(bx, by, bz); // Placeholder for beam particles
+            
+            for (Entity target : manager.getNearby(bx, by, bz, 1.5f)) {
+                if (target != this && target.type.isHostile()) {
+                    target.damage(400f, this);
+                    target.applyBurn(3.0f);
+                }
+            }
+        }
+        System.out.println("SOLAR BEAM FIRED!");
+    }
+
     @Override
     public void damage(float amount, Entity attacker) {
         if (invincibilityTimer > 0) return; 
@@ -348,6 +441,20 @@ public class Player extends Entity {
         
         // Onyx 35% Damage Reduction (Hardness)
         if (inventory.hasFullSet("Onyx")) actualDamage *= 0.65f;
+        
+        // Xenotime Projectile/Fireball Resistance
+        if (inventory.hasFullSet("Xenotime") && attacker != null) {
+            if (attacker.type == EntityType.FIREBALL || attacker.type == EntityType.GOLD_FIREBALL || attacker.type == EntityType.FIRE_DEMON) {
+                actualDamage *= 0.35f; // 65% Reduction
+            }
+        }
+        
+        // Bastnaesite Projectile/Fireball Resistance
+        if (inventory.hasFullSet("Bastnaesite") && attacker != null) {
+            if (attacker.type == EntityType.FIREBALL || attacker.type == EntityType.GOLD_FIREBALL || attacker.type == EntityType.FIRE_DEMON) {
+                actualDamage *= 0.30f; // 70% Reduction
+            }
+        }
 
         super.damage(actualDamage, attacker);
         
@@ -356,6 +463,24 @@ public class Player extends Entity {
 
         // --- Armor Abilities (Thorns & Reflection) ---
         if (attacker != null) {
+            // Bastnaesite Nova Blast (Melee Counter)
+            if (inventory.hasFullSet("Bastnaesite")) {
+                // Trigger Nova Blast (10 block radius)
+                if (this.manager != null) {
+                    System.out.println("NOVA BLAST!");
+                    for (Entity e : this.manager.getNearby(position.x, position.y, position.z, 10.0f)) {
+                        if (e != this && e.type.isHostile()) {
+                            e.damage(20f, this);
+                            e.applyBurn(5.0f); // 5s burn
+                        }
+                    }
+                }
+            }
+            
+            // Topaz (Reactive Reflection - 20% damage reflected back)
+            if (inventory.hasFullSet("Topaz")) {
+                attacker.damage(actualDamage * 0.20f, this);
+            }
             // Tanzanite (Sharp/Thorns)
             if (inventory.hasPiece("Tanzanite")) {
                 attacker.damage(5.0f, this); // Flat thorn damage
@@ -407,8 +532,8 @@ public class Player extends Entity {
         // Map 0..1 back to -30C..40C
         float baseTemp = worldTemp * 70f - 30f;
         
-        // 0. Thermal Lock (Painite & Neodymium)
-        if (inventory.hasFullSet("Painite") || inventory.hasFullSet("Neodymium")) {
+        // 0. Thermal Lock (Legendary Sets)
+        if (inventory.hasFullSet("Painite") || inventory.hasFullSet("Neodymium") || inventory.hasFullSet("Garnet")) {
             temperature = 36.6f;
             tempState = "Normal";
             return;
@@ -461,12 +586,18 @@ public class Player extends Entity {
         if (hunger <= 0 || thirst <= 0) {
             health = Math.max(0, health - 1.0f * dt);
         } else if (tempState.equals("Okay") || tempState.equals("Warm")) {
-            // Regeneration
+                // Regeneration
             if (hunger > 80 && thirst > 80) {
                 float regenRate = 0.15f;
                 // Neodymium 10% Health Regen Boost
                 if (inventory.hasFullSet("Neodymium")) regenRate *= 1.10f;
+                // Emerald "Verdant Mending" Bonus
+                if (inventory.hasFullSet("Emerald")) regenRate += 0.50f; 
+                
                 health = Math.min(maxHealth, health + regenRate * dt);
+            } else if (inventory.hasFullSet("Emerald")) {
+                // Emerald heals even if not full hunger, just slower
+                health = Math.min(maxHealth, health + 0.20f * dt);
             }
         }
     }
