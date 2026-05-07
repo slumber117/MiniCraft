@@ -131,6 +131,14 @@ public class CraftingManager {
         addArmorSet("Plutonium", "PLUTONIUM_ORE", 0.28f, 4, 1.0f, 1.0f, 0.5f,
                 new minicraft.math.Vector3f(1.0f, 0.45f, 0.05f)); // Orange Glow
         addToolSet("Plutonium", "PLUTONIUM_ORE", 6, 25.0f);
+        
+        addArmorSet("Neptunium", "NEPTUNIUM_ORE", 0.30f, 5, 1.2f, 1.0f, 0.6f,
+                new minicraft.math.Vector3f(0.0f, 0.8f, 1.0f)); // Cyan/Blue Glow
+        addToolSet("Neptunium", "NEPTUNIUM_ORE", 6, 30.0f);
+        
+        addArmorSet("Orichalcum", "ORICHALCUM_ORE", 0.35f, 6, 1.5f, 1.1f, 0.4f,
+                new minicraft.math.Vector3f(1.0f, 0.8f, 0.2f)); // Golden/Yellow Glow
+        addToolSet("Orichalcum", "ORICHALCUM_ORE", 6, 35.0f);
 
         // --- 8. LEGENDARY GEM TIERS (Zenith Industry) ---
         addArmorSet("Tourmaline", "TOURMALINE_ORE", 0.22f, 3, 0.5f, 1.15f, 0.4f, null);
@@ -234,6 +242,45 @@ public class CraftingManager {
 
         addToolSet("Promethium", "PROMETHIUM", 30, 500.0f);
         addArmorSet("Promethium", "PROMETHIUM", 3.00f, 50, 250.0f, 4.0f, 10.0f, new minicraft.math.Vector3f(0.0f, 1.0f, 1.0f)); // Final Tier Cyan Glow
+
+        // --- 13. VERDANT TIER (Nature/Rare Earth Mix) ---
+        addArmorSet("Ruthenium", "RUTHENIUM_ORE", 0.45f, 15, 35.0f, 1.25f, 2.0f, new minicraft.math.Vector3f(0.5f, 1.0f, 0.3f));
+        addToolSet("Ruthenium", "RUTHENIUM_ORE", 20, 150.0f);
+        
+        addArmorSet("Rhenium", "RHENIUM_ORE", 0.50f, 18, 45.0f, 1.30f, 2.5f, new minicraft.math.Vector3f(0.4f, 0.9f, 0.4f));
+        addToolSet("Rhenium", "RHENIUM_ORE", 22, 180.0f);
+        
+        addArmorSet("Iridium", "IRIDIUM_ORE", 0.55f, 22, 55.0f, 1.35f, 3.0f, new minicraft.math.Vector3f(0.3f, 0.8f, 0.5f));
+        addToolSet("Iridium", "IRIDIUM_ORE", 25, 220.0f);
+        
+        addArmorSet("Osmium", "OSMIUM_ORE", 0.60f, 28, 70.0f, 1.40f, 4.0f, new minicraft.math.Vector3f(0.2f, 0.7f, 0.6f));
+        addToolSet("Osmium", "OSMIUM_ORE", 30, 280.0f);
+        
+        addArmorSet("Rhodium", "RHODIUM_ORE", 0.70f, 35, 90.0f, 1.50f, 5.0f, new minicraft.math.Vector3f(0.1f, 0.6f, 0.7f));
+        addToolSet("Rhodium", "RHODIUM_ORE", 35, 350.0f);
+
+        // --- 14. VANGUARD TIER (Ultimate End-Game) ---
+        // Antimatter: 90% reduction, glows blue/green
+        addArmorSet("Antimatter", "ANTIMATTER_ORE", 0.90f, 100, 200.0f, 1.50f, 10.0f, new minicraft.math.Vector3f(0.0f, 1.0f, 0.5f));
+        addToolSet("Antimatter", "ANTIMATTER_ORE", 50, 20000.0f, new minicraft.math.Vector3f(0.0f, 1.0f, 0.5f), 0.35f); 
+        // Special: Citadel Sword (10 antimatter)
+        Map<Item, Integer> citadelIng = new HashMap<>();
+        citadelIng.put(new Item("ANTIMATTER_ORE", null), 10);
+        recipes.add(new Recipe("Citadel", Recipe.Category.TOOLS, citadelIng,
+                new ToolItem("Citadel", ToolItem.ToolType.SWORD, 100, 20000.0f, "item_sword_antimatter"), 1));
+
+        // Darkmatter: 85% reduction, glows black/purple
+        addArmorSet("Darkmatter", "DARKMATTER_ORE", 0.85f, 120, 250.0f, 1.40f, 10.0f, new minicraft.math.Vector3f(0.3f, 0.0f, 0.5f));
+        addToolSet("Darkmatter", "DARKMATTER_ORE", 60, 15000.0f, new minicraft.math.Vector3f(0.3f, 0.0f, 0.5f), 0.50f); 
+        
+        // Gamma Ray: 80% reduction, white/orange
+        addArmorSet("Gamma Ray", "GAMMA_RAY_ORE", 0.80f, 150, 300.0f, 1.25f, 10.0f, new minicraft.math.Vector3f(1.0f, 0.6f, 0.1f));
+        addToolSet("Gamma Ray", "GAMMA_RAY_ORE", 80, 175000.0f, new minicraft.math.Vector3f(1.0f, 0.6f, 0.1f), 0.25f);
+
+        // Nebula: Strongest, 95% reduction
+        addArmorSet("Nebula", "NEBULA_ORE", 0.95f, 200, 500.0f, 1.75f, 10.0f, new minicraft.math.Vector3f(0.6f, 0.1f, 1.0f));
+        addToolSet("Nebula", "NEBULA_ORE", 100, 200000.0f, new minicraft.math.Vector3f(0.6f, 0.1f, 1.0f), 0.15f);
+
 
         // --- 12. MasterCraft Tier ---
         
@@ -520,12 +567,14 @@ public class CraftingManager {
         if (tierName.equals("Iron") || tierName.equals("Silver")) req = 5;
         else if (tierName.equals("Gold") || tierName.equals("Nickel") || tierName.equals("Amethyst")) req = 10;
         else if (tierName.equals("Diamond") || tierName.equals("Titanium") || tierName.equals("Tanzanite")) req = 20;
-        else if (tierName.equals("Aquamarine") || tierName.equals("Emerald") || tierName.equals("Topaz") || tierName.equals("Opal") || tierName.equals("Alexandrite")) req = 30;
-        else if (tierName.equals("Uranium") || tierName.equals("Plutonium")) req = 40;
-        else if (tierName.equals("Adamantine") || tierName.equals("Agate")) req = 50;
-        else if (tierName.equals("Obsidian")) req = 65;
+        else if (tierName.equals("Aquamarine") || tierName.equals("Emerald") || tierName.equals("Topaz") || tierName.equals("Opal") || tierName.equals("Alexandrite") || tierName.equals("Tourmaline")) req = 30;
+        else if (tierName.equals("Uranium") || tierName.equals("Plutonium") || tierName.equals("Neptunium") || tierName.equals("Orichalcum")) req = 40;
+        else if (tierName.equals("Adamantine") || tierName.equals("Agate") || tierName.equals("Taaffeite")) req = 50;
         else if (tierName.equals("Painite") || tierName.equals("Garnet") || tierName.equals("Serendibite")) req = 80;
-        else if (tierName.equals("Onyx") || tierName.equals("Mithril")) req = 100;
+        else if (tierName.equals("Ruthenium") || tierName.equals("Rhenium")) req = 85;
+        else if (tierName.equals("Iridium") || tierName.equals("Osmium")) req = 90;
+        else if (tierName.equals("Rhodium")) req = 95;
+        else if (tierName.equals("Onyx") || tierName.equals("Mithril") || tierName.equals("Antimatter") || tierName.equals("Darkmatter") || tierName.equals("Gamma Ray") || tierName.equals("Nebula") || tierName.equals("Citadel")) req = 100;
 
         // Helmet
         ArmorItem helm = new ArmorItem(tierName + " Helmet", ArmorItem.ArmorSlot.HELMET, prot * 0.20f, "armor_helm_" + low,

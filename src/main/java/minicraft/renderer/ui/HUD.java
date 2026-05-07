@@ -105,6 +105,53 @@ public class HUD {
         }
 
         renderBossCompass(ui, player, shader, width, height, main);
+        renderVanguardHUD(ui, player, shader, width, height);
+    }
+
+    private void renderVanguardHUD(UIRenderer ui, Player player, ShaderProgram shader, int width, int height) {
+        minicraft.item.Item held = player.inventory.getSelectedItem();
+        if (held == null) return;
+        
+        String name = held.getDisplayName();
+        float cd = 0;
+        String label = "";
+        Vector4f color = new Vector4f(1, 1, 1, 1);
+        
+        if (name.equals("Citadel")) {
+            cd = player.vanguardCooldown;
+            label = "ANTIMATTER ATOM";
+            color = new Vector4f(0.2f, 0.8f, 1.0f, 1.0f); // Cyan
+        } else if (name.equals("Darkmatter Sword") || name.equals("Darkmatter")) {
+            cd = player.darkmatterCooldown;
+            label = "VOID BEAM";
+            color = new Vector4f(0.5f, 0.0f, 1.0f, 1.0f); // Purple
+        } else if (name.equals("Gamma Ray Sword") || name.equals("Gamma Ray")) {
+            cd = player.gammaRayCooldown;
+            label = "BLACK HOLE";
+            color = new Vector4f(1.0f, 0.6f, 0.0f, 1.0f); // Orange
+        } else if (name.equals("Nebula Sword") || name.equals("Nebula")) {
+            cd = player.nebulaCooldown;
+            label = "COSMIC BEAMS";
+            color = new Vector4f(0.8f, 0.4f, 1.0f, 1.0f); // Pink/Purple
+        } else {
+            return;
+        }
+
+        // Render bar
+        float barWidth = 150f;
+        float barHeight = 12f;
+        float x = (width - barWidth) / 2f;
+        float y = height - 160f;
+        
+        float pct = Math.max(0, cd / 12.0f);
+        if (pct > 0) {
+            ui.drawRect(shader, x, y, barWidth, barHeight, new Vector4f(0.1f, 0.1f, 0.1f, 0.7f));
+            ui.drawRect(shader, x, y, barWidth * (1.0f - pct), barHeight, color);
+            ui.drawText(shader, label + " READY", x, y - 15f, 0.45f, color);
+        } else {
+            ui.drawText(shader, label + " READY", x, y - 15f, 0.45f, color);
+            // Flash effect?
+        }
     }
 
     private void renderBossCompass(UIRenderer ui, Player player, ShaderProgram shader, int width, int height, Main main) {

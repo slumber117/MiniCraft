@@ -171,7 +171,7 @@ public class Chunk {
                     }
 
                     // Block Light sources
-                    if (b != null && b.name().endsWith("_TORCH") || b == Block.TORCH || b == Block.LAVA || b == Block.MAGMA) {
+                    if (b != null && b.name().endsWith("_TORCH") || b == Block.TORCH || b == Block.LAVA || b == Block.MAGMA || b == Block.NEPTUNIUM_ORE || b == Block.ORICHALCUM_ORE) {
                         blockLightMap[i] = 1.0f;
                         blockQueue.add(new int[]{x, y, z, 30});
                     }

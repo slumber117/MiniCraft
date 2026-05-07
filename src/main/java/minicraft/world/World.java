@@ -663,16 +663,19 @@ public class World implements IWeatherWorld {
         // Gold and Titanium
         spawnOreGrip(chunk, Block.GOLD_ORE, ClusterSize.MEDIUM, 12, 430, 450);
         spawnOreGrip(chunk, Block.TITANIUM_ORE, ClusterSize.MEDIUM, 8, 430, 450);
+        spawnOreGrip(chunk, Block.PLATINUM_ORE, ClusterSize.SMALL, 5, 430, 470);
 
         // --- 4. MID-CRUST (Y: 410 - 430) ---
         // Diamond and Sapphire
         spawnOreGrip(chunk, Block.DIAMOND_ORE, ClusterSize.SMALL, 10, 410, 430);
         spawnOreGrip(chunk, Block.SAPPHIRE_ORE, ClusterSize.SMALL, 10, 410, 430);
+        spawnOreGrip(chunk, Block.JADE_ORE, ClusterSize.SMALL, 8, 410, 440);
 
         // --- 5. LOWER-CRUST (Y: 390 - 410) ---
         // Emerald and Topaz (Tier 5)
         spawnOreGrip(chunk, Block.EMERALD_ORE, ClusterSize.SMALL, 12, 390, 410);
         spawnOreGrip(chunk, Block.TOPAZ_ORE, ClusterSize.SMALL, 12, 390, 410);
+        spawnOreGrip(chunk, Block.PERIDOT_ORE, ClusterSize.SMALL, 10, 380, 410);
 
         // --- 6. DEEP ABYSSAL CRUST (Y: 100 - 390) ---
         // Secondary Gems and Rare Minerals
@@ -687,6 +690,8 @@ public class World implements IWeatherWorld {
         // Hazardous power sources
         spawnOreGrip(chunk, Block.URANIUM_ORE, ClusterSize.SMALL, 6, 40, 100);
         spawnOreGrip(chunk, Block.PLUTONIUM_ORE, ClusterSize.TINY, 4, 40, 80);
+        spawnOreGrip(chunk, Block.ORICHALCUM_ORE, ClusterSize.MEDIUM, 2, 40, 100);
+        spawnOreGrip(chunk, Block.NEPTUNIUM_ORE, ClusterSize.MEDIUM, 1, 30, 70);
 
         // --- 8. BEDROCK FLOOR (Y: 4 - 40) ---
         // Legendary Materials

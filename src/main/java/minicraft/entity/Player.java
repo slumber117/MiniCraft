@@ -27,6 +27,12 @@ public class Player extends Entity {
     
     // Environmental Cooldowns
     public float transmatCooldown = 0f;
+    
+    // Vanguard Ability Cooldowns
+    public float vanguardCooldown = 0f; // Antimatter
+    public float darkmatterCooldown = 0f;
+    public float gammaRayCooldown = 0f;
+    public float nebulaCooldown = 0f;
 
     public final Inventory inventory = new Inventory();
     public float miningProgress = 0f;
@@ -103,6 +109,10 @@ public class Player extends Entity {
         // --- Timers ---
         if (invincibilityTimer > 0) invincibilityTimer -= dt;
         if (transmatCooldown > 0) transmatCooldown -= dt;
+        if (vanguardCooldown > 0) vanguardCooldown -= dt;
+        if (darkmatterCooldown > 0) darkmatterCooldown -= dt;
+        if (gammaRayCooldown > 0) gammaRayCooldown -= dt;
+        if (nebulaCooldown > 0) nebulaCooldown -= dt;
 
         // 1. Survival ticks
         hunger = Math.max(0, hunger - 0.05f * dt);
@@ -285,6 +295,13 @@ public class Player extends Entity {
             float speedMod = inventory.getTotalSpeedMod();
             if (inventory.hasFullSet("Xenotime")) speedMod *= 1.40f; // Xenotime 40% Speed Boost
             if (inventory.hasFullSet("Bastnaesite")) speedMod *= 1.30f; // Bastnaesite 30% Speed Boost
+            
+            // --- VANGUARD SPEED BOOSTS ---
+            if (inventory.hasFullSet("Antimatter")) speedMod *= 1.75f; // 50% faster than Topaz (1.15 * 1.5 = 1.725)
+            if (inventory.hasFullSet("Darkmatter")) speedMod *= 1.65f;
+            if (inventory.hasFullSet("Gamma Ray")) speedMod *= 1.50f;
+            if (inventory.hasFullSet("Nebula")) speedMod *= 2.00f;
+            
             velocity.x *= 0.8f * speedMod;
             velocity.z *= 0.8f * speedMod;
         }
@@ -351,6 +368,44 @@ public class Player extends Entity {
                 if (held != null && held.getDisplayName().equals("Xenotime Sword")) {
                     finalDamage = 600f; // The Zenith Strike
                     e.applyRadiationSickness(10.0f); // Severe radiation
+                }
+                
+                // --- VANGUARD TIER SWORDS ---
+                
+                // Citadel (Antimatter)
+                if (held != null && held.getDisplayName().equals("Citadel")) {
+                    finalDamage = 20000.0f;
+                    if (vanguardCooldown <= 0) {
+                        summonAntimatterExplosion(manager, pm);
+                        vanguardCooldown = 12.0f;
+                    }
+                }
+                
+                // Darkmatter Sword
+                if (held != null && (held.getDisplayName().equals("Darkmatter Sword") || held.getDisplayName().equals("Darkmatter"))) {
+                    finalDamage = 15000.0f;
+                    if (darkmatterCooldown <= 0) {
+                        summonDarkmatterBeam(manager, pm);
+                        darkmatterCooldown = 12.0f;
+                    }
+                }
+                
+                // Gamma Ray Sword
+                if (held != null && (held.getDisplayName().equals("Gamma Ray Sword") || held.getDisplayName().equals("Gamma Ray"))) {
+                    finalDamage = 175000.0f;
+                    if (gammaRayCooldown <= 0) {
+                        summonBlackHole(manager, pm);
+                        gammaRayCooldown = 12.0f;
+                    }
+                }
+                
+                // Nebula Sword
+                if (held != null && (held.getDisplayName().equals("Nebula Sword") || held.getDisplayName().equals("Nebula"))) {
+                    finalDamage = 200000.0f;
+                    if (nebulaCooldown <= 0) {
+                        summonNebulaBeams(manager, pm);
+                        nebulaCooldown = 12.0f;
+                    }
                 }
                 
                 // --- Garnet Sword Special Logic ---
@@ -467,6 +522,23 @@ public class Player extends Entity {
                 actualDamage *= 0.30f; // 70% Reduction
             }
         }
+        
+        // --- VANGUARD ARMOR LOGIC ---
+        
+        // Antimatter: 90% Damage Reduction
+        if (inventory.hasFullSet("Antimatter")) {
+            actualDamage *= 0.10f; 
+        }
+        
+        // Gamma Ray: 80% Damage Reduction
+        if (inventory.hasFullSet("Gamma Ray")) {
+            actualDamage *= 0.20f;
+        }
+        
+        // Darkmatter: 85% Damage Reduction
+        if (inventory.hasFullSet("Darkmatter")) {
+            actualDamage *= 0.15f;
+        }
 
         super.damage(actualDamage, attacker);
         
@@ -475,6 +547,19 @@ public class Player extends Entity {
 
         // --- Armor Abilities (Thorns & Reflection) ---
         if (attacker != null) {
+            // Antimatter Fireball Reflection (70% back to Dragons)
+            if (inventory.hasFullSet("Antimatter")) {
+                if (attacker.type == EntityType.FIREBALL || attacker.type == EntityType.GOLD_FIREBALL) {
+                    attacker.damage(amount * 0.70f, this);
+                }
+            }
+            
+            // Gamma Ray Fireball Reflection (55% back to Dragons)
+            if (inventory.hasFullSet("Gamma Ray")) {
+                if (attacker.type == EntityType.FIREBALL || attacker.type == EntityType.GOLD_FIREBALL) {
+                    attacker.damage(amount * 0.55f, this);
+                }
+            }
             // Bastnaesite Nova Blast (Melee Counter)
             if (inventory.hasFullSet("Bastnaesite")) {
                 // Trigger Nova Blast (10 block radius)
@@ -661,6 +746,80 @@ public class Player extends Entity {
 
     public boolean isRiding() {
         return ridingShip != null;
+    }
+
+    private void summonAntimatterExplosion(EntityManager manager, ParticleManager pm) {
+        System.out.println("ANTIMATTER ATOM DETONATED!");
+        // Visual: Sphere of smoke/sparks
+        for(int i=0; i<50; i++) {
+            float rx = (rng.nextFloat()-0.5f)*10f;
+            float ry = (rng.nextFloat()-0.5f)*10f;
+            float rz = (rng.nextFloat()-0.5f)*10f;
+            pm.spawnSmoke(position.x + rx, position.y + ry, position.z + rz);
+        }
+        for (Entity e : manager.getNearby(position.x, position.y, position.z, 15.0f)) {
+            if (e != this && e.type.isHostile()) {
+                e.damage(150000.0f, this);
+            }
+        }
+    }
+
+    private void summonDarkmatterBeam(EntityManager manager, ParticleManager pm) {
+        float yaw = (float) Math.toRadians(camera.getRotation().y);
+        float dx = (float) Math.sin(yaw);
+        float dz = (float) -Math.cos(yaw);
+        
+        for (float d = 1.0f; d < 20.0f; d += 0.5f) {
+            float bx = position.x + dx * d;
+            float by = position.y + 1.0f;
+            float bz = position.z + dz * d;
+            pm.spawnSmoke(bx, by, bz); // Black/Purple smoke
+            
+            for (Entity target : manager.getNearby(bx, by, bz, 2.0f)) {
+                if (target != this && target.type.isHostile()) {
+                    // Darkmatter Poison: 15% health/s for 4s
+                    target.damage(target.getMaxHealth() * 0.15f, this);
+                    target.applyRadiationSickness(4.0f); // Use radiation as poison base
+                }
+            }
+        }
+    }
+
+    private void summonBlackHole(EntityManager manager, ParticleManager pm) {
+        float yaw = (float) Math.toRadians(camera.getRotation().y);
+        float bx = position.x + (float)Math.sin(yaw) * 5f;
+        float bz = position.z + (float)-Math.cos(yaw) * 5f;
+        float by = position.y + 1f;
+
+        // Effect is persistent damage in area
+        System.out.println("BLACK HOLE STABILIZED!");
+        for (Entity e : manager.getNearby(bx, by, bz, 6.0f)) {
+            if (e != this && e.type.isHostile()) {
+                e.damage(e.getMaxHealth() * 0.12f, this); // 12% per hit
+                e.applyKnockback((bx - e.position.x)*0.5f, 0, (bz - e.position.z)*0.5f); // Pull in
+            }
+        }
+        for(int i=0; i<20; i++) pm.spawnSmoke(bx + (rng.nextFloat()-0.5f)*4f, by + (rng.nextFloat()-0.5f)*4f, bz + (rng.nextFloat()-0.5f)*4f);
+    }
+
+    private void summonNebulaBeams(EntityManager manager, ParticleManager pm) {
+        float yaw = (float) Math.toRadians(camera.getRotation().y);
+        float fx = (float) Math.sin(yaw);
+        float fz = (float) -Math.cos(yaw);
+        
+        for (int i = 0; i < 5; i++) {
+            float offset = (i - 2) * 1.5f;
+            float startX = position.x + fx * 10f + (float)Math.cos(yaw) * offset;
+            float startZ = position.z + fz * 10f + (float)Math.sin(yaw) * offset;
+            
+            pm.spawnSmoke(startX, position.y + 1f, startZ);
+            for (Entity e : manager.getNearby(startX, position.y + 1f, startZ, 3.0f)) {
+                if (e != this && e.type.isHostile()) {
+                    e.damage(e.getMaxHealth() * 0.05f, this);
+                    e.applyBurn(2.0f);
+                }
+            }
+        }
     }
 
     private void checkBlockHazards(float dt, World world) {

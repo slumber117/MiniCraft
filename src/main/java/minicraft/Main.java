@@ -1154,6 +1154,13 @@ public class Main {
                 if (player.inventory.hasFullSet("Painite")) jumpPower *= 1.20f;
                 if (player.inventory.hasFullSet("Xenotime")) jumpPower *= 1.10f; 
                 if (player.inventory.hasFullSet("Bastnaesite")) jumpPower *= 1.15f; // Bastnaesite 15% Jump Boost
+                
+                // --- VANGUARD JUMP BOOSTS ---
+                if (player.inventory.hasFullSet("Antimatter")) jumpPower *= 2.00f; // 100% boost
+                if (player.inventory.hasFullSet("Darkmatter")) jumpPower *= 1.50f;
+                if (player.inventory.hasFullSet("Gamma Ray")) jumpPower *= 1.25f;
+                if (player.inventory.hasFullSet("Nebula")) jumpPower *= 2.50f;
+                
                 player.velocity.y = jumpPower;
                 player.isGrounded = false;
             } else if (player.isInWater) {
