@@ -1149,8 +1149,11 @@ public class Main {
         }
 
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            if (player.isGrounded) {
+            if (player.coyoteTime > 0 && player.jumpTimer <= 0) {
                 float jumpPower = 11.6f; // Doubled jump height (v^2/2g)
+                player.jumpTimer = 0.25f; // Prevent double-triggering on same jump
+                player.coyoteTime = 0; // Consume coyote time so no multi-jump
+                player.isGrounded = false;
                 if (player.inventory.hasFullSet("Painite")) jumpPower *= 1.20f;
                 if (player.inventory.hasFullSet("Xenotime")) jumpPower *= 1.10f; 
                 if (player.inventory.hasFullSet("Bastnaesite")) jumpPower *= 1.15f; // Bastnaesite 15% Jump Boost
@@ -1764,7 +1767,7 @@ public class Main {
                 ToolItem t = (ToolItem) held;
                 baseEfficiency = t.getEfficiency();
                 // Radioactive ores are mined much faster by specialized tools
-                if (b == Block.URANIUM_ORE || b == Block.PLUTONIUM_ORE) {
+                if (b == Block.URANIUM_ORE || b == Block.PLUTONIUM_ORE || b == Block.NEPTUNIUM_ORE) {
                     baseEfficiency *= t.radioactiveBonus;
                 }
                 toolLevel = t.getHarvestLevel();

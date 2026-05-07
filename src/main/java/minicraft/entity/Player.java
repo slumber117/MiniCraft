@@ -27,6 +27,8 @@ public class Player extends Entity {
     
     // Environmental Cooldowns
     public float transmatCooldown = 0f;
+    public float jumpTimer = 0f;
+    public float coyoteTime = 0f;
     
     // Vanguard Ability Cooldowns
     public float vanguardCooldown = 0f; // Antimatter
@@ -109,6 +111,9 @@ public class Player extends Entity {
         // --- Timers ---
         if (invincibilityTimer > 0) invincibilityTimer -= dt;
         if (transmatCooldown > 0) transmatCooldown -= dt;
+        if (jumpTimer > 0) jumpTimer -= dt;
+        if (coyoteTime > 0) coyoteTime -= dt;
+        if (isGrounded) coyoteTime = 0.15f; // Reset coyote time when on ground
         if (vanguardCooldown > 0) vanguardCooldown -= dt;
         if (darkmatterCooldown > 0) darkmatterCooldown -= dt;
         if (gammaRayCooldown > 0) gammaRayCooldown -= dt;

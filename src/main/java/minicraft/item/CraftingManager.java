@@ -517,27 +517,30 @@ public class CraftingManager {
         String name = tier + " ";
         String low = tier.toLowerCase();
  
+        float radBonus = 1.0f;
+        if (tier.equals("Uranium")) radBonus = 1.5f;
+        if (tier.equals("Plutonium")) radBonus = 2.5f;
+        if (tier.equals("Neptunium")) radBonus = 3.0f;
+        if (tier.equals("Xenotime")) radBonus = 2.0f;
+
         // Pickaxe
         Map<Item, Integer> pI = new HashMap<>();
         pI.put(m, 3);
-        float radioactiveSpeed = 1.0f;
-        if (tier.equals("Xenotime")) radioactiveSpeed = 1.5f; // 50% faster for radioactive ores
-        
-        ToolItem pick = new ToolItem(name + "Pick", ToolItem.ToolType.PICKAXE, level, speed, "item_pick_" + low, null, 0f, false, 0f, aura, radioactiveSpeed, 1.0f, chance);
+        ToolItem pick = new ToolItem(name + "Pick", ToolItem.ToolType.PICKAXE, level, speed, "item_pick_" + low, null, 0f, false, 0f, aura, radBonus, 1.0f, chance);
         pick.setLevelRequirement(getReqLevel(level));
         recipes.add(new Recipe(name + "Pickaxe", Recipe.Category.TOOLS, pI, pick, 1));
 
         // Axe
         Map<Item, Integer> aI = new HashMap<>();
         aI.put(m, 3);
-        ToolItem axe = new ToolItem(name + "Axe", ToolItem.ToolType.AXE, level, speed, "item_axe_" + low, null, 0f, false, 0f, aura, 1.0f, 1.0f, 0f);
+        ToolItem axe = new ToolItem(name + "Axe", ToolItem.ToolType.AXE, level, speed, "item_axe_" + low, null, 0f, false, 0f, aura, radBonus, 1.0f, 0f);
         axe.setLevelRequirement(getReqLevel(level));
         recipes.add(new Recipe(name + "Axe", Recipe.Category.TOOLS, aI, axe, 1));
 
         // Shovel
         Map<Item, Integer> sI = new HashMap<>();
         sI.put(m, 3);
-        ToolItem shovel = new ToolItem(name + "Shovel", ToolItem.ToolType.SHOVEL, level, speed, "item_shovel_" + low, null, 0f, false, 0f, aura, 1.0f, 1.0f, 0f);
+        ToolItem shovel = new ToolItem(name + "Shovel", ToolItem.ToolType.SHOVEL, level, speed, "item_shovel_" + low, null, 0f, false, 0f, aura, radBonus, 1.0f, 0f);
         shovel.setLevelRequirement(getReqLevel(level));
         recipes.add(new Recipe(name + "Shovel", Recipe.Category.TOOLS, sI, shovel, 1));
         // Sword
@@ -552,7 +555,7 @@ public class CraftingManager {
         if (tier.equals("Aquamarine")) attackSpeed = 0.444f; // 0.9s cooldown: 0.4 / 0.444 = 0.9
         if (tier.equals("Agate")) attackSpeed = 0.533f; // 0.75s cooldown: 0.4 / 0.533 = 0.75
         
-        ToolItem sword = new ToolItem(name + "Sword", ToolItem.ToolType.SWORD, level, speed, "item_sword_" + low, null, 0f, false, 0f, aura, 1.0f, attackSpeed, 0f);
+        ToolItem sword = new ToolItem(name + "Sword", ToolItem.ToolType.SWORD, level, speed, "item_sword_" + low, null, 0f, false, 0f, aura, radBonus, attackSpeed, 0f);
         sword.setLevelRequirement(getReqLevel(level));
         recipes.add(new Recipe(name + "Sword", Recipe.Category.TOOLS, swI, sword, 1));
     }

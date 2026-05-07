@@ -28,10 +28,9 @@ public class HUD {
         float startX = (width - stripW) / 2f;
         
         float panelW = 210f + 40f + 16f;
-        float panelGap = 20f; // Gap between health and hotbar
         
-        float panelX = startX - panelW - panelGap;
-        float statTop = hotbarTop - (panelH - slotS) / 2f; // Vertically center with hotbar
+        float panelX = 14f; // Bottom-left margin
+        float statTop = height - 14f - panelH; // Bottom-left position
         float marginLeft = panelX + 8f;
 
         renderHotbar(ui, player, shader, width, height, hotbarTop);
@@ -137,21 +136,14 @@ public class HUD {
             return;
         }
 
-        // Render bar
+        // Render tactical bar
         float barWidth = 150f;
-        float barHeight = 12f;
+        float barHeight = 10f;
         float x = (width - barWidth) / 2f;
         float y = height - 160f;
         
-        float pct = Math.max(0, cd / 12.0f);
-        if (pct > 0) {
-            ui.drawRect(shader, x, y, barWidth, barHeight, new Vector4f(0.1f, 0.1f, 0.1f, 0.7f));
-            ui.drawRect(shader, x, y, barWidth * (1.0f - pct), barHeight, color);
-            ui.drawText(shader, label + " READY", x, y - 15f, 0.45f, color);
-        } else {
-            ui.drawText(shader, label + " READY", x, y - 15f, 0.45f, color);
-            // Flash effect?
-        }
+        float fill = 1.0f - Math.max(0, cd / 12.0f);
+        ui.drawTacticalBar(shader, x, y, barWidth, barHeight, fill, color, label);
     }
 
     private void renderBossCompass(UIRenderer ui, Player player, ShaderProgram shader, int width, int height, Main main) {
