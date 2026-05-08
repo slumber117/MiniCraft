@@ -1,5 +1,6 @@
 package minicraft.world.cave;
 
+import minicraft.world.Biome;
 import minicraft.world.CaveGenerator;
 import minicraft.world.WorldCell;
 import minicraft.world.cave.geode.*;
@@ -99,8 +100,8 @@ public class CaveCarver {
                 return new CaveCell(true, CaveType.GEODE_HOLLOW, geode.depth);
         }
 
-        // ── 2. Master Cave Generator (3D Noise) ────────────────────────────
-        CaveType type = caveGen.getCaveType(x, y, z, surfaceY);
+        // ── 2. Master Cave Generator (3D Noise + Topology Planner) ─────────
+        CaveType type = caveGen.getCaveType(x, y, z, surfaceY, isUnderwater ? Biome.OCEAN : Biome.GRASSLAND); // Default if biome unknown, but we usually have it via overload
         if (type != CaveType.NONE) {
             return new CaveCell(true, type, depthFraction);
         }
@@ -116,17 +117,40 @@ public class CaveCarver {
         return CaveCell.SOLID;
     }
 
-    /**
-     * Convenience overload that accepts a {@link WorldCell} from the terrain
-     * generator so the caller doesn't need to manually extract surface info.
-     *
-     * @param x         World X
-     * @param y         World Y
-     * @param z         World Z
-     * @param surface   The WorldCell at (x, z) from WorldGenerator
-     * @param surfaceY  The world-unit height corresponding to surface.elevation
-     */
     public CaveCell query(int x, int y, int z, WorldCell surface, int surfaceY) {
-        return query(x, y, z, surfaceY, surface.isWater);
+        // ── Absolute floor — bedrock is always solid ───────────────────────
+        if (y <= BEDROCK_Y) return CaveCell.SOLID;
+
+        // ── Don't carve above the surface ─────────────────────────────────
+        if (y >= surfaceY) return CaveCell.SOLID;
+
+        float depthFraction = 1.0f - ((float) y / (float) Math.max(1, surfaceY));
+
+        // ── 1. Gem Geodes (Constructive) ───────────────────────────────────
+        GeodeCell geode = gemGeode.query(x, y, z, surfaceY, surface.isWater);
+        if (geode.layer != GeodeCell.Layer.OUTSIDE) {
+            if (geode.layer == GeodeCell.Layer.SHELL)
+                return new CaveCell(false, CaveType.GEODE_SHELL, geode.depth);
+            if (geode.layer == GeodeCell.Layer.CRYSTAL)
+                return new CaveCell(false, CaveType.GEODE_CRYSTAL, geode.depth, geode.gemType);
+            if (geode.layer == GeodeCell.Layer.HOLLOW)
+                return new CaveCell(true, CaveType.GEODE_HOLLOW, geode.depth);
+        }
+
+        // ── 2. Master Cave Generator (Physics-Motivated SDF) ───────────────
+        CaveType type = caveGen.getCaveType(x, y, z, surfaceY, surface.biome);
+        if (type != CaveType.NONE) {
+            return new CaveCell(true, type, depthFraction);
+        }
+
+        // ── 3. Underwater cave ─────────────────────────────────────────────
+        if (surface.isWater) {
+            CaveType uwType = underwaterCarver.query(x, y, z, surfaceY, true);
+            if (uwType != CaveType.NONE) {
+                return new CaveCell(true, uwType, depthFraction);
+            }
+        }
+
+        return CaveCell.SOLID;
     }
 }

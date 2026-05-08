@@ -65,5 +65,25 @@ public enum CaveType {
     /** Gem crystal growing inside a geode. */
     GEODE_CRYSTAL,
     /** Air pocket interior of a geode. */
-    GEODE_HOLLOW
+    GEODE_HOLLOW,
+
+    // ── Biome-Conditioned Specialties ─────────────────────────────────────
+    
+    /** 
+     * Karst cave — massive, dissolved limestone chambers with smooth,
+     * undulating walls and irregular branching. Found in temperate/humid regions.
+     */
+    KARST,
+
+    /** 
+     * Lava tube — long, smooth, cylindrical passages formed by volcanic flow.
+     * Often horizontal with occasional vertical "skylights." Found in arid/mountain regions.
+     */
+    LAVA_TUBE,
+
+    /** 
+     * Fracture cave — jagged, angular cracks and vertical rifts formed by 
+     * tectonic stress or ice expansion. Found in cold/arctic regions.
+     */
+    FRACTURE
 }

@@ -642,77 +642,70 @@ public class World implements IWeatherWorld {
     }
 
     private void spawnOres(Chunk chunk, int cx, int cz) {
-        // --- 1. MOUNTAIN/SURFACE INJECTION (Y: 300 - 950) ---
-        // Basic metals available on the surface and in mountain peaks
-        spawnOreGrip(chunk, Block.IRON_ORE, ClusterSize.LARGE, 15, 300, 950);
-        spawnOreGrip(chunk, Block.SILVER_ORE, ClusterSize.MEDIUM, 10, 300, 900);
-        spawnOreGrip(chunk, Block.TIN_ORE, ClusterSize.MEDIUM, 12, 300, 850);
-        spawnOreGrip(chunk, Block.COPPER_ORE, ClusterSize.LARGE, 15, 300, 800);
-        spawnOreGrip(chunk, Block.QUARTZ_ORE, ClusterSize.MEDIUM, 15, 300, 800);
-        spawnOreGrip(chunk, Block.COAL_ORE, ClusterSize.LARGE, 25, 300, 950);
-        spawnOreGrip(chunk, Block.NICKEL_ORE, ClusterSize.SMALL, 10, 300, 500);
+        // --- Tier 1: Surface & Highlands (Y: 750 - 1024) ---
+        spawnOreGrip(chunk, Block.IRON_ORE, ClusterSize.LARGE, 15, 750, 1024);
+        spawnOreGrip(chunk, Block.COAL_ORE, ClusterSize.LARGE, 25, 700, 1024);
+        spawnOreGrip(chunk, Block.COPPER_ORE, ClusterSize.LARGE, 15, 750, 950);
+        spawnOreGrip(chunk, Block.TIN_ORE, ClusterSize.MEDIUM, 12, 750, 950);
 
-        // --- 2. UPPER-CRUST (Y: 250 - 300) ---
-        // Gold and Titanium
-        spawnOreGrip(chunk, Block.GOLD_ORE, ClusterSize.MEDIUM, 12, 250, 300);
-        spawnOreGrip(chunk, Block.TITANIUM_ORE, ClusterSize.MEDIUM, 8, 250, 300);
-        spawnOreGrip(chunk, Block.PLATINUM_ORE, ClusterSize.SMALL, 5, 250, 300);
+        // --- Tier 2: Shallow Crust (Y: 600 - 800) ---
+        spawnOreGrip(chunk, Block.SILVER_ORE, ClusterSize.MEDIUM, 10, 600, 800);
+        spawnOreGrip(chunk, Block.QUARTZ_ORE, ClusterSize.MEDIUM, 15, 600, 800);
+        spawnOreGrip(chunk, Block.NICKEL_ORE, ClusterSize.SMALL, 10, 600, 800);
 
-        // --- 3. MID-CRUST (Y: 200 - 250) ---
-        // Diamond and Sapphire
-        spawnOreGrip(chunk, Block.DIAMOND_ORE, ClusterSize.SMALL, 10, 200, 250);
-        spawnOreGrip(chunk, Block.SAPPHIRE_ORE, ClusterSize.SMALL, 10, 200, 250);
-        spawnOreGrip(chunk, Block.JADE_ORE, ClusterSize.SMALL, 8, 200, 250);
-        spawnOreGrip(chunk, Block.AMETHYST_ORE, ClusterSize.SMALL, 8, 200, 250);
-        spawnOreGrip(chunk, Block.AQUAMARINE_ORE, ClusterSize.SMALL, 8, 200, 250);
+        // --- Tier 3: Sub-Surface Transition (Y: 450 - 650) ---
+        // Gold now spans across the Layer 500 boundary
+        spawnOreGrip(chunk, Block.GOLD_ORE, ClusterSize.MEDIUM, 15, 450, 650);
+        spawnOreGrip(chunk, Block.TITANIUM_ORE, ClusterSize.MEDIUM, 10, 450, 650);
+        spawnOreGrip(chunk, Block.PLATINUM_ORE, ClusterSize.SMALL, 6, 450, 650);
 
-        // --- 4. LOWER-CRUST (Y: 150 - 200) ---
-        // Tier 5 Gems
-        spawnOreGrip(chunk, Block.EMERALD_ORE, ClusterSize.SMALL, 12, 150, 200);
-        spawnOreGrip(chunk, Block.TOPAZ_ORE, ClusterSize.SMALL, 12, 150, 200);
-        spawnOreGrip(chunk, Block.PERIDOT_ORE, ClusterSize.SMALL, 10, 150, 200);
-        spawnOreGrip(chunk, Block.RUBY_ORE, ClusterSize.SMALL, 8, 150, 200);
-        spawnOreGrip(chunk, Block.TANZANITE_ORE, ClusterSize.SMALL, 6, 150, 200);
-        spawnOreGrip(chunk, Block.OPAL_ORE, ClusterSize.TINY, 4, 150, 200);
+        // --- Tier 4: Upper-Crust Gems (Y: 350 - 550) ---
+        spawnOreGrip(chunk, Block.DIAMOND_ORE, ClusterSize.SMALL, 12, 350, 550);
+        spawnOreGrip(chunk, Block.SAPPHIRE_ORE, ClusterSize.SMALL, 12, 350, 550);
+        spawnOreGrip(chunk, Block.JADE_ORE, ClusterSize.SMALL, 10, 350, 550);
+        spawnOreGrip(chunk, Block.AMETHYST_ORE, ClusterSize.SMALL, 10, 350, 550);
+        spawnOreGrip(chunk, Block.AQUAMARINE_ORE, ClusterSize.SMALL, 10, 350, 550);
 
-        // --- 5. RADIOACTIVE ZONE (Y: 100 - 150) ---
-        // Hazardous power sources (Tier 6)
-        spawnOreGrip(chunk, Block.URANIUM_ORE, ClusterSize.SMALL, 6, 100, 150);
-        spawnOreGrip(chunk, Block.PLUTONIUM_ORE, ClusterSize.TINY, 4, 100, 150);
-        spawnOreGrip(chunk, Block.ORICHALCUM_ORE, ClusterSize.MEDIUM, 2, 100, 150);
-        spawnOreGrip(chunk, Block.NEPTUNIUM_ORE, ClusterSize.MEDIUM, 1, 100, 150);
+        // --- Tier 5: Mid-Crust Exotic Gems (Y: 250 - 450) ---
+        spawnOreGrip(chunk, Block.EMERALD_ORE, ClusterSize.SMALL, 12, 250, 450);
+        spawnOreGrip(chunk, Block.TOPAZ_ORE, ClusterSize.SMALL, 12, 250, 450);
+        spawnOreGrip(chunk, Block.PERIDOT_ORE, ClusterSize.SMALL, 10, 250, 450);
+        spawnOreGrip(chunk, Block.RUBY_ORE, ClusterSize.SMALL, 8, 250, 450);
+        spawnOreGrip(chunk, Block.TANZANITE_ORE, ClusterSize.SMALL, 6, 250, 450);
+        spawnOreGrip(chunk, Block.OPAL_ORE, ClusterSize.TINY, 4, 250, 450);
 
-        // --- 6. DEEP ABYSSAL CRUST (Y: 70 - 100) ---
-        // Tier 7 Ores
-        spawnOreGrip(chunk, Block.ADAMANTINE_ORE, ClusterSize.TINY, 5, 70, 100);
-        spawnOreGrip(chunk, Block.TAAFFEITE_ORE, ClusterSize.TINY, 5, 70, 100);
-        spawnOreGrip(chunk, Block.ALEXANDRITE_ORE, ClusterSize.TINY, 8, 70, 100); // Doubled density
+        // --- Tier 6: Radioactive Stratum (Y: 150 - 350) ---
+        spawnOreGrip(chunk, Block.URANIUM_ORE, ClusterSize.SMALL, 8, 150, 350);
+        spawnOreGrip(chunk, Block.PLUTONIUM_ORE, ClusterSize.TINY, 6, 150, 350);
+        spawnOreGrip(chunk, Block.ORICHALCUM_ORE, ClusterSize.MEDIUM, 4, 150, 350);
+        spawnOreGrip(chunk, Block.NEPTUNIUM_ORE, ClusterSize.MEDIUM, 3, 150, 350);
 
-        // --- 7. MANTLE TRANSITION (Y: 40 - 70) ---
-        // Tier 8 Ores
-        spawnOreGrip(chunk, Block.AGATE_ORE, ClusterSize.TINY, 4, 40, 70);
-        spawnOreGrip(chunk, Block.GARNET_ORE, ClusterSize.TINY, 4, 40, 70);
-        spawnOreGrip(chunk, Block.SERENDIBITE_ORE, ClusterSize.TINY, 3, 40, 70);
-        spawnOreGrip(chunk, Block.PYRITE_ORE, ClusterSize.TINY, 3, 40, 70);
-        spawnOreGrip(chunk, Block.GRANDIDIERITE_ORE, ClusterSize.TINY, 2, 40, 70);
-        spawnOreGrip(chunk, Block.MUSGRAVITE_ORE, ClusterSize.TINY, 2, 40, 70);
+        // --- Tier 7: Deep Abyssal Crust (Y: 80 - 200) ---
+        spawnOreGrip(chunk, Block.ADAMANTINE_ORE, ClusterSize.TINY, 6, 80, 200);
+        spawnOreGrip(chunk, Block.TAAFFEITE_ORE, ClusterSize.TINY, 6, 80, 200);
+        spawnOreGrip(chunk, Block.ALEXANDRITE_ORE, ClusterSize.TINY, 10, 80, 200);
 
-        // --- 8. NEAR BEDROCK (Y: 20 - 40) ---
-        // Tier 9 Ores
-        spawnOreGrip(chunk, Block.PAINITE_ORE, ClusterSize.TINY, 4, 20, 40);
+        // --- Tier 8: Mantle Transition (Y: 40 - 100) ---
+        spawnOreGrip(chunk, Block.AGATE_ORE, ClusterSize.TINY, 5, 40, 100);
+        spawnOreGrip(chunk, Block.GARNET_ORE, ClusterSize.TINY, 5, 40, 100);
+        spawnOreGrip(chunk, Block.SERENDIBITE_ORE, ClusterSize.TINY, 4, 40, 100);
+        spawnOreGrip(chunk, Block.PYRITE_ORE, ClusterSize.TINY, 4, 40, 100);
+        spawnOreGrip(chunk, Block.GRANDIDIERITE_ORE, ClusterSize.TINY, 3, 40, 100);
+        spawnOreGrip(chunk, Block.MUSGRAVITE_ORE, ClusterSize.TINY, 3, 40, 100);
 
-        // --- 9. BEDROCK FLOOR (Y: 10 - 20) ---
-        // Legendary Materials (Tier 10 Vanguard)
-        spawnOreGrip(chunk, Block.ONYX_ORE, ClusterSize.TINY, 3, 10, 20);
-        spawnOreGrip(chunk, Block.MITHRIL_ORE, ClusterSize.TINY, 3, 10, 20);
-        spawnOreGrip(chunk, Block.XENOTIME_ORE, ClusterSize.SMALL, 5, 10, 20);
-        spawnOreGrip(chunk, Block.BASTNAESITE_ORE, ClusterSize.SMALL, 5, 10, 20);
+        // --- Tier 9: Pre-Bedrock Depth (Y: 15 - 50) ---
+        spawnOreGrip(chunk, Block.PAINITE_ORE, ClusterSize.TINY, 6, 15, 50);
 
-        // --- 10. THE DEEPEST ZENITH (Y: 0 - 10) ---
-        // Rare Earth Extremes
-        spawnOreGrip(chunk, Block.PROMETHIUM_ORE, ClusterSize.TINY, 2, 0, 10);
-        spawnOreGrip(chunk, Block.LANTHANUM_ORE, ClusterSize.TINY, 2, 0, 10);
-        spawnOreGrip(chunk, Block.CERIUM_ORE, ClusterSize.TINY, 2, 0, 10);
+        // --- Tier 10: Bedrock Floor (Y: 5 - 25) ---
+        spawnOreGrip(chunk, Block.ONYX_ORE, ClusterSize.TINY, 4, 5, 25);
+        spawnOreGrip(chunk, Block.MITHRIL_ORE, ClusterSize.TINY, 4, 5, 25);
+        spawnOreGrip(chunk, Block.XENOTIME_ORE, ClusterSize.SMALL, 6, 5, 25);
+        spawnOreGrip(chunk, Block.BASTNAESITE_ORE, ClusterSize.SMALL, 6, 5, 25);
+
+        // --- Tier 11+: The Deepest Zenith (Y: 0 - 10) ---
+        spawnOreGrip(chunk, Block.PROMETHIUM_ORE, ClusterSize.TINY, 3, 0, 10);
+        spawnOreGrip(chunk, Block.LANTHANUM_ORE, ClusterSize.TINY, 3, 0, 10);
+        spawnOreGrip(chunk, Block.CERIUM_ORE, ClusterSize.TINY, 3, 0, 10);
     }
 
     private enum ClusterSize { TINY(2), SMALL(4), MEDIUM(8), LARGE(12); int count; ClusterSize(int c) { count = c; } }
