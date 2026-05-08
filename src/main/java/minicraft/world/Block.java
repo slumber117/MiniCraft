@@ -53,44 +53,44 @@ public enum Block {
     IRON_ORE(true, 2, 3.5f, 5.0f, "iron_ore"),
     COPPER_ORE(true, 1, 3.0f, 3.0f, "copper_ore"),
     TIN_ORE(true, 1, 3.0f, 3.0f, "tin_ore"),
- 
-    GOLD_ORE(true, 3, 5.0f, 10.0f, "gold_ore"),
-    TANZANITE_ORE(true, 3, 5.0f, 30.0f, "tanzanite_ore"),
+
+    GOLD_ORE(true, 3, 15.0f, 10.0f, "gold_ore"),
+    TANZANITE_ORE(true, 3, 10.0f, 30.0f, "tanzanite_ore"),
     SILVER_ORE(true, 3, 5.0f, 8.0f, "silver_ore"),
     NICKEL_ORE(true, 3, 5.0f, 7.0f, "nickel_ore"),
     PLATINUM_ORE(true, 3, 8.0f, 12.0f, "platinum_ore"),
- 
-    DIAMOND_ORE(true, 4, 30.0f, 30.0f, "diamond_ore"),
-    EMERALD_ORE(true, 5, 25.0f, 54.0f, "emerald_ore"),
-    RUBY_ORE(true, 5, 25.0f, 36.0f, "ruby_ore"),
-    TOPAZ_ORE(true, 5, 20.0f, 45.0f, "topaz_ore"),
-    AQUAMARINE_ORE(true, 5, 20.0f, 22.5f, "aquamarine_ore"),
-    PERIDOT_ORE(true, 5, 20.0f, 15.0f, "peridot_ore"),
-    LAPIS_ORE(true, 1, 3.0f, 5.0f, "lapis_ore"),
+
+    DIAMOND_ORE(true, 4, 30.0f, 100.0f, "diamond_ore"),
+    EMERALD_ORE(true, 5, 25.0f, 154.0f, "emerald_ore"),
+    RUBY_ORE(true, 5, 25.0f, 136.0f, "ruby_ore"),
+    TOPAZ_ORE(true, 5, 20.0f, 450.0f, "topaz_ore"),
+    AQUAMARINE_ORE(true, 5, 20.0f, 422.5f, "aquamarine_ore"),
+    PERIDOT_ORE(true, 5, 20.0f, 515.0f, "peridot_ore"),
+    LAPIS_ORE(true, 6, 3.0f, 500.0f, "lapis_ore"),
     SAPPHIRE_ORE(true, 5, 15.0f, 22.5f, "sapphire_ore"),
     AMETHYST_ORE(true, 4, 12.0f, 12.0f, "amethyst_ore"),
-    JADE_ORE(true, 4, 10.0f, 10.0f, "jade_ore"),
-    ONYX_ORE(true, 10, 120.0f, 150.0f, "onyx_ore"),
+    JADE_ORE(true, 5, 10.0f, 350.0f, "jade_ore"),
+    ONYX_ORE(true, 10, 120.0f, 1500.0f, "onyx_ore"),
     GARNET_ORE(true, 8, 90.0f, 120.0f, "garnet_ore"),
     TOURMALINE_ORE(true, 5, 25.0f, 20.0f, "tourmaline_ore"),
-    AGATE_ORE(true, 5, 20.0f, 15.0f, "agate_ore"),
-    PAINITE_ORE(true, 9, 80.0f, 100.0f, "painite_ore"), // High-fidelity deep red crystalline ore
-    TAAFFEITE_ORE(true, 7, 90.0f, 262.5f, "tanzanite_ore"), // Solid lilac crystal pattern
-    GRANDIDIERITE_ORE(true, 8, 95.0f, 200.0f, "grandidierite_ore"),
-    SERENDIBITE_ORE(true, 8, 100.0f, 300.0f, "serendibite_ore"),
-    ALEXANDRITE_ORE(true, 7, 80.0f, 262.5f, "alexandrite_ore"),
+    AGATE_ORE(true, 8, 20.0f, 33000.0f, "agate_ore"),
+    PAINITE_ORE(true, 9, 80.0f, 345000.0f, "painite_ore"), // High-fidelity deep red crystalline ore
+    TAAFFEITE_ORE(true, 7, 90.0f, 1285.0f, "tanzanite_ore"), // Solid lilac crystal pattern
+    GRANDIDIERITE_ORE(true, 8, 95.0f, 600.0f, "grandidierite_ore"),
+    SERENDIBITE_ORE(true, 8, 100.0f, 2000.0f, "serendibite_ore"),
+    ALEXANDRITE_ORE(true, 7, 80.0f, 925.0f, "alexandrite_ore"),
     MUSGRAVITE_ORE(true, 8, 110.0f, 400.0f, "musgravite_ore"),
     OPAL_ORE(true, 5, 15.0f, 25.0f, "opal_ore"),
- 
-    QUARTZ_ORE(true, 4, 4.0f, 3.0f, "quartz_ore"),
-    PYRITE_ORE(true, 1, 4.0f, 4.0f, "pyrite_ore"),
-    MITHRIL_ORE(true, 10, 150.0f, 500.0f, "mithril_ore"),
-    ADAMANTINE_ORE(true, 7, 50.0f, 70.0f, "adamantine_ore"),
-    ORICHALCUM_ORE(true, 6, 35.0f, 375.0f, "orichalcum_ore"),
+
+    QUARTZ_ORE(true, 4, 4.0f, 400.0f, "quartz_ore"),
+    PYRITE_ORE(true, 8, 45.0f, 1000.0f, "pyrite_ore"),
+    MITHRIL_ORE(true, 10, 150.0f, 1200.0f, "mithril_ore"),
+    ADAMANTINE_ORE(true, 7, 50.0f, 1400.0f, "adamantine_ore"),
+    ORICHALCUM_ORE(true, 6, 35.0f, 750.0f, "orichalcum_ore"),
     PLUTONIUM_ORE(true, 6, 50.0f, 262.5f, "plutonium_ore"),
     URANIUM_ORE(true, 6, 45.0f, 500.0f, "uranium_ore"),
-    NEPTUNIUM_ORE(true, 6, 45.0f, 375.0f, "neptunium_ore"),
- 
+    NEPTUNIUM_ORE(true, 6, 45.0f, 750.0f, "neptunium_ore"),
+
     TUNGSTEN_ORE(true, 4, 10.0f, 12.0f, "tungsten_ore"),
     TITANIUM_ORE(true, 3, 10.0f, 12.0f, "titanium_ore"),
 
@@ -115,20 +115,20 @@ public enum Block {
     CERIUM_ORE(true, 27, 500.0f, 1800.0f, "cerium_ore"),
     LANTHANUM_ORE(true, 28, 520.0f, 1900.0f, "lanthanum_ore"),
     PROMETHIUM_ORE(true, 30, 600.0f, 2500.0f, "promethium_ore"),
-    
+
     // --- 13. VERDANT TIER (Tier 31-35) ---
     RUTHENIUM_ORE(true, 31, 650.0f, 3000.0f, "ruthenium_ore"),
     RHENIUM_ORE(true, 32, 700.0f, 3500.0f, "rhenium_ore"),
     IRIDIUM_ORE(true, 33, 750.0f, 4000.0f, "iridium_ore"),
     OSMIUM_ORE(true, 34, 800.0f, 4500.0f, "osmium_ore"),
     RHODIUM_ORE(true, 35, 850.0f, 5000.0f, "rhodium_ore"),
-    
+
     // --- 14. VANGUARD TIER (Tier 50-100) ---
     ANTIMATTER_ORE(true, 50, 2000.0f, 25000.0f, "antimatter_ore"),
     DARKMATTER_ORE(true, 60, 3000.0f, 50000.0f, "darkmatter_ore"),
     GAMMA_RAY_ORE(true, 80, 5000.0f, 100000.0f, "gamma_ray_ore"),
     NEBULA_ORE(true, 100, 10000.0f, 250000.0f, "nebula_ore"),
-    
+
     // Arena Blocks
     BEDROCK_WALL(true, 0, 999999f, 999999f, "stone"), // Unbreakable
     BOSS_GATE(true, 0, 999999f, 999999f, "iron_block"), // Only passable if Level 25+
@@ -148,8 +148,8 @@ public enum Block {
     ALLOY_FORGE(true, 0, 4.0f, 15.0f, "alloy_forge", Block.MeshType.CUBE,
             new minicraft.world.behavior.FurnaceBlock("FUSION FORGE", "ALLOY_FORGE")),
     CHEST(true, 0, 50.0f, 15.0f, "boss_chest_texture", Block.MeshType.CUBE, new minicraft.world.behavior.ChestBlock()),
-    GOLDEN_CHEST(true, 0, 50.0f, 15.0f, "golden_boss_chest_texture", Block.MeshType.CUBE, new minicraft.world.behavior.ChestBlock()),
-
+    GOLDEN_CHEST(true, 0, 50.0f, 15.0f, "golden_boss_chest_texture", Block.MeshType.CUBE,
+            new minicraft.world.behavior.ChestBlock()),
 
     // ── Vegetation & Undersea ─────────────────────────────────────────────
     TALL_GRASS(false, 0, 0f, 0f, "tall_grass", MeshType.CROSS),
@@ -312,14 +312,14 @@ public enum Block {
      */
     public boolean isGemOre() {
         return this == DIAMOND_ORE || this == EMERALD_ORE || this == RUBY_ORE
-            || this == TOPAZ_ORE || this == AQUAMARINE_ORE || this == PERIDOT_ORE
-            || this == SAPPHIRE_ORE || this == AMETHYST_ORE || this == JADE_ORE
-            || this == ONYX_ORE || this == GARNET_ORE || this == TOURMALINE_ORE
-            || this == AGATE_ORE || this == PAINITE_ORE || this == OPAL_ORE
-            || this == TANZANITE_ORE || this == LAPIS_ORE
-            || this == TAAFFEITE_ORE || this == GRANDIDIERITE_ORE
-            || this == SERENDIBITE_ORE || this == ALEXANDRITE_ORE
-            || this == MUSGRAVITE_ORE;
+                || this == TOPAZ_ORE || this == AQUAMARINE_ORE || this == PERIDOT_ORE
+                || this == SAPPHIRE_ORE || this == AMETHYST_ORE || this == JADE_ORE
+                || this == ONYX_ORE || this == GARNET_ORE || this == TOURMALINE_ORE
+                || this == AGATE_ORE || this == PAINITE_ORE || this == OPAL_ORE
+                || this == TANZANITE_ORE || this == LAPIS_ORE
+                || this == TAAFFEITE_ORE || this == GRANDIDIERITE_ORE
+                || this == SERENDIBITE_ORE || this == ALEXANDRITE_ORE
+                || this == MUSGRAVITE_ORE;
     }
 
     public boolean isAir() {

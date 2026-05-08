@@ -341,6 +341,7 @@ public class Main {
 
         // ── Framebuffer resize ────────────────────────────────────────────
         glfwSetFramebufferSizeCallback(window, (win, w, h) -> {
+            if (w <= 0 || h <= 0) return; // Ignore invalid dimensions
             glViewport(0, 0, w, h);
             framebufferW = w;
             framebufferH = h;
@@ -711,17 +712,17 @@ public class Main {
             } else {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             }
-
+ 
             int currentW, currentH;
             try (MemoryStack stack = stackPush()) {
-                IntBuffer pw = stack.mallocInt(1), ph = stack.mallocInt(1);
+                IntBuffer pw = stack.callocInt(1), ph = stack.callocInt(1);
                 glfwGetFramebufferSize(window, pw, ph);
                 currentW = pw.get(0);
                 currentH = ph.get(0);
             }
-
+ 
             // ── RESOLUTION RESILIENCE ─────────────────────────────────────
-            if (currentW != framebufferW || currentH != framebufferH) {
+            if (currentW > 0 && currentH > 0 && (currentW != framebufferW || currentH != framebufferH)) {
                 resizeCounter++;
                 if (resizeCounter > 20) { // Debounce: Wait for 20 frames of stability
                     framebufferW = currentW;
@@ -1172,24 +1173,6 @@ public class Main {
             }
         }
 
-        // Mouse look (polled here as well as via callback for reliability)
-        double[] mx = new double[1], my = new double[1];
-        glfwGetCursorPos(window, mx, my);
-        if (firstMouse) {
-            lastMouseX = mx[0];
-            lastMouseY = my[0];
-            firstMouse = false;
-        }
-        double mdx = mx[0] - lastMouseX;
-        double mdy = my[0] - lastMouseY;
-        lastMouseX = mx[0];
-        lastMouseY = my[0];
-        camera.moveRotation((float) (mdy * MOUSE_SENSITIVITY), (float) (mdx * MOUSE_SENSITIVITY), 0);
-
-        if (camera.getRotation().x > 89f)
-            camera.setRotation(89f, camera.getRotation().y, 0);
-        if (camera.getRotation().x < -89f)
-            camera.setRotation(-89f, camera.getRotation().y, 0);
     }
 
     private void handleInventoryInput() {
