@@ -332,6 +332,14 @@ public class Player extends Entity {
                 
                 // Set cooldown based on attack speed
                 attackTimer = 0.4f / tool.attackSpeedMultiplier;
+            } else if (tool.getToolType() == ToolItem.ToolType.BATTLE_AXE) {
+                baseDmg = tool.getEfficiency() * 4f * 1.3f; // 30% more damage than sword
+                percentDmg = tool.getPercentDamage();
+                instaKill = tool.isInstaKill();
+                bossPercent = tool.getBossPercentDamage();
+
+                // Set cooldown (slower than sword)
+                attackTimer = 0.6f / tool.attackSpeedMultiplier;
             } else {
                 attackTimer = 0.5f; // Default swing speed for tools
             }
@@ -357,7 +365,7 @@ public class Player extends Entity {
                 float finalDamage = baseDmg;
                 
                 // --- Bastnaesite Sword Logic ---
-                if (held != null && held.getDisplayName().equals("Bastnaesite Sword")) {
+                if (held != null && (held.getDisplayName().equals("Bastnaesite Sword") || held.getDisplayName().equals("Bastnaesite Battle Axe"))) {
                     finalDamage = 800f; 
                     if (e.getType() == EntityType.ONYX_DRAGON) {
                         finalDamage *= 2.5f; // Dragon Slayer
@@ -370,7 +378,7 @@ public class Player extends Entity {
                 }
                 
                 // --- Xenotime Sword Logic ---
-                if (held != null && held.getDisplayName().equals("Xenotime Sword")) {
+                if (held != null && (held.getDisplayName().equals("Xenotime Sword") || held.getDisplayName().equals("Xenotime Battle Axe"))) {
                     finalDamage = 600f; // The Zenith Strike
                     e.applyRadiationSickness(10.0f); // Severe radiation
                 }
@@ -378,7 +386,7 @@ public class Player extends Entity {
                 // --- VANGUARD TIER SWORDS ---
                 
                 // Citadel (Antimatter)
-                if (held != null && held.getDisplayName().equals("Citadel")) {
+                if (held != null && (held.getDisplayName().equals("Citadel") || held.getDisplayName().equals("Citadel Battle Axe"))) {
                     finalDamage = 20000.0f;
                     if (vanguardCooldown <= 0) {
                         summonAntimatterExplosion(manager, pm);
@@ -387,7 +395,7 @@ public class Player extends Entity {
                 }
                 
                 // Darkmatter Sword
-                if (held != null && (held.getDisplayName().equals("Darkmatter Sword") || held.getDisplayName().equals("Darkmatter"))) {
+                if (held != null && (held.getDisplayName().equals("Darkmatter Sword") || held.getDisplayName().equals("Darkmatter") || held.getDisplayName().equals("Darkmatter Battle Axe"))) {
                     finalDamage = 15000.0f;
                     if (darkmatterCooldown <= 0) {
                         summonDarkmatterBeam(manager, pm);
@@ -396,7 +404,7 @@ public class Player extends Entity {
                 }
                 
                 // Gamma Ray Sword
-                if (held != null && (held.getDisplayName().equals("Gamma Ray Sword") || held.getDisplayName().equals("Gamma Ray"))) {
+                if (held != null && (held.getDisplayName().equals("Gamma Ray Sword") || held.getDisplayName().equals("Gamma Ray") || held.getDisplayName().equals("Gamma Ray Battle Axe"))) {
                     finalDamage = 175000.0f;
                     if (gammaRayCooldown <= 0) {
                         summonBlackHole(manager, pm);
@@ -405,7 +413,7 @@ public class Player extends Entity {
                 }
                 
                 // Nebula Sword
-                if (held != null && (held.getDisplayName().equals("Nebula Sword") || held.getDisplayName().equals("Nebula"))) {
+                if (held != null && held.getDisplayName().equals("Nebula Sword")) {
                     finalDamage = 200000.0f;
                     if (nebulaCooldown <= 0) {
                         summonNebulaBeams(manager, pm);
@@ -413,13 +421,22 @@ public class Player extends Entity {
                     }
                 }
                 
+                // Nebula Battle Axe — Black Hole + Asteroid Bombardment
+                if (held != null && held.getDisplayName().equals("Nebula Battle Axe")) {
+                    finalDamage = 200000.0f * 1.3f; // 30% more than sword
+                    if (nebulaCooldown <= 0) {
+                        summonNebulaBlackHole(manager, pm, world);
+                        nebulaCooldown = 14.0f;
+                    }
+                }
+                
                 // --- Garnet Sword Special Logic ---
-                if (held != null && held.getDisplayName().equals("Garnet Sword")) {
+                if (held != null && (held.getDisplayName().equals("Garnet Sword") || held.getDisplayName().equals("Garnet Battle Axe"))) {
                     finalDamage = 100f; // 4 hits to kill 400HP Orc
                 }
                 
                 // --- Topaz Sword Special Logic ---
-                if (held != null && held.getDisplayName().equals("Topaz Sword")) {
+                if (held != null && (held.getDisplayName().equals("Topaz Sword") || held.getDisplayName().equals("Topaz Battle Axe"))) {
                     if (e.getType() == EntityType.ZOMBIE || e.getType() == EntityType.SPIDER) {
                         finalDamage *= 2.0f; // Smites common arthropods and undead
                     }
@@ -428,7 +445,7 @@ public class Player extends Entity {
                 // --- Topaz Sword Special Logic ---
                 
                 // --- Radiation Blade Special Logic ---
-                if (held != null && held.getDisplayName().equals("Radiation Blade")) {
+                if (held != null && (held.getDisplayName().equals("Radiation Blade") || held.getDisplayName().equals("Radiation Greataxe"))) {
                     if (e.getType() == EntityType.TROLL) {
                         e.applyRadiation(15f); // DoT damage
                         finalDamage = e.getMaxHealth() * 0.40f; 
@@ -825,6 +842,110 @@ public class Player extends Entity {
                 }
             }
         }
+    }
+
+    /**
+     * Nebula Battle Axe ability: Summons a black hole 8 blocks ahead of the player.
+     * - Pulls all mobs within 10 blocks toward the center.
+     * - Deals 70% of each target's max health.
+     * - Spawns 6 asteroid projectiles that scatter outward and deal 20% of target health on impact.
+     * - Charring grass/sand in a 4-block radius around the black hole center.
+     */
+    private void summonNebulaBlackHole(EntityManager manager, ParticleManager pm, World world) {
+        float yaw = (float) Math.toRadians(camera.getRotation().y);
+        float fx = (float) Math.sin(yaw);
+        float fz = (float) -Math.cos(yaw);
+
+        // Black hole center: 8 blocks in front of player
+        float cx = position.x + fx * 8f;
+        float cy = position.y + 1.5f;
+        float cz = position.z + fz * 8f;
+
+        // --- Pull & Damage Phase ---
+        float pullRadius = 10.0f;
+        for (Entity e : manager.getNearby(cx, cy, cz, pullRadius)) {
+            if (e == this || e.dead) continue;
+
+            // Pull toward center
+            float dx = cx - e.position.x;
+            float dy = cy - e.position.y;
+            float dz = cz - e.position.z;
+            float dist = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (dist > 0.5f) {
+                float pullStrength = 12.0f * (1.0f - dist / pullRadius);
+                e.applyKnockback(dx / dist * pullStrength, dy / dist * pullStrength * 0.5f, dz / dist * pullStrength);
+            }
+
+            // 70% of target max health
+            if (e.type.isHostile()) {
+                e.damage(e.getMaxHealth() * 0.70f, this);
+            }
+        }
+
+        // --- Asteroid Bombardment Phase ---
+        int asteroidCount = 6;
+        for (int i = 0; i < asteroidCount; i++) {
+            double angle = (2.0 * Math.PI / asteroidCount) * i;
+            float aRadius = 3.0f + rng.nextFloat() * 4.0f; // 3-7 blocks out from center
+            float ax = cx + (float) Math.cos(angle) * aRadius;
+            float az = cz + (float) Math.sin(angle) * aRadius;
+            float ay = cy + 2.0f + rng.nextFloat() * 3.0f;
+
+            // Visual: smoke trail for each asteroid
+            pm.spawnSmoke(ax, ay, az);
+            pm.spawnSmoke(ax, ay - 0.5f, az);
+
+            // Asteroid impact damage (20% of target max health)
+            for (Entity e : manager.getNearby(ax, ay, az, 2.0f)) {
+                if (e != this && !e.dead && e.type.isHostile()) {
+                    e.damage(e.getMaxHealth() * 0.20f, this);
+                    e.applyKnockback(
+                        (float) Math.cos(angle) * 6f,
+                        3.0f,
+                        (float) Math.sin(angle) * 6f
+                    );
+                }
+            }
+
+            // Place asteroid block at impact point if valid
+            int bx = (int) Math.floor(ax);
+            int by = (int) Math.floor(ay - 1f);
+            int bz = (int) Math.floor(az);
+            Block ground = world.getBlock(bx, by, bz);
+            if (ground == Block.GRASS || ground == Block.DIRT || ground == Block.STONE || ground == Block.SAND) {
+                world.setBlock(bx, by + 1, bz, Block.ASTEROID);
+            }
+        }
+
+        // --- Char terrain around black hole center (4-block radius) ---
+        int charRadius = 4;
+        for (int dx = -charRadius; dx <= charRadius; dx++) {
+            for (int dz = -charRadius; dz <= charRadius; dz++) {
+                if (dx * dx + dz * dz > charRadius * charRadius) continue;
+                int bx = (int) Math.floor(cx) + dx;
+                int bz2 = (int) Math.floor(cz) + dz;
+                // Scan a few Y levels around impact
+                for (int dy = -2; dy <= 2; dy++) {
+                    int by = (int) Math.floor(cy) + dy;
+                    Block b = world.getBlock(bx, by, bz2);
+                    if (b == Block.GRASS) {
+                        world.setBlock(bx, by, bz2, Block.CHARRED_GRASS);
+                    } else if (b == Block.SAND) {
+                        world.setBlock(bx, by, bz2, Block.CHARRED_SAND);
+                    }
+                }
+            }
+        }
+
+        // Visual feedback
+        for (int i = 0; i < 20; i++) {
+            float px = cx + (rng.nextFloat() - 0.5f) * 6f;
+            float py = cy + (rng.nextFloat() - 0.5f) * 4f;
+            float pz = cz + (rng.nextFloat() - 0.5f) * 6f;
+            pm.spawnSmoke(px, py, pz);
+        }
+
+        System.out.println("NEBULA BLACK HOLE ACTIVATED!");
     }
 
     private void checkBlockHazards(float dt, World world) {

@@ -167,11 +167,6 @@ public class WormCarver {
 
     // ── Worm walker ───────────────────────────────────────────────────────
 
-    /**
-     * Walks a single worm from its start position for up to maxSteps steps,
-     * carving a sphere at each step. Direction is driven by direction noise
-     * sampled at the current position scaled by dirScale.
-     */
     private void walkWorm(int startX, int startY, int startZ,
                           int maxSteps, float baseRadius, double dirScale,
                           CaveType type, Random rng, int worldMaxY) {
@@ -187,16 +182,27 @@ public class WormCarver {
         // A noise-based "time" offset so each worm samples different noise regions
         double tOffset = rng.nextDouble() * 1000.0;
 
-        for (int step = 0; step < maxSteps; step++) {
-            double t = tOffset + step * 0.1;
+        int stepSize = 8;
+        int numPoints = maxSteps / stepSize;
+        if (numPoints < 4) return;
 
-            // Sample direction noise — each axis uses a different noise slice
+        double[][] pts = new double[numPoints][3];
+
+        // Generate control points using noise-driven stepping
+        for (int i = 0; i < numPoints; i++) {
+            pts[i][0] = px;
+            pts[i][1] = py;
+            pts[i][2] = pz;
+
+            double t = tOffset + i * 0.1 * stepSize;
+
+            // Sample direction noise
             double noiseYaw   = directionNoise.noise(t * dirScale, 0.0, 0.0);
             double noisePitch = directionNoise.noise(0.0, t * dirScale + 50.0, 0.0);
 
-            // Smoothly bend the direction
-            yaw   += noiseYaw   * 0.4;
-            pitch += noisePitch * 0.2;
+            // Smoothly bend the direction, scaling the turn by stepSize
+            yaw   += noiseYaw   * 0.4 * Math.sqrt(stepSize);
+            pitch += noisePitch * 0.2 * Math.sqrt(stepSize);
             // Keep pitch from going fully vertical — caves are mostly horizontal
             pitch = Math.max(-0.6, Math.min(0.6, pitch));
 
@@ -206,20 +212,58 @@ public class WormCarver {
             double dy   = Math.sin(pitch);
             double dz   = Math.sin(yaw) * cosP;
 
-            px += dx;
-            py += dy;
-            pz += dz;
+            px += dx * stepSize;
+            py += dy * stepSize;
+            pz += dz * stepSize;
+        }
 
-            // Kill the worm if it escapes the world vertically
-            if (py < 1 || py > worldMaxY - 1) break;
+        // Catmull-Rom to Cubic Bezier sweep
+        for (int i = 0; i < numPoints - 1; i++) {
+            double[] p0 = (i == 0) ? pts[0] : pts[i - 1];
+            double[] p1 = pts[i];
+            double[] p2 = pts[i + 1];
+            double[] p3 = (i + 2 < numPoints) ? pts[i + 2] : pts[i + 1];
 
-            // Modulate radius — breathes wider and narrower naturally
-            double radiusMod = radiusNoise.noise(px * 0.05, py * 0.05, pz * 0.05);
-            float radius = baseRadius + (float) (radiusMod * RADIUS_VARIANCE);
-            radius = Math.max(0.5f, radius);
+            // Tangents
+            double t1x = (p2[0] - p0[0]) * 0.5;
+            double t1y = (p2[1] - p0[1]) * 0.5;
+            double t1z = (p2[2] - p0[2]) * 0.5;
 
-            // Carve into the map immediately
-            carveSphere((float) px, (float) py, (float) pz, radius, type, startX & ~15, startZ & ~15);
+            double t2x = (p3[0] - p1[0]) * 0.5;
+            double t2y = (p3[1] - p1[1]) * 0.5;
+            double t2z = (p3[2] - p1[2]) * 0.5;
+
+            // Bezier control points
+            double b0x = p1[0], b0y = p1[1], b0z = p1[2];
+            double b1x = p1[0] + t1x / 3.0, b1y = p1[1] + t1y / 3.0, b1z = p1[2] + t1z / 3.0;
+            double b2x = p2[0] - t2x / 3.0, b2y = p2[1] - t2y / 3.0, b2z = p2[2] - t2z / 3.0;
+            double b3x = p2[0], b3y = p2[1], b3z = p2[2];
+
+            // Evaluate Bezier curve
+            int evalSteps = stepSize * 2; // sample densely to ensure smooth carving
+            for (int j = 0; j <= evalSteps; j++) {
+                double t = (double) j / evalSteps;
+                double u = 1.0 - t;
+                double tt = t * t;
+                double uu = u * u;
+                double uuu = uu * u;
+                double ttt = tt * t;
+
+                double bx = uuu * b0x + 3 * uu * t * b1x + 3 * u * tt * b2x + ttt * b3x;
+                double by = uuu * b0y + 3 * uu * t * b1y + 3 * u * tt * b2y + ttt * b3y;
+                double bz = uuu * b0z + 3 * uu * t * b1z + 3 * u * tt * b2z + ttt * b3z;
+
+                // Kill the worm segment if it escapes the world vertically
+                if (by < 1 || by > worldMaxY - 1) continue;
+
+                // Modulate radius — breathes wider and narrower naturally
+                double radiusMod = radiusNoise.noise(bx * 0.05, by * 0.05, bz * 0.05);
+                float radius = baseRadius + (float) (radiusMod * RADIUS_VARIANCE);
+                radius = Math.max(0.5f, radius);
+
+                // Carve into the map
+                carveSphere((float) bx, (float) by, (float) bz, radius, type, startX & ~15, startZ & ~15);
+            }
         }
     }
 

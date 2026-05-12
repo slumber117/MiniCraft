@@ -32,25 +32,43 @@ public class World implements IWeatherWorld {
     private final Queue<long[]> generationQueue = new ConcurrentLinkedQueue<>();
 
     private Block getGemBlock(GemType type) {
-        if (type == null) return Block.STONE;
+        if (type == null)
+            return Block.STONE;
         switch (type) {
-            case DIAMOND:       return Block.DIAMOND_ORE;
-            case EMERALD:       return Block.EMERALD_ORE;
-            case RUBY:          return Block.RUBY_ORE;
-            case TANZANITE:     return Block.TANZANITE_ORE;
-            case AMETHYST:      return Block.AMETHYST_ORE;
-            case AGATE:         return Block.AGATE_ORE;
-            case GARNET:        return Block.GARNET_ORE;
-            case TOURMALINE:    return Block.TOURMALINE_ORE;
-            case OPAL:          return Block.OPAL_ORE;
-            case ALEXANDRITE:   return Block.ALEXANDRITE_ORE;
-            case ONYX:          return Block.ONYX_ORE;
-            case PAINITE:       return Block.PAINITE_ORE;
-            case MUSGRAVITE:    return Block.MUSGRAVITE_ORE;
-            case TAAFFEITE:     return Block.TAAFFEITE_ORE;
-            case GRANDIDIERITE: return Block.GRANDIDIERITE_ORE;
-            case SERENDIBITE:   return Block.SERENDIBITE_ORE;
-            default:            return Block.STONE;
+            case DIAMOND:
+                return Block.DIAMOND_ORE;
+            case EMERALD:
+                return Block.EMERALD_ORE;
+            case RUBY:
+                return Block.RUBY_ORE;
+            case TANZANITE:
+                return Block.TANZANITE_ORE;
+            case AMETHYST:
+                return Block.AMETHYST_ORE;
+            case AGATE:
+                return Block.AGATE_ORE;
+            case GARNET:
+                return Block.GARNET_ORE;
+            case TOURMALINE:
+                return Block.TOURMALINE_ORE;
+            case OPAL:
+                return Block.OPAL_ORE;
+            case ALEXANDRITE:
+                return Block.ALEXANDRITE_ORE;
+            case ONYX:
+                return Block.ONYX_ORE;
+            case PAINITE:
+                return Block.PAINITE_ORE;
+            case MUSGRAVITE:
+                return Block.MUSGRAVITE_ORE;
+            case TAAFFEITE:
+                return Block.TAAFFEITE_ORE;
+            case GRANDIDIERITE:
+                return Block.GRANDIDIERITE_ORE;
+            case SERENDIBITE:
+                return Block.SERENDIBITE_ORE;
+            default:
+                return Block.STONE;
         }
     }
 
@@ -90,17 +108,21 @@ public class World implements IWeatherWorld {
     }
 
     @Override
-    public long getSeed() { return generator.getSeed(); }
+    public long getSeed() {
+        return generator.getSeed();
+    }
 
     @Override
     public List<minicraft.entity.Entity> getEntitiesInBox(float x1, float y1, float z1, float x2, float y2, float z2) {
-        if (entityManager == null) return new ArrayList<>();
+        if (entityManager == null)
+            return new ArrayList<>();
         return entityManager.getEntitiesInBox(x1, y1, z1, x2, y2, z2);
     }
 
     @Override
     public void damageEntity(minicraft.entity.Entity e, float damage) {
-        if (e != null) e.damage(damage, null);
+        if (e != null)
+            e.damage(damage, null);
     }
 
     @Override
@@ -108,7 +130,8 @@ public class World implements IWeatherWorld {
         Chunk chunk = chunks.get(key(Math.floorDiv(x, Chunk.WIDTH), Math.floorDiv(z, Chunk.DEPTH)));
         if (chunk != null) {
             for (int y = minicraft.world.Chunk.HEIGHT - 1; y >= 0; y--) {
-                if (chunk.getBlock(Math.floorMod(x, Chunk.WIDTH), y, Math.floorMod(z, Chunk.DEPTH)) != Block.AIR) return y;
+                if (chunk.getBlock(Math.floorMod(x, Chunk.WIDTH), y, Math.floorMod(z, Chunk.DEPTH)) != Block.AIR)
+                    return y;
             }
         }
         // Fallback to generator's analytical elevation if chunk is not yet in the map
@@ -117,7 +140,8 @@ public class World implements IWeatherWorld {
 
     @Override
     public List<minicraft.world.IWeatherEntity> getEntitiesInRadius(float x, float y, float z, float radius) {
-        if (entityManager == null) return new ArrayList<>();
+        if (entityManager == null)
+            return new ArrayList<>();
         List<minicraft.world.IWeatherEntity> out = new ArrayList<>();
         for (minicraft.entity.Entity e : entityManager.getNearby(x, y, z, radius)) {
             out.add(e);
@@ -170,9 +194,11 @@ public class World implements IWeatherWorld {
     @Override
     public boolean isWindDestructible(int x, int y, int z) {
         Block b = getBlock(x, y, z);
-        if (b == null) return false;
+        if (b == null)
+            return false;
         // Small things easily blown away
-        return b == Block.TALL_GRASS || b == Block.FLOWER_RED || b == Block.FLOWER_BLUE || b == Block.MUSHROOM || b == Block.LEAVES;
+        return b == Block.TALL_GRASS || b == Block.FLOWER_RED || b == Block.FLOWER_BLUE || b == Block.MUSHROOM
+                || b == Block.LEAVES;
     }
 
     @Override
@@ -183,7 +209,8 @@ public class World implements IWeatherWorld {
 
     @Override
     public List<minicraft.world.IWeatherEntity> getAllEntities() {
-        if (entityManager == null) return new ArrayList<>();
+        if (entityManager == null)
+            return new ArrayList<>();
         List<minicraft.world.IWeatherEntity> out = new ArrayList<>();
         for (minicraft.entity.Entity e : entityManager.getAll()) {
             out.add(e);
@@ -215,12 +242,13 @@ public class World implements IWeatherWorld {
 
     public Chunk requestChunk(int cx, int cz) {
         Chunk chunk = chunks.get(key(cx, cz));
-        if (chunk != null) return chunk;
+        if (chunk != null)
+            return chunk;
 
         long k = key(cx, cz);
         if (!pendingChunks.contains(k)) {
             pendingChunks.add(k);
-            generationQueue.add(new long[]{cx, cz});
+            generationQueue.add(new long[] { cx, cz });
         }
         return null;
     }
@@ -374,13 +402,14 @@ public class World implements IWeatherWorld {
                         b = Block.BEDROCK;
                     else if (y == surfaceY) {
                         if (y < seaLevelY) {
-                            // Use underwater materials if below sea level: SAND for oceans, STONE/SAND for others
-                            b = (cell.biome == Biome.OCEAN || cell.biome == Biome.FROZEN_OCEAN) ? Block.SAND : (Math.random() < 0.5 ? Block.STONE : Block.SAND);
+                            // Use underwater materials if below sea level: SAND for oceans, STONE/SAND for
+                            // others
+                            b = (cell.biome == Biome.OCEAN || cell.biome == Biome.FROZEN_OCEAN) ? Block.SAND
+                                    : (Math.random() < 0.5 ? Block.STONE : Block.SAND);
                         } else {
                             b = getSurfaceBlock(cell.biome);
                         }
-                    }
-                    else if (y >= surfaceY - DIRT_LAYERS)
+                    } else if (y >= surfaceY - DIRT_LAYERS)
                         b = getFillerBlock(cell.biome);
                     else {
                         boolean isDeep = y < (SEA_LEVEL - 100);
@@ -421,7 +450,7 @@ public class World implements IWeatherWorld {
                     }
 
                     CaveCell caveCell = caveCarver.query(gx, y, gz, cell, surfaceY);
-                    
+
                     // ── Geode Materialization ──────────────────────────────────────
                     if (caveCell.type == CaveType.GEODE_SHELL) {
                         chunk.setBlock(x, y, z, Block.STONE_DARK);
@@ -436,13 +465,16 @@ public class World implements IWeatherWorld {
                         Block b = Block.AIR;
                         if (caveCell.type == CaveType.UNDERWATER || caveCell.type == CaveType.GEODE_HOLLOW)
                             b = Block.WATER; // Use water for underwater, air for geode hollows (overridden later)
-                        
-                        if (caveCell.type == CaveType.GEODE_HOLLOW) b = Block.AIR;
 
-                        if (caveCell.type == minicraft.world.cave.CaveType.UNDERWATER) b = Block.WATER;
-                        else if (y < 50 && Math.random() < 0.05 && caveCell.type != minicraft.world.cave.CaveType.GEODE_HOLLOW)
+                        if (caveCell.type == CaveType.GEODE_HOLLOW)
+                            b = Block.AIR;
+
+                        if (caveCell.type == minicraft.world.cave.CaveType.UNDERWATER)
+                            b = Block.WATER;
+                        else if (y < 50 && Math.random() < 0.05
+                                && caveCell.type != minicraft.world.cave.CaveType.GEODE_HOLLOW)
                             b = Block.LAVA;
-                        
+
                         chunk.setBlock(x, y, z, b);
                     } else if (y < 50 && Math.random() < 0.03) {
                         chunk.setBlock(x, y, z, Block.MAGMA);
@@ -458,7 +490,7 @@ public class World implements IWeatherWorld {
 
         // --- Multi-Tier Ore Spawning ---
         spawnOres(chunk, cx, cz);
-        
+
         // --- Boss Arena Generation ---
         applyDragonArenas(chunk);
 
@@ -556,25 +588,25 @@ public class World implements IWeatherWorld {
     private void applyDragonArenas(Chunk chunk) {
         int cx = chunk.chunkX;
         int cz = chunk.chunkZ;
-        
+
         // Procedural Boss Arena Grid (Every 128x128 chunks ≈ 2048x2048 blocks)
         // Spaced out more for the massive 1024 world
         int gridSize = 128;
         int gx = Math.floorDiv(cx, gridSize) * gridSize + (gridSize / 2);
         int gz = Math.floorDiv(cz, gridSize) * gridSize + (gridSize / 2);
-        
+
         // Deterministic seed for this grid cell
-        long seed = (long)gx * 3123456789L + (long)gz * 123456789L + 777; 
+        long seed = (long) gx * 3123456789L + (long) gz * 123456789L + 777;
         java.util.Random r = new java.util.Random(seed);
-        
+
         if (r.nextFloat() < 0.8f) { // 80% chance a grid cell has a boss
             int bossType = r.nextInt(5); // 0-4 for different dragons
-            
+
             // Check biome at the potential center
             WorldCell centerCell = generator.generate(gx * 16 + 8, gz * 16 + 8);
             int arenaY = 750 + r.nextInt(150); // Floating in the sky (Y: 750 - 900)
-            
-            switch(bossType) {
+
+            switch (bossType) {
                 case 0: // Gold Dragon (Mountains)
                     if (centerCell.biome == Biome.MOUNTAINS)
                         applyDomeArena(chunk, gx * 16 + 8, arenaY, gz * 16 + 8, 50, 40, Block.GOLD_BLOCK, false);
@@ -593,19 +625,27 @@ public class World implements IWeatherWorld {
                     break;
                 case 4: // Earth Dragon (Forests)
                     if (centerCell.biome == Biome.FOREST || centerCell.biome == Biome.JUNGLE)
-                        applyDomeArena(chunk, gx * 16 + 8, arenaY, gz * 16 + 8, 55, 35, Block.OAK_WOOD, true); // Wood and Dirt (handled in applyDome)
+                        applyDomeArena(chunk, gx * 16 + 8, arenaY, gz * 16 + 8, 55, 35, Block.OAK_WOOD, true); // Wood
+                                                                                                               // and
+                                                                                                               // Dirt
+                                                                                                               // (handled
+                                                                                                               // in
+                                                                                                               // applyDome)
                     break;
             }
         }
     }
 
-    private void applyDomeArena(Chunk chunk, int centerX, int arenaY, int centerZ, int radius, int height, Block wallMaterial, boolean hasGate) {
+    private void applyDomeArena(Chunk chunk, int centerX, int arenaY, int centerZ, int radius, int height,
+            Block wallMaterial, boolean hasGate) {
         int cx = chunk.chunkX * 16;
         int cz = chunk.chunkZ * 16;
-        
+
         // Quick AABB check
-        if (cx > centerX + radius + 10 || cx + 16 < centerX - radius - 10) return;
-        if (cz > centerZ + radius + 10 || cz + 16 < centerZ - radius - 10) return;
+        if (cx > centerX + radius + 10 || cx + 16 < centerX - radius - 10)
+            return;
+        if (cz > centerZ + radius + 10 || cz + 16 < centerZ - radius - 10)
+            return;
 
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
@@ -613,28 +653,31 @@ public class World implements IWeatherWorld {
                 int wz = cz + z;
                 int dx = wx - centerX;
                 int dz = wz - centerZ;
-                
+
                 float distSq = dx * dx + dz * dz;
                 if (distSq <= (radius + 5) * (radius + 5)) {
                     for (int y = arenaY; y <= arenaY + height + 5; y++) {
-                        if (y >= Chunk.HEIGHT) continue;
+                        if (y >= Chunk.HEIGHT)
+                            continue;
                         float dy = y - arenaY;
                         float val = distSq / (radius * radius) + (dy * dy) / (height * height);
-                        
+
                         if (val <= 1.0f) {
                             chunk.setBlock(x, y, z, Block.AIR);
                         } else if (val <= 1.2f) {
                             Block mat = wallMaterial;
                             // Earth Arena Special: Alternating Dirt and Wood
-                            if (wallMaterial == Block.OAK_WOOD && (y % 2 == 0)) mat = Block.DIRT;
+                            if (wallMaterial == Block.OAK_WOOD && (y % 2 == 0))
+                                mat = Block.DIRT;
                             chunk.setBlock(x, y, z, mat);
                         }
                     }
-                    
+
                     if (hasGate && dx >= radius - 2 && dx <= radius + 5 && Math.abs(dz) <= 3) {
-                         for (int y = arenaY + 1; y <= arenaY + 6; y++) {
-                             if (y < Chunk.HEIGHT) chunk.setBlock(x, y, z, Block.BOSS_GATE);
-                         }
+                        for (int y = arenaY + 1; y <= arenaY + 6; y++) {
+                            if (y < Chunk.HEIGHT)
+                                chunk.setBlock(x, y, z, Block.BOSS_GATE);
+                        }
                     }
                 }
             }
@@ -664,7 +707,7 @@ public class World implements IWeatherWorld {
         spawnOreGrip(chunk, Block.SAPPHIRE_ORE, ClusterSize.SMALL, 12, 350, 550);
         spawnOreGrip(chunk, Block.JADE_ORE, ClusterSize.SMALL, 10, 350, 550);
         spawnOreGrip(chunk, Block.AMETHYST_ORE, ClusterSize.SMALL, 10, 350, 550);
-        spawnOreGrip(chunk, Block.AQUAMARINE_ORE, ClusterSize.SMALL, 10, 350, 550);
+        spawnOreGrip(chunk, Block.AQUAMARINE_ORE, ClusterSize.SMALL, 10, 350, 450);
 
         // --- Tier 5: Mid-Crust Exotic Gems (Y: 250 - 450) ---
         spawnOreGrip(chunk, Block.EMERALD_ORE, ClusterSize.SMALL, 12, 250, 450);
@@ -708,29 +751,40 @@ public class World implements IWeatherWorld {
         spawnOreGrip(chunk, Block.CERIUM_ORE, ClusterSize.TINY, 3, 0, 10);
     }
 
-    private enum ClusterSize { TINY(2), SMALL(4), MEDIUM(8), LARGE(12); int count; ClusterSize(int c) { count = c; } }
+    private enum ClusterSize {
+        TINY(2), SMALL(4), MEDIUM(8), LARGE(12);
+
+        int count;
+
+        ClusterSize(int c) {
+            count = c;
+        }
+    }
 
     private void spawnOreGrip(Chunk chunk, Block ore, ClusterSize size, int density, int minY, int maxY) {
         for (int i = 0; i < density; i++) {
             int x = random.nextInt(16);
             int z = random.nextInt(16);
             int y = minY + random.nextInt(Math.max(1, maxY - minY));
-            
+
             // Check if near a cave (air neighbor)
             boolean nearCave = false;
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dy = -1; dy <= 1; dy++) {
                     for (int dz = -1; dz <= 1; dz++) {
-                        if (x + dx >= 0 && x + dx < 16 && y + dy >= 0 && y + dy < Chunk.HEIGHT && z + dz >= 0 && z + dz < 16) {
+                        if (x + dx >= 0 && x + dx < 16 && y + dy >= 0 && y + dy < Chunk.HEIGHT && z + dz >= 0
+                                && z + dz < 16) {
                             if (chunk.getBlock(x + dx, y + dy, z + dz) == Block.AIR) {
                                 nearCave = true;
                                 break;
                             }
                         }
                     }
-                    if (nearCave) break;
+                    if (nearCave)
+                        break;
                 }
-                if (nearCave) break;
+                if (nearCave)
+                    break;
             }
 
             int finalCount = nearCave ? size.count * 2 : size.count;
@@ -741,8 +795,10 @@ public class World implements IWeatherWorld {
                     int dx = random.nextInt(3) - 1;
                     int dy = random.nextInt(3) - 1;
                     int dz = random.nextInt(3) - 1;
-                    if (x + dx >= 0 && x + dx < 16 && y + dy >= 0 && y + dy < Chunk.HEIGHT && z + dz >= 0 && z + dz < 16) {
-                        if (chunk.getBlock(x + dx, y + dy, z + dz) == Block.STONE || chunk.getBlock(x + dx, y + dy, z + dz) == Block.STONE_DARK) {
+                    if (x + dx >= 0 && x + dx < 16 && y + dy >= 0 && y + dy < Chunk.HEIGHT && z + dz >= 0
+                            && z + dz < 16) {
+                        if (chunk.getBlock(x + dx, y + dy, z + dz) == Block.STONE
+                                || chunk.getBlock(x + dx, y + dy, z + dz) == Block.STONE_DARK) {
                             chunk.setBlock(x + dx, y + dy, z + dz, ore);
                         }
                     }
@@ -775,7 +831,8 @@ public class World implements IWeatherWorld {
                 }
     }
 
-    public void update(float dt, minicraft.entity.Player player, minicraft.entity.ParticleManager pm, minicraft.entity.EntityManager em) {
+    public void update(float dt, minicraft.entity.Player player, minicraft.entity.ParticleManager pm,
+            minicraft.entity.EntityManager em) {
         int px = (int) player.position.x;
         int py = (int) player.position.y;
         int pz = (int) player.position.z;
@@ -787,22 +844,25 @@ public class World implements IWeatherWorld {
                         Block b = getBlock(px + dx, py + dy, pz + dz);
                         if (b != null && (b == Block.TORCH || b.name().endsWith("_TORCH"))) {
                             pm.spawnSmoke(px + dx + 0.5f, py + dy + 0.6f, pz + dz + 0.5f);
-                            
+
                             // Radiation logic
                             if (b == Block.URANIUM_TORCH || b == Block.PLUTONIUM_TORCH) {
                                 float damage = (b == Block.PLUTONIUM_TORCH) ? 1.5f : 0.5f;
                                 float radRadius = (b == Block.PLUTONIUM_TORCH) ? 6.0f : 4.0f;
-                                
-                                List<minicraft.entity.Entity> nearby = em.getNearby(px + dx + 0.5f, py + dy + 0.5f, pz + dz + 0.5f, radRadius);
+
+                                List<minicraft.entity.Entity> nearby = em.getNearby(px + dx + 0.5f, py + dy + 0.5f,
+                                        pz + dz + 0.5f, radRadius);
                                 for (minicraft.entity.Entity e : nearby) {
-                                    if (e instanceof minicraft.entity.Player) continue;
+                                    if (e instanceof minicraft.entity.Player)
+                                        continue;
                                     e.damage(damage, null);
                                 }
-                                
+
                                 // Spawn green/orange sparks for radiation
                                 if (Math.random() < 0.3) {
-                                    pm.spawnRadiationSpark(px + dx + 0.5f, py + dy + 0.8f, pz + dz + 0.5f, 
-                                        b == Block.URANIUM_TORCH ? new minicraft.math.Vector3f(0.2f, 1.0f, 0.2f) : new minicraft.math.Vector3f(1.0f, 0.5f, 0.1f));
+                                    pm.spawnRadiationSpark(px + dx + 0.5f, py + dy + 0.8f, pz + dz + 0.5f,
+                                            b == Block.URANIUM_TORCH ? new minicraft.math.Vector3f(0.2f, 1.0f, 0.2f)
+                                                    : new minicraft.math.Vector3f(1.0f, 0.5f, 0.1f));
                                 }
                             }
                         }
@@ -825,15 +885,15 @@ public class World implements IWeatherWorld {
 
     public minicraft.math.Vector3f findSafeGrassSpawn(int startX, int startZ) {
         // Optimized for AI: Scan only local area first to save on CPU inference
-        int maxSteps = 10; 
+        int maxSteps = 10;
         for (int i = 0; i < maxSteps; i++) {
             int rx = startX + (int) (Math.random() * 200 - 100);
             int rz = startZ + (int) (Math.random() * 200 - 100);
             WorldCell cell = generator.generate(rx, rz);
-            
+
             // Look for non-ocean
             if (cell.elevation > 0.45f) {
-                return new minicraft.math.Vector3f(rx, (float)(cell.elevation * Chunk.HEIGHT) + 2.0f, rz);
+                return new minicraft.math.Vector3f(rx, (float) (cell.elevation * Chunk.HEIGHT) + 2.0f, rz);
             }
         }
         // Fallback to center if no high ground found quickly
@@ -857,14 +917,15 @@ public class World implements IWeatherWorld {
     public int getSafeSpawnY(int x, int preferredY, int z) {
         // Clamp preferredY
         int startY = Math.max(1, Math.min(Chunk.HEIGHT - 3, preferredY));
-        
+
         // 1. Search locally (up/down 15 blocks)
         for (int dy = 0; dy <= 15; dy++) {
             // Check current, then above, then below
-            int[] targets = {startY + dy, startY - dy};
+            int[] targets = { startY + dy, startY - dy };
             for (int y : targets) {
-                if (y <= 0 || y >= Chunk.HEIGHT - 1) continue;
-                
+                if (y <= 0 || y >= Chunk.HEIGHT - 1)
+                    continue;
+
                 Block b = getBlock(x, y, z);
                 if (b.solid || b == Block.WATER || b == Block.ICE) {
                     // Potential floor found, check space for player (2 blocks high)
@@ -884,37 +945,43 @@ public class World implements IWeatherWorld {
      */
     public minicraft.math.Vector3f findSafeSpawn() {
         Random rand = new Random();
-        
+
         // Pick a single random tile to prevent hammering the ML inference pipeline
         int tileX = (rand.nextInt(20) - 10) * 256;
         int tileZ = (rand.nextInt(20) - 10) * 256;
-        
+
         // Extended search within the cached tile to ensure a land-locked start
         for (int i = 0; i < 2000; i++) {
             int rx = tileX + rand.nextInt(256);
             int rz = tileZ + rand.nextInt(256);
-            
+
             // Skip the origin zone entirely to avoid factory platform interference
-            if (Math.abs(rx) < 150 && Math.abs(rz) < 150) continue;
-            
+            if (Math.abs(rx) < 150 && Math.abs(rz) < 150)
+                continue;
+
             WorldCell cell = generator.generate(rx, rz);
-            
-            // 1. Extreme Land Check: 
-            // - Elevation 0.35 is double the sea level (0.18), roughly 100 blocks above water.
-            // - Continentalness 0.4 ensures we are deep inland, away from coastal instability.
-            if (cell.isWater || cell.elevation < 0.35f || cell.continentalness < 0.4f) continue;
-            
+
+            // 1. Extreme Land Check:
+            // - Elevation 0.35 is double the sea level (0.18), roughly 100 blocks above
+            // water.
+            // - Continentalness 0.4 ensures we are deep inland, away from coastal
+            // instability.
+            if (cell.isWater || cell.elevation < 0.35f || cell.continentalness < 0.4f)
+                continue;
+
             // 2. Height Calculation
             float surfaceY = cell.elevation * Chunk.HEIGHT;
-            
+
             // 3. Stability Guard: Avoid very high mountains or platforms
-            if (surfaceY > 380.0f) continue;
-            
-            System.out.println("WORLD: Verified safe interior spawn at (" + rx + ", " + rz + ") Elevation: " + cell.elevation);
+            if (surfaceY > 380.0f)
+                continue;
+
+            System.out.println(
+                    "WORLD: Verified safe interior spawn at (" + rx + ", " + rz + ") Elevation: " + cell.elevation);
             // Spawn at surface level to prevent being too high to see terrain
             return new minicraft.math.Vector3f(rx + 0.5f, surfaceY + 1.0f, rz + 0.5f);
         }
-        
+
         // Emergency Deep Inland Fallback
         System.out.println("WORLD: Extreme search failed, using deep interior fallback.");
         WorldCell fallbackCell = generator.generate(2048, 2048);
@@ -991,7 +1058,6 @@ public class World implements IWeatherWorld {
                     1 + r.nextInt(2));
         }
     }
-
 
     private int unpackX(long pos) {
         return (int) ((pos << 40) >> 40); // Sign-extend 24-bit X

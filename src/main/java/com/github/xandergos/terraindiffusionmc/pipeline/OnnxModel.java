@@ -131,7 +131,7 @@ public final class OnnxModel implements AutoCloseable {
         try {
             if (!TerrainDiffusionConfig.offloadModels()) {
                 OrtSession.SessionOptions sessionOptions = new OrtSession.SessionOptions();
-                sessionOptions.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT);
+                sessionOptions.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.EXTENDED_OPT);
                 if (addGpuProvider(sessionOptions)) {
                     this.gpuSession = env.createSession(modelBytes, sessionOptions);
                     this.cpuSession = null;
@@ -139,6 +139,9 @@ public final class OnnxModel implements AutoCloseable {
                             name, modelBytes.length / 1024, System.currentTimeMillis() - startMillis);
                     return;
                 }
+            } else {
+                LOG.info("ONNX model '{}' deferred loading (offload_models=true).", name);
+                return;
             }
         } catch (Exception e) {
             LOG.warn("Failed to initialize GPU session for '{}', falling back to CPU: {}", name, e.getMessage());
@@ -156,7 +159,7 @@ public final class OnnxModel implements AutoCloseable {
 
     private void loadCpuSession(byte[] modelBytes, long startMillis) throws OrtException {
         OrtSession.SessionOptions sessionOptions = new OrtSession.SessionOptions();
-        sessionOptions.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT);
+        sessionOptions.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.EXTENDED_OPT);
         // Use all available cores for CPU inference
         sessionOptions.setInterOpNumThreads(0); 
         sessionOptions.setIntraOpNumThreads(0);
@@ -273,7 +276,7 @@ public final class OnnxModel implements AutoCloseable {
 
         try {
             OrtSession.SessionOptions opts = new OrtSession.SessionOptions();
-            opts.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT);
+            opts.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.EXTENDED_OPT);
             if (addGpuProvider(opts)) {
                 activeGpuSession = env.createSession(optimizedModelBytes, opts);
                 gpuSlotHolder = this;

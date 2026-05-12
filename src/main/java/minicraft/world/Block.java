@@ -22,6 +22,9 @@ public enum Block {
     SNOW(true, -1, 0.1f, 0.05f, "snow"),
     ICE(true, 1, 2.0f, 0.2f, "ice"),
     PODZOL(true, -1, 0.6f, 0.1f, "podzol_top", "dirt", "podzol_side"),
+    CHARRED_GRASS(true, -1, 0.6f, 0.1f, "charred_grass"),
+    CHARRED_SAND(true, -1, 0.5f, 0.1f, "charred_sand"),
+    ASTEROID(true, 10, 50.0f, 0.0f, "asteroid"),
 
     // ── Construction ──────────────────────────────────────────────────────
     SAND_BRICKS(true, 0, 2.0f, 1.0f, "sand_bricks"),
@@ -60,9 +63,9 @@ public enum Block {
     NICKEL_ORE(true, 3, 5.0f, 7.0f, "nickel_ore"),
     PLATINUM_ORE(true, 3, 8.0f, 12.0f, "platinum_ore"),
 
-    DIAMOND_ORE(true, 4, 30.0f, 100.0f, "diamond_ore"),
-    EMERALD_ORE(true, 5, 25.0f, 308.0f, "emerald_ore"),
-    RUBY_ORE(true, 5, 25.0f, 272.0f, "ruby_ore"),
+    DIAMOND_ORE(true, 4, 30.0f, 200.0f, "diamond_ore"),
+    EMERALD_ORE(true, 5, 25.0f, 708.0f, "emerald_ore"),
+    RUBY_ORE(true, 5, 25.0f, 800.0f, "ruby_ore"),
     TOPAZ_ORE(true, 5, 20.0f, 900.0f, "topaz_ore"),
     AQUAMARINE_ORE(true, 5, 20.0f, 845.0f, "aquamarine_ore"),
     PERIDOT_ORE(true, 5, 20.0f, 1030.0f, "peridot_ore"),
@@ -71,25 +74,25 @@ public enum Block {
     AMETHYST_ORE(true, 4, 12.0f, 12.0f, "amethyst_ore"),
     JADE_ORE(true, 5, 10.0f, 700.0f, "jade_ore"),
     ONYX_ORE(true, 10, 120.0f, 7.5f, "onyx_ore"),
-    GARNET_ORE(true, 8, 90.0f, 120.0f, "garnet_ore"),
+    GARNET_ORE(true, 8, 90.0f, 38000.0f, "garnet_ore"),
     TOURMALINE_ORE(true, 5, 25.0f, 40.0f, "tourmaline_ore"),
     AGATE_ORE(true, 8, 20.0f, 33000.0f, "agate_ore"),
     PAINITE_ORE(true, 9, 80.0f, 345000.0f, "painite_ore"), // High-fidelity deep red crystalline ore
     TAAFFEITE_ORE(true, 7, 90.0f, 1285.0f, "tanzanite_ore"), // Solid lilac crystal pattern
     GRANDIDIERITE_ORE(true, 8, 95.0f, 600.0f, "grandidierite_ore"),
-    SERENDIBITE_ORE(true, 8, 100.0f, 2000.0f, "serendibite_ore"),
+    SERENDIBITE_ORE(true, 8, 100.0f, 40000.0f, "serendibite_ore"),
     ALEXANDRITE_ORE(true, 7, 80.0f, 925.0f, "alexandrite_ore"),
-    MUSGRAVITE_ORE(true, 8, 110.0f, 400.0f, "musgravite_ore"),
+    MUSGRAVITE_ORE(true, 8, 110.0f, 40000.0f, "musgravite_ore"),
     OPAL_ORE(true, 5, 15.0f, 50.0f, "opal_ore"),
 
     QUARTZ_ORE(true, 4, 4.0f, 400.0f, "quartz_ore"),
     PYRITE_ORE(true, 8, 45.0f, 1000.0f, "pyrite_ore"),
     MITHRIL_ORE(true, 10, 150.0f, 7.5f, "mithril_ore"),
     ADAMANTINE_ORE(true, 7, 50.0f, 1400.0f, "adamantine_ore"),
-    ORICHALCUM_ORE(true, 6, 35.0f, 1500.0f, "orichalcum_ore"),
+    ORICHALCUM_ORE(true, 6, 35.0f, 3000.0f, "orichalcum_ore"),
     PLUTONIUM_ORE(true, 6, 50.0f, 1225.0f, "plutonium_ore"),
     URANIUM_ORE(true, 6, 45.0f, 1000.0f, "uranium_ore"),
-    NEPTUNIUM_ORE(true, 6, 45.0f, 1500.0f, "neptunium_ore"),
+    NEPTUNIUM_ORE(true, 6, 45.0f, 3000.0f, "neptunium_ore"),
 
     TUNGSTEN_ORE(true, 4, 10.0f, 12.0f, "tungsten_ore"),
     TITANIUM_ORE(true, 3, 10.0f, 12.0f, "titanium_ore"),

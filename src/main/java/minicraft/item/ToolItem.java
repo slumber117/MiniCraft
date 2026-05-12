@@ -7,7 +7,7 @@ import minicraft.world.Block;
  */
 public class ToolItem extends Item {
 
-    public enum ToolType { PICKAXE, AXE, SHOVEL, SWORD }
+    public enum ToolType { PICKAXE, AXE, SHOVEL, SWORD, BATTLE_AXE }
 
     private final ToolType toolType;
     private final int harvestLevel;
